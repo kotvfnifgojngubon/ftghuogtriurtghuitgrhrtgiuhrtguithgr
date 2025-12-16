@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>PILOUS — SESSION 01</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: black;
+      color: #e6e6e6;
+      font-family: monospace;
+      height: 100%;
+      overflow: hidden;
+      cursor: none;
+    }
+    #game {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      padding: 40px;
+      line-height: 1.6;
+      max-width: 900px;
+      margin: auto;
+    }
+    .flicker { animation: flicker 3s infinite; }
+    @keyframes flicker {
+      0% { opacity: 1; }
+      4% { opacity: 0.4; }
+      8% { opacity: 1; }
+      12% { opacity: 0.2; }
+      16% { opacity: 1; }
+      100% { opacity: 1; }
+    }
+    .glitch { animation: glitch 0.12s infinite; }
+    @keyframes glitch {
+      0% { transform: translate(0); }
+      25% { transform: translate(2px, -1px); }
+      50% { transform: translate(-2px, 1px); }
+      75% { transform: translate(1px, -2px); }
+      100% { transform: translate(0); }
+    }
+    button {
+      background: black;
+      color: white;
+      border: 1px solid #666;
+      padding: 14px 28px;
+      margin-top: 30px;
+      font-size: 16px;
+    }
+    button:hover { background: #550000; }
+  </style>
+</head>
+<body>
+<div id="game"></div>
+
+<audio id="amb" loop>
+  <source src="https://cdn.pixabay.com/download/audio/2022/10/30/audio_28bff2f9e7.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+const game = document.getElementById('game');
+const amb = document.getElementById('amb');
+
+const scenes = {
+intro: {
+text: "PILOUS.\n\nCeci n'est pas un jeu.\n\nCeci est un enregistrement.\n\nSession 01 initialisée…",
+glitch:true,sound:true,
+choices:[{label:"Continuer",next:"room"}]
+},
+room:{
+text:"Tu es assis.\n\nTu ne te souviens pas t'être assis.\n\nLa pièce est étroite. Trop étroite.\n\nLes murs respirent lentement.\n\nQuand tu respires… ils respirent aussi.",
+choices:[{label:"Observer la pièce",next:"observe"},{label:"Fermer les yeux",next:"eyes"}]
+},
+observe:{
+text:"Il y a une porte.\n\nElle n'était pas là avant.\n\nSur la porte, ton prénom est gravé.\n\nLes lettres saignent lentement.",
+choices:[{label:"Toucher la porte",next:"touch"},{label:"Recule",next:"back"}]
+},
+touch:{
+text:"La porte est chaude.\n\nBeaucoup trop chaude.\n\nQuelque chose pousse de l'autre côté.\n\nPas pour sortir.\n\nPour entrer.",
+glitch:true,
+choices:[{label:"Résister",next:"resist"}]
+},
+resist:{
+text:"Tu forces.\n\nTes bras tremblent.\n\nLa voix murmure :\n\n« Pilous… laisse-moi finir. »",
+choices:[{label:"Demander finir quoi",next:"voice"}]
+},
+voice:{
+text:"La voix rit.\n\n« Tu dors encore. »\n\n« Mais ton corps est réveillé. »\n\n« Regarde derrière toi. »",
+choices:[{label:"Se retourner",next:"death"},{label:"Refuser",next:"refuse"}]
+},
+refuse:{
+text:"Tu refuses.\n\nLa pièce devient silencieuse.\n\nTrop silencieuse.\n\nPuis l'écran clignote.",
+glitch:true,
+choices:[{label:"Continuer",next:"hall"}]
+},
+hall:{
+text:"Un couloir apparaît.\n\nIl semble infini.\n\nChaque pas que tu fais…\n\nTu l'entends respirer plus près.",
+choices:[{label:"Avancer",next:"walk"}]
+},
+walk:{
+text:"Tu avances longtemps.\n\nTrop longtemps.\n\nTu commences à oublier pourquoi tu avances.\n\nMais pas pourquoi tu as peur.",
+choices:[{label:"Continuer",next:"mirror"}]
+},
+mirror:{
+text:"Un miroir.\n\nTon reflet a un retard.\n\nIl sourit quand tu ne souris pas.",
+choices:[{label:"Toucher le miroir",next:"death"},{label:"Fermer les yeux",next:"end"}]
+},
+death:{
+text:"ERREUR FATALE.\n\nENTITÉ NON CONFORME DÉTECTÉE.\n\nSESSION CORROMPUE.",
+glitch:true,
+choices:[{label:"Redémarrer la session",next:"intro"}]
+},
+end:{
+text:"Tu fermes les yeux.\n\nQuand tu les ouvres…\n\nTu es encore là.\n\nMais quelque chose est entré.",
+choices:[{label:"Relancer",next:"intro"}]
+}
+};
+
+function showScene(n){
+ const s=scenes[n];game.innerHTML="";
+ if(s.sound) amb.play(); else amb.pause();
+ const t=document.createElement('div');
+ t.innerText=s.text;
+ t.className='flicker'+(s.glitch?' glitch':'');
+ game.appendChild(t);
+ s.choices.forEach(c=>{const b=document.createElement('button');b.innerText=c.label;b.onclick=()=>showScene(c.next);game.appendChild(b);});
+}
+
+showScene('intro');
+
+setTimeout(()=>{
+ const j=document.createElement('div');
+ j.style.position='fixed';j.style.top=0;j.style.left=0;j.style.width='100%';j.style.height='100%';
+ j.style.background='black';j.style.color='red';j.style.display='flex';j.style.alignItems='center';j.style.justifyContent='center';
+ j.style.fontSize='70px';j.style.zIndex='9999';j.innerText='NE TE RETOURNE PAS';
+ document.body.appendChild(j);setTimeout(()=>j.remove(),180);
+},Math.random()*20000+10000);
+</script>
+</body>
+</html>
