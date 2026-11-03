@@ -1,0 +1,13 @@
+{
+  "name": "sillage-stellaire-outils",
+  "private": true,
+  "description": "Outils de rendu et de contrôle du pixel art de Sillage Stellaire (skill .claude/skills/sillage-pixel)",
+  "scripts": {
+    "ships": "node .claude/skills/sillage-pixel/tools/ships.mjs",
+    "fx": "node .claude/skills/sillage-pixel/tools/fx.mjs",
+    "check": "node .claude/skills/sillage-pixel/tools/check.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.47.0"
+  }
+}
