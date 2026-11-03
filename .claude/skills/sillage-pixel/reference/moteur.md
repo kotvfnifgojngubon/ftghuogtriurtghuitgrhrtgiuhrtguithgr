@@ -188,8 +188,33 @@ Les opaques (2, 10, 11, 13, 14, 15) passent avant l'éclairage, les autres en mo
 - `updatePuffs` les fait vieillir, `drawPuffs` les dessine (après les débris opaques, avant la lumière additive) et `drawXRings`
   dessine les anneaux, dans la passe additive.
 
+**Événements différés** : `later(délai, fn)` exécute `fn` plus tard, au rythme du jeu (240 au plus, vidés avec le monde).
+Il sert aux chaînes d'explosions le long d'une coque et à la couronne d'explosions qui précède une rupture.
+
+**Mort des grands vaisseaux** (`bigShip`), en trois actes :
+1. **L'agonie** (`capDying`) monte en puissance avec `p`, qui va de 0 au premier signe à 1 quand le réacteur cède :
+   - les explosions se rapprochent, grossissent avec la coque (`gk`) et gagnent toute sa longueur ;
+   - le cœur rougit (`heatCell`) et le réacteur pulse (`flashAt`) ;
+   - des conduites cèdent en chaîne (`later`).
+
+   Ces explosions sont en version allégée (`explosion(…, lite)`) et s'espacent quand le jeu abaisse `PMAX`.
+2. **La rupture** (`bigDeath`) : une couronne d'explosions court sur toute la coque en un tiers de seconde, puis le souffle
+   du réacteur (`amBlast`, éclair de 0,09 s) et la coupure en tronçons.
+3. **L'après** : chaque grand tronçon garde ses cellules de cassure (`_brk`) et, pendant 4,5 à 7 s (`_burnT`), il fume,
+   crache du feu et pète encore le long de la cassure (`updatePuffs`).
+
+**Lumière** (`collectLights`, puis `renderLighting`) :
+- `addLight(x,y,r,col,a,rim)` ajoute une lumière. La carte de lumière est calculée à demi-résolution, posée sur les coques
+  (masque, à 50 %) et, très faiblement, sur tout l'écran ;
+- `rim` : la lumière peut allumer le **liseré** des coques tournées vers elle (`rimLight`). Ont ce droit les éclairs
+  (`flashAt`) et les bouffées de feu, pas les moteurs. Le liseré, c'est la coque moins la coque décalée de 2 px vers la
+  source, coloré par la carte de lumière (amplifiée ×4) et **posé par-dessus**, pas ajouté (sur une coque claire, une
+  lumière ajoutée sature au blanc et ne se voit pas). Il touche 6 coques par image au plus, rognées à la portée de la
+  lumière, et il est ignoré quand la lumière est trop petite pour la coque (`L.r < b.rad*0.22`) ;
+- les incendies éclairent leur coque (deux lumières qui vacillent par coque, dix en tout).
+
 Autres effets :
-- `flashAt(x,y,r,col,durée)` : lueur en anneaux tramés (elle éclaire aussi les coques voisines) ;
+- `flashAt(x,y,r,col,durée)` : lueur en anneaux tramés (elle éclaire aussi les coques voisines, liseré compris) ;
 - `fballs` : anciennes boules de feu (`drawFireballs`), que `explosion` n'utilise plus ;
 - `addShock(x,y,puissance,max,{col})` : onde de choc de réacteur (dégâts compris), dessinée en couronnes de pixels nets
   (halo, front blanc, traîne en deux paliers) ;

@@ -6582,7 +6582,10 @@ let fballs=[];
    secondes (jamais un damier). Les anneaux sont des couronnes de pixels nets, sans dégradé lisse. */
 const XFIRE=['#ffffff','#fff3a6','#ffe26b','#ffc23d','#ff8a2a','#f2561d','#c9281f','#8a1f17','#4a1712'];
 const XSMOKE=['#8a8494','#6c6878','#504c5c','#3a3744','#292731','#1c1b23'];
-let puffs=[],xrings=[];
+let puffs=[],xrings=[],laters=[];
+// événements différés des effets (chaînes d'explosions le long d'une coque, sursauts d'une épave) : ils suivent le temps
+// du jeu (pause, ralenti) et sont vidés avec le monde
+function later(d,fn){if(laters.length<240)laters.push({t:d,fn});}
 // plafond des bouffées : suit celui des particules, qui baisse tout seul sur une machine qui peine
 const puffMax=()=>Math.round(PMAX/22);
 // bouffée de feu (fire) ou de fumée ; o.smk : le feu laisse en mourant une fumée de cette durée relative,
@@ -6614,6 +6617,16 @@ function fillRing(cx,cy,r0,r1){if(r1-r0<0.6)r0=r1-1;
     if(Math.abs(dy)>=r0){ctx.fillRect(xa,y,xd-xa,1);continue;}
     const hi=Math.sqrt(r0*r0-dy*dy),xb=Math.round(cx-hi),xc=Math.round(cx+hi);if(xb>xa)ctx.fillRect(xa,y,xb-xa,1);if(xd>xc)ctx.fillRect(xc,y,xd-xc,1);}}
 function updatePuffs(dt){
+  for(let i=laters.length-1;i>=0;i--){const e=laters[i];e.t-=dt;if(e.t<=0){laters[i]=laters[laters.length-1];laters.pop();try{e.fn();}catch(err){}}}
+  // tronçons d'un grand vaisseau : ils fument et pètent encore quelques secondes le long de leur cassure
+  for(const w of wrecks){if(w.dead||!(w._burnT>0))continue;w._burnT-=dt;w._smT=(w._smT||0)-dt;if(w._smT>0)continue;
+    const K=w._burnK||1,life=w._burnT/(w._burn0||6);w._smT=rnd(0.05,0.1)/K/Math.max(0.3,PMAX/3600);
+    const L=w._brk;if(!L||!L.length)continue;const i=L[(Math.random()*L.length)|0];if(!w.type[i])continue;
+    const lx=i%w.w+0.5,ly=((i/w.w)|0)+0.5,x=w.wx(lx,ly),y=w.wy(lx,ly),a=Math.random()*TAU,v=rnd(6,24)*K;
+    addPuff(x,y,w.vx*0.5+Math.cos(a)*v,w.vy*0.5+Math.sin(a)*v,rnd(2,3.2)*(0.6+0.4*life),rnd(6,13)*K,0,{drag:1.1,warm:1});
+    if(Math.random()<0.65*life)addPuff(x,y,w.vx*0.6+Math.cos(a)*v,w.vy*0.6+Math.sin(a)*v,rnd(0.3,0.7),rnd(4,8)*K,1,{drag:3,smk:1});
+    if(Math.random()<0.07*life)explosion(x,y,rnd(0.8,1.6)*Math.min(1.8,K),w.vx,w.vy);
+    else if(Math.random()<0.15*life)sparks(x,y,4,90,'#ffd27a');}
   for(let i=puffs.length-1;i>=0;i--){const q=puffs[i];if(q.delay>0){q.delay-=dt;continue;}q.life-=dt;
     if(q.life<=0){const s=q.f&&q.smk?q:null;puffs[i]=puffs[puffs.length-1];puffs.pop();
       if(s)addPuff(s.x,s.y,s.vx*0.5,s.vy*0.5,rnd(1.1,1.9)*s.smk,s.r*0.95,0,{drag:1.5,warm:1});continue;}
@@ -6714,30 +6727,34 @@ function drawFxBullet(b,sx,sy,dx,dy){const X=Math.round(sx),Y=Math.round(sy),nx=
 function flashAt(x,y,r,col,life){if(flashes.length<140)flashes.push({x,y,r,col,life,max:life});}
 function sparks(x,y,n,spd,col){for(let i=0;i<n;i++){const a=Math.random()*TAU,v=rnd(spd*0.3,spd);if(col)addP(x,y,Math.cos(a)*v,Math.sin(a)*v,rnd(0.2,0.5),6,col,2.5);else addP(x,y,Math.cos(a)*v,Math.sin(a)*v,rnd(0.2,0.5),1,null,2.5);}}
 function addShard(x,y,vx,vy,life,col,len){if(parts.length>=PMAX)return;parts.push({x,y,vx,vy,life,max:life,t:14,c:col,drag:0.5,s:len||2,ang:Math.random()*TAU,spin:rnd(-9,9)});}
-// explosion de taille k (0,4 : une roquette ; 1 : un module ; 2,4 : une frégate ; 3,4 : un croiseur), en cinq temps :
+// explosion de taille k (0,4 : une roquette ; 1 : un module ; 2,4 : une frégate ; 3,4 : un croiseur ; jusqu'à 5 sur la
+// coque d'un géant qui agonise), en cinq temps :
 // éclair, anneaux de choc, cœur chauffé à blanc, boule de bouffées qui refroidissent en fumée, longue retombée
 // (fumée, braises, éclats, étincelles étirées par la vitesse)
-function explosion(x,y,k,vx,vy){
-  vx=vx||0;vy=vy||0;const K=Math.min(3.5,k),R=4+5.5*K,P=Math.sqrt(K),cvx=vx*0.6,cvy=vy*0.6;
+// lite : version allégée (deux fois moins de bouffées), pour les explosions qui s'enchaînent sur une même coque
+function explosion(x,y,k,vx,vy,lite){
+  vx=vx||0;vy=vy||0;const K=Math.min(5,k),R=4+5.5*K,P=Math.sqrt(K),cvx=vx*0.6,cvy=vy*0.6,lk=lite?0.5:1;
   // 1) éclair : un disque blanc d'une ou deux images, une lueur large qui retombe vite, un point chaud serré
   addRing(x,y,cvx,cvy,0,R*0.7,0.045+0.015*K,0,null);
-  flashAt(x,y,16+13*K,'#ffb066',0.12+0.07*K);if(K>=1.2)flashAt(x,y,6+5*K,'#fff4d8',0.07);
+  flashAt(x,y,22+16*K,'#ffb066',0.14+0.08*K);if(K>=1.2)flashAt(x,y,6+5*K,'#fff4d8',0.07);
   // 2) anneaux de choc : partent vite et freinent, s'amincissent et s'éteignent en s'éloignant
   // (une petite explosion, sur une coque qui agonise par exemple, n'a qu'un anneau fin et court)
   if(K<0.9)addRing(x,y,cvx,cvy,R*0.4,R*1.9,0.18,1,XFIRE[3]);
   else{addRing(x,y,cvx,cvy,R*0.45,R*2.6,0.26+0.05*K,1.6+0.7*K,XFIRE[2]);if(K>=1.5)addRing(x,y,cvx,cvy,R*0.3,R*1.6,0.2,1.2+0.3*K,XFIRE[4]);}
   // 3) cœur : quelques grosses bouffées chauffées à blanc, presque immobiles
-  for(let i=0;i<2+K;i++)addPuff(x+rnd(-0.15,0.15)*R,y+rnd(-0.15,0.15)*R,cvx+rnd(-10,10),cvy+rnd(-10,10),rnd(0.22,0.36)*(0.8+0.25*P),R*rnd(0.45,0.6),1,{drag:4,smk:Math.random()<0.5?1:0});
+  for(let i=0;i<(2+K)*(lite?0.6:1);i++)addPuff(x+rnd(-0.15,0.15)*R,y+rnd(-0.15,0.15)*R,cvx+rnd(-10,10),cvy+rnd(-10,10),rnd(0.22,0.36)*(0.8+0.25*P),R*rnd(0.45,0.6),1,{drag:4,smk:Math.random()<0.5?1:0});
   // 4) boule : des bouffées serrées qui se chevauchent (une seule masse de feu, pas des pastilles), poussées
   // vers l'extérieur et freinées fort ; elles refroidissent, et deux sur trois laissent une fumée en mourant
   // (les petites explosions, les plus fréquentes, gardent assez de bouffées et des bouffées plus grosses pour rester une masse)
   const sm=clamp(1.75-K*0.45,1,1.5);
-  for(let i=0,n=Math.round(4+7*K);i<n;i++){const a=Math.random()*TAU,d=rnd(0,R*0.35),v=rnd(20,90)*P;
-    addPuff(x+Math.cos(a)*d,y+Math.sin(a)*d,cvx+Math.cos(a)*v,cvy+Math.sin(a)*v,rnd(0.35,0.8)*(0.7+0.3*P),R*rnd(0.28,0.5)*sm,1,{drag:4.5,smk:Math.random()<0.65?1+0.25*K:0});}
+  for(let i=0,n=Math.round((4+7*K)*lk);i<n;i++){const a=Math.random()*TAU,d=rnd(0,R*0.35),v=rnd(20,90)*P;
+    addPuff(x+Math.cos(a)*d,y+Math.sin(a)*d,cvx+Math.cos(a)*v,cvy+Math.sin(a)*v,rnd(0.35,0.8)*(0.7+0.3*P),R*rnd(0.28,0.5)*sm,1,{drag:4.5,smk:Math.random()<(K<1.3?0.35:0.65)?1+0.25*K:0});}
   // 5) fumée : des bouffées sombres qui gonflent, dérivent et s'éclaircissent, une à deux secondes et demie selon la
   // taille (un simple impact ne doit pas noyer le vaisseau touché dans la fumée)
-  for(let i=0,n=Math.round(1+4*K);i<n;i++){const a=Math.random()*TAU,d=rnd(0,R*0.4),v=rnd(8,45)*P;
-    addPuff(x+Math.cos(a)*d,y+Math.sin(a)*d,cvx+Math.cos(a)*v,cvy+Math.sin(a)*v,rnd(1.4,2.4)*(0.55+0.3*P),R*rnd(0.3,0.52),0,{drag:1.3,delay:rnd(0.06,0.35)});}
+  // (petite explosion : peu de fumée, qui part vite et quitte la coque touchée au lieu de stagner dessus)
+  const sk=K<1.3,sn=sk?Math.round(3*K):Math.round(1+4*K);
+  for(let i=0,n=Math.round(sn*lk);i<n;i++){const a=Math.random()*TAU,d=rnd(0,R*0.4),v=sk?rnd(25,70):rnd(8,45)*P;
+    addPuff(x+Math.cos(a)*d,y+Math.sin(a)*d,cvx+Math.cos(a)*v,cvy+Math.sin(a)*v,rnd(1.4,2.4)*(0.55+0.3*P)*(sk?0.75:1),R*rnd(0.3,0.52),0,{drag:sk?0.8:1.3,delay:rnd(0.06,0.35)});}
   // 6) retombée : étincelles étirées par leur vitesse, braises qui refroidissent, éclats de coque qui tournent
   for(let i=0;i<16*K;i++){const a=Math.random()*TAU,v=rnd(90,340)*P;addP(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(0.25,0.7),1,null,2.4,Math.random()<0.3?2:1);}
   for(let i=0;i<4*K;i++){const a=Math.random()*TAU,v=rnd(20,110)*P;addP(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(1.2,2.6),13,null,0.9,Math.random()<0.25?2:1);}
@@ -10898,6 +10915,11 @@ function capitalArrives(e){
 // les deux tronçons, éteints, dérivent en s'écartant ; quelques débris seulement
 function bigDeath(b){
   if(b.crew){for(const c of b.crew)spaceCrew(b,c,rnd(30,90));b.crew=null;}
+  // la coque entière lâche : une couronne d'explosions secondaires court sur toute la longueur en un tiers de seconde
+  // (positions prises avant la rupture, elles suivent la dérive du vaisseau)
+  if(b.samples&&b.samples.length){const n=Math.round(clamp(b.rad/40,4,12)),bvx=b.vx,bvy=b.vy;
+    for(let k=0;k<n;k++){const i=b.samples[(Math.random()*b.samples.length)|0],px=b.wx(i%b.w+0.5,((i/b.w)|0)+0.5),py=b.wy(i%b.w+0.5,((i/b.w)|0)+0.5),d=rnd(0.02,0.34);
+      later(d,()=>explosion(px+bvx*d,py+bvy*d,rnd(1.4,2.6)*clamp(b.rad/200,0.8,1.9),bvx,bvy));}}
   const R=reactorPos(b),wx=b.wx(R.lx,R.ly),wy=b.wy(R.lx,R.ly);
   amBlast(wx,wy,clamp(b.rad*0.85,40,420),b.vx,b.vy);
   sfx.play('boomL',wx,wy,{direct:true,vol:1.2});sfx.play('shock',wx,wy,{delay:0.1,vol:1});if(b.rad>120){sfx.play('boomL',wx,wy,{delay:0.35,vol:0.9});sfx.duck(0.35,0.4,1.2);}
@@ -10919,6 +10941,8 @@ function bigDeath(b){
     const nb=detach(b,cp.cells,0.3);if(!nb)continue;const sp=big?rnd(9,22):rnd(30,80);
     nb.vx+=b.ca*dir*sp+rnd(-5,5);nb.vy+=b.sa*dir*sp+rnd(-5,5);nb.va=(nb.va||0)*0.3+dir*rnd(0.02,0.09)*(big?1:5);nb.noBurn=1;
     if(big){nb.emi.fill(0);nb.big=1;}out.push(nb);}
+  // les grands tronçons fument et pètent encore le long de leur cassure (les cellules restées chaudes)
+  for(const nb of out)if(nb.big){nb._brk=nb.hot.slice(0,600);nb._burn0=nb._burnT=rnd(4.5,7);nb._burnK=clamp(b.rad/260,0.7,2);}
   b.pieces=out;b.dead=true;return out;}
 // nouvelle explosion (torpilles, missiles, réacteurs) : éclair aveuglant, dôme de choc blanc bleuté qui s'étend,
 // puis un noyau rouge et blanc qui persiste, cerclé d'une onde fine
@@ -10926,7 +10950,7 @@ let ambs=[];
 function amBlast(x,y,R,vx,vy){
   vx=vx||0;vy=vy||0;if(ambs.length>=24)ambs.shift();
   ambs.push({x,y,vx:vx*0.5,vy:vy*0.5,t:0,R,max:R>90?3.6:R>30?2.6:1.5,ph:Math.random()*9});
-  flashAt(x,y,R*2.4,'#ffffff',0.1+Math.min(0.3,R/400));flashAt(x,y,R*1.3,'#bfe0ff',0.4);
+  flashAt(x,y,R*2.4,'#ffffff',0.1+Math.min(0.3,R/400));flashAt(x,y,R*1.3,'#bfe0ff',0.22);
   const n=Math.min(70,8+R*0.7);for(let k=0;k<n;k++){const a=Math.random()*TAU,v=rnd(0.5,1.5)*Math.max(40,R*2);addP(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(0.25,0.75),6,k%3?'#d8ecff':'#ffffff',2.4);}
   for(let k=0;k<Math.min(14,2+R*0.12);k++){const a=Math.random()*TAU,v=rnd(10,60)*Math.sqrt(R/10);addShard(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(1,2.6),Math.random()<0.4?'#ff9a6a':'#3a4252',2);}
   if(R>40&&player&&hyp(x-player.x,y-player.y)<Math.max(W,H)*0.7)nukeFlash=Math.max(nukeFlash,REDUCED?0.15:Math.min(0.6,R/300));
@@ -10945,7 +10969,7 @@ function drawAmBlasts(){
   if(!ambs.length)return;ctx.globalCompositeOperation='lighter';
   for(const b of ambs){const t=b.t,R=b.R,sx=b.x-ox,sy=b.y-oy;if(!onScreen(sx,sy,R*2.4+10))continue;const st=R>80?2:1,M=b.max;
     // 1. éclair blanc
-    if(t<0.14)amDisc(sx,sy,R*0.6*Math.sqrt(t/0.14+0.05),'#ffffff',1,st,0.02,t);
+    if(t<0.09)amDisc(sx,sy,R*0.6*Math.sqrt(t/0.09+0.05),'#ffffff',1,st,0.02,t);
     // 2. dôme de choc qui gonfle : voile blanc bleuté, bord brillant
     // (de la lumière en lignes plutôt qu'un aplat : un voile très léger, une bande bleutée derrière le front, le front blanc)
     if(t<0.85){const u=t/0.85,r=R*(1-Math.exp(-t*7))*1.05,bw=Math.max(2,r*0.16);
@@ -10969,12 +10993,27 @@ function capitalDeath(b){
 }
 // agonie d'un géant : explosions en série pendant plusieurs secondes
 function capDying(b,dt){
-  if(bigShip(b)){b.boomT=(b.boomT||0)-dt;if(b.boomT>0)return;b.boomT=rnd(0.1,0.24);
-    const R=reactorPos(b),a=Math.random()*TAU,rr=Math.sqrt(Math.random())*Math.max(5,Math.min(b.w,b.h)*0.45),x=R.lx+Math.cos(a)*rr,y=R.ly+Math.sin(a)*rr*0.7;
-    if(x<0||y<0||x>=b.w||y>=b.h)return;if(b.dm)dmHit(b,x,y,5,0.25);
-    const rm=Math.random()<0.4?damageAt(b,x,y,2.5,rnd(1.2,2.4),0):0,wx=b.wx(x,y),wy=b.wy(x,y);
-    if(rm)explosion(wx,wy,rnd(0.5,1.1),b.vx,b.vy);else{sparks(wx,wy,5,90,'#ffd27a');flashAt(wx,wy,10+rr*0.3,'#ffb066',0.08);}
-    if(Math.random()<0.35)sfx.explode(1,wx,wy);else sfx.crack(wx,wy);addShake(b===player?1.2:0.3);return;}
+  if(bigShip(b)){
+    // l'agonie monte en puissance : p va de 0 (premier signe) à 1 (le réacteur cède) ; les explosions se rapprochent,
+    // grossissent et gagnent toute la coque, le cœur rougit, des conduites cèdent en chaîne
+    if(!(b._dy0>=b.dyT))b._dy0=Math.max(0.5,b.dyT);const p=clamp(1-b.dyT/b._dy0,0,1),R=reactorPos(b),gk=clamp(b.rad/300,1,1.9);
+    b.heatT=(b.heatT||0)-dt;
+    if(b.heatT<=0){b.heatT=0.08;const hr=3+p*Math.min(b.h*0.35,16);
+      for(let k=0;k<3+p*6;k++){const a=Math.random()*TAU,r=Math.sqrt(Math.random())*hr,x=Math.floor(R.lx+Math.cos(a)*r),y=Math.floor(R.ly+Math.sin(a)*r);
+        if(x>=0&&y>=0&&x<b.w&&y<b.h){const i=y*b.w+x;if(b.type[i])b.heatCell(i,0.45+0.5*p);}}
+      // le réacteur pulse : un éclair de plus en plus fort, qui éclaire la coque autour
+      if(Math.random()<0.08+0.17*p)flashAt(b.wx(R.lx,R.ly),b.wy(R.lx,R.ly),24+p*Math.min(110,b.rad*0.4),'#ffd9a0',0.1+0.12*p);}
+    // (sur une machine qui peine, le jeu abaisse PMAX : les explosions de l'agonie s'espacent d'autant)
+    b.boomT=(b.boomT||0)-dt;if(b.boomT>0)return;b.boomT=rnd(0.1,0.24)*(1-0.6*p)/Math.max(0.3,PMAX/3600);
+    const sx=Math.max(5,b.w*0.45)*(0.3+0.7*p),sy=Math.max(4,b.h*0.42)*(0.4+0.6*p),x=R.lx+rnd(-1,1)*sx,y=R.ly+rnd(-1,1)*sy;
+    if(x<0||y<0||x>=b.w||y>=b.h||!b.type[Math.floor(y)*b.w+Math.floor(x)])return;if(b.dm)dmHit(b,x,y,5,0.25);
+    const rm=Math.random()<0.4+0.4*p?damageAt(b,x,y,2.5,rnd(1.2,2.4)+p*1.5,0.3+0.5*p):0,wx=b.wx(x,y),wy=b.wy(x,y);
+    if(rm||Math.random()<0.3+0.5*p)explosion(wx,wy,(rnd(0.5,1.1)+p*1.3)*gk,b.vx,b.vy,1);else{sparks(wx,wy,5,90,'#ffd27a');flashAt(wx,wy,10+sx*0.1,'#ffb066',0.08);}
+    // une conduite cède : une chaîne d'explosions file le long de la coque à partir du point touché
+    if(Math.random()<0.1+0.25*p){const a=Math.random()<0.5?0:PI,n=3+((Math.random()*3)|0),st=rnd(6,12)*(1+p);
+      for(let k=1;k<=n;k++){const lx=x+Math.cos(a+rnd(-0.2,0.2))*st*k,ly=y+rnd(-2,2);
+        later(k*0.07,()=>{if(b.dead||lx<0||ly<0||lx>=b.w||ly>=b.h||!b.type[Math.floor(ly)*b.w+Math.floor(lx)])return;damageAt(b,lx,ly,2,1.6,0.6);explosion(b.wx(lx,ly),b.wy(lx,ly),(rnd(0.6,1.2)+p*0.8)*gk,b.vx,b.vy,1);});}}
+    if(Math.random()<0.35)sfx.explode(1,wx,wy);else sfx.crack(wx,wy);addShake(b===player?1.2+p:0.3+0.5*p);return;}
   b.boomT=(b.boomT||0)-dt;if(b.boomT>0)return;b.boomT=rnd(0.08,0.2);
   const S=b.samples,i=S[(Math.random()*S.length)|0];if(!b.type[i])return;
   const x=i%b.w+0.5+rnd(-14,14),y=((i/b.w)|0)+0.5+rnd(-10,10);damageAt(b,x,y,3,rnd(4,8),0.6);
@@ -11088,7 +11127,7 @@ function arenaBegin(mode){
   ARENA.y=-(WORLD_R+12500);
   arena.saved={player,playerTpl,rocks,wrecks,enemies,allies,pickups,crates,spacers,bullets,missiles,parts,floaters,shocks,flashes,blasts,trails,cam:{x:cam.x,y:cam.y},waypoint,state,docked,lostBody,enemyTimer,powerKey,
     snap:JSON.stringify(serialize()),contract:game.contract,shopHidden:shopEl.hidden,hudHidden:hud.hidden,touchHidden:touchUI.hidden,titleHidden:titleEl.hidden,origin:yard.origin};
-  rocks=[];wrecks=[];enemies=[];allies=[];pickups=[];crates=[];spacers=[];bullets=[];missiles=[];parts=[];floaters=[];shocks=[];flashes=[];blasts=[];trails=[];puffs=[];xrings=[];
+  rocks=[];wrecks=[];enemies=[];allies=[];pickups=[];crates=[];spacers=[];bullets=[];missiles=[];parts=[];floaters=[];shocks=[];flashes=[];blasts=[];trails=[];puffs=[];xrings=[];laters=[];
   lostBody=null;waypoint=null;game.contract=null;releaseWeld();powerKey='bal';
   Object.assign(arena,{on:true,mode,wave:0,waveDone:0,timer:2.5,over:0,t:0,kills:0,result:''});
 }
@@ -11149,7 +11188,7 @@ function openTrialPick(){
 function endArena(){
   if(!arena.on)return;
   const S=arena.saved,wave=arena.waveDone,mode=arena.mode,res=arena.result;
-  ({player,playerTpl,rocks,wrecks,enemies,allies,pickups,crates,spacers,bullets,missiles,parts,floaters,shocks,flashes,blasts,trails,waypoint,lostBody,enemyTimer,powerKey}=S);puffs=[];xrings=[];
+  ({player,playerTpl,rocks,wrecks,enemies,allies,pickups,crates,spacers,bullets,missiles,parts,floaters,shocks,flashes,blasts,trails,waypoint,lostBody,enemyTimer,powerKey}=S);puffs=[];xrings=[];laters=[];
   cam.x=S.cam.x;cam.y=S.cam.y;
   applySave(JSON.parse(S.snap));game.contract=S.contract;
   if(mode==='waves')game.arenaBest=Math.max(game.arenaBest||0,wave);
@@ -11866,7 +11905,7 @@ function enterSystem(s){
   for(const p of PLANETS)freePlanet(p);
   poolClear();bgJobs.length=0;
   useSystem(s);resetSun();prepSun();bgJobs.push(skyJob(s));
-  rocks=[];wrecks=[];enemies=[];allies=[];pickups=[];crates=[];spacers=[];bullets=[];missiles=[];beams=[];shocks=[];flashes=[];blasts=[];trails=[];fballs=[];ambs=[];puffs=[];xrings=[];clearSpecials();
+  rocks=[];wrecks=[];enemies=[];allies=[];pickups=[];crates=[];spacers=[];bullets=[];missiles=[];beams=[];shocks=[];flashes=[];blasts=[];trails=[];fballs=[];ambs=[];puffs=[];xrings=[];laters=[];clearSpecials();
   boardings.length=0;fuses.length=0;if(boardPick)closeBoardPick();if(eva){eva.d.evaBy=null;eva=null;}lostBody=null;offers=null;waypoint=null;hyperDest=null;lockTarget=null;scanning=null;enemyTimer=12;
   initFields();setRelay(RELAYS[0]);
   for(const p of PLANETS)p.scan=p.scanned?1:0;
@@ -12588,7 +12627,8 @@ function lightSprite(r,col){
   for(let y=0;y<S;y++)for(let x=0;x<S;x++){const dd=Math.hypot(x-r,y-r)/r;if(dd>1)continue;const a=dd<0.22?1:dd<0.45?0.62:dd<0.7?0.34:0.15,o=(y*S+x)*4;d[o]=R;d[o+1]=G;d[o+2]=B;d[o+3]=a*255;}
   g.putImageData(img,0,0);LSPR.set(key,c);return c;
 }
-function addLight(x,y,r,col,a){if(lights.length<180)lights.push({x,y,r,col,a});}
+// rim : cette lumière peut allumer le bord des coques tournées vers elle (éclairs d'explosion, feu ; pas les moteurs)
+function addLight(x,y,r,col,a,rim){if(lights.length<180)lights.push({x,y,r,col,a,rim:rim||0});}
 function collectLights(){
   lights.length=0;
   const ships=[];if(player&&!player.dead&&(state==='play'||state==='title'))ships.push(player);for(const e of enemies)if(!e.dead)ships.push(e);for(const a of allies)if(!a.dead)ships.push(a);
@@ -12598,10 +12638,11 @@ function collectLights(){
     const col=TRAIL_LIGHT[b.tpl.trail]||'#a6f6ff';
     if(thr>0.05){const E=b.mods.filter(m=>m.active&&(m.code==='E'||m.code==='e')),n=Math.min(4,E.length);for(let q=0;q<n;q++){const m=E[Math.floor((q+0.5)*E.length/n)],big=m.code==='e',o=big?22:9;addLight(b.wx(m.lx-o,m.ly),b.wy(m.lx-o,m.ly),(big?26:12)+thr*(big?16:9),col,0.26+thr*0.14);}}
   }
-  for(const b of [...ships,...wrecks]){
-    if(true)continue;
-    const F=b.fires,n=Math.min(3,Math.ceil(F.length/6));for(let k=0;k<n;k++){const i=F[(Math.random()*F.length)|0];addLight(b.wx(i%b.w+0.5,((i/b.w)|0)+0.5),b.wy(i%b.w+0.5,((i/b.w)|0)+0.5),10+Math.min(10,F.length*0.08),'#ff7a2e',0.22+Math.random()*0.12);}
-  }
+  // les incendies éclairent leur coque d'une lueur qui vacille : deux lumières par coque au plus, dix en tout
+  {let fl=0;for(const b of [...ships,...wrecks]){
+    if(fl>=10||!b.fires||!b.fires.length||!onScreen(b.x-ox,b.y-oy,b.rad+20))continue;
+    const F=b.fires,n=Math.min(2,Math.ceil(F.length/8));for(let k=0;k<n&&fl<10;k++,fl++){const i=F[(Math.random()*F.length)|0];addLight(b.wx(i%b.w+0.5,((i/b.w)|0)+0.5),b.wy(i%b.w+0.5,((i/b.w)|0)+0.5),9+Math.min(12,F.length*0.06),'#ff7a2e',0.18+Math.random()*0.1);}
+  }}
   for(const b of beams){
     if(b.pd)continue;const c=clipSeg(b.x0-ox,b.y0-oy,b.x1-ox,b.y1-oy,20);if(!c)continue;
     const L=hyp(c[2]-c[0],c[3]-c[1]),n=Math.min(24,Math.ceil(L/28));
@@ -12612,12 +12653,47 @@ function collectLights(){
   for(const f of fballs)addLight(f.x,f.y,f.R*1.9,'#ff9a3c',0.45*(1-f.t/f.max));
   // les bouffées de feu encore chaudes éclairent les coques voisines : 8 au plus, rayon borné (la carte de lumière
   // coûte selon la surface éclairée, et une grande coque en couvre beaucoup)
-  {let n=0;for(const q of puffs){if(!q.f||q.delay>0||n>=8)continue;const u=1-q.life/q.max;if(u>0.5||q.r<4)continue;n++;addLight(q.x,q.y,Math.min(90,q.r*2+6),u<0.2?'#ffe2a0':'#ff8a3c',0.24*(1-u/0.5));}}
+  {let n=0;for(const q of puffs){if(!q.f||q.delay>0||n>=8)continue;const u=1-q.life/q.max;if(u>0.5||q.r<4)continue;n++;addLight(q.x,q.y,Math.min(90,q.r*2+6),u<0.2?'#ffe2a0':'#ff8a3c',0.24*(1-u/0.5),1);}}
   for(const f of ambs){const u=f.t/f.max;addLight(f.x,f.y,Math.min(256,f.R*(u<0.3?2.2:1.2)),u<0.3?'#d8ecff':'#ff6a4a',0.7*(1-u));}
   for(const q of missiles)if(q.W&&q.W.bomb)addLight(q.x,q.y,6+q.size*2,'#7fb4ff',0.4);else addLight(q.x,q.y,q.kind==='nuke'?34:8+q.size*3,q.kind==='nuke'?'#ff4f6a':'#ffb347',0.6);
-  for(const f of flashes)addLight(f.x,f.y,f.r,f.col,Math.min(0.8,f.life/f.max));
+  for(const f of flashes)addLight(f.x,f.y,f.r,f.col,Math.min(0.8,f.life/f.max),1);
   if(weld.target&&player&&!player.dead){const arm=weldArm(player);if(arm)addLight(player.wx(arm.lx,arm.ly),player.wy(arm.lx,arm.ly),20,'#a6f6ff',0.6+Math.random()*0.3);}
   gangLights();
+}
+// liseré de lumière : sur une coque proche d'une source forte (explosion, souffle, éclair de tir lourd), le bord tourné
+// vers la source s'allume en pixels nets, à la couleur et à l'intensité de la carte de lumière. Le liseré, c'est la coque
+// moins la coque décalée de 2 px vers la source : il ne reste que les pixels dont le voisin côté source est du vide.
+// Six coques par image au plus (les plus touchées), et seulement quand une lumière forte est à portée.
+let rimC=null,rimG=null;
+function rimLight(bodies){
+  let n=0;
+  for(const b of bodies){if(n>=6)break;
+    let best=null,bs=0.07;
+    // (une lumière trop petite pour la coque, comme une explosion sur un croiseur, n'y dessine pas de liseré lisible :
+    // la flaque de lumière suffit, et on évite de redessiner deux fois une coque géante)
+    for(const L of lights){if(!L.rim||L.a<0.12||L.r<14||L.r<b.rad*0.22)continue;const dx=L.x-b.x,dy=L.y-b.y,d=Math.hypot(dx,dy),reach=b.rad+L.r*1.3;if(d>reach)continue;
+      const sc=Math.min(1,L.a)*(1-d/reach)*Math.min(1,L.r/40);if(sc>bs){bs=sc;best=L;}}
+    if(!best)continue;
+    // zone de travail : la coque, rognée à la portée de la lumière (une grande coque n'est éclairée que par endroits)
+    const sx=b.x-ox,sy=b.y-oy,r=b.rad+3,lr=best.r*1.15+3,lx=best.x-ox,ly=best.y-oy;
+    const X=Math.max(0,Math.floor(Math.max(sx-r,lx-lr))),Y=Math.max(0,Math.floor(Math.max(sy-r,ly-lr))),X1=Math.min(W,Math.ceil(Math.min(sx+r,lx+lr))),Y1=Math.min(H,Math.ceil(Math.min(sy+r,ly+lr)));
+    if(X1<=X||Y1<=Y)continue;n++;
+    if(!rimC||rimC.width!==W||rimC.height!==H){rimC=mkCanvas(W,H);rimG=rimC.getContext('2d');rimG.imageSmoothingEnabled=false;}
+    const dx=best.x-b.x,dy=best.y-b.y,d=Math.hypot(dx,dy)||1,mx=Math.round(dx/d*2),my=Math.round(dy/d*2);
+    rimG.globalCompositeOperation='source-over';rimG.globalAlpha=1;rimG.clearRect(X,Y,X1-X,Y1-Y);
+    rimG.save();rimG.beginPath();rimG.rect(X,Y,X1-X,Y1-Y);rimG.clip();
+    drawBody(b,rimG);
+    const o0=ox,o1=oy;ox+=mx;oy+=my;rimG.globalCompositeOperation='destination-out';drawBody(b,rimG);ox=o0;oy=o1;rimG.restore();
+    rimG.globalCompositeOperation='source-in';rimG.drawImage(lightC,X/LS,Y/LS,(X1-X)/LS,(Y1-Y)/LS,X,Y,X1-X,Y1-Y);
+    // la carte de lumière est douce : on l'amplifie deux fois dans le calque (×4), pour que le liseré se lise franchement
+    // là où la lumière arrive et s'éteigne net là où elle n'arrive pas
+    rimG.globalCompositeOperation='lighter';rimG.drawImage(rimC,X,Y,X1-X,Y1-Y,X,Y,X1-X,Y1-Y);rimG.drawImage(rimC,X,Y,X1-X,Y1-Y,X,Y,X1-X,Y1-Y);
+    // posé par-dessus (pas ajouté) : sur une coque claire, une lumière additive saturerait au blanc sans se voir ;
+    // ici le bord prend la couleur de la source (orange d'une explosion, bleu d'un souffle de réacteur)
+    ctx.globalCompositeOperation='source-over';ctx.globalAlpha=Math.min(0.9,0.5+bs*1.2);ctx.drawImage(rimC,X,Y,X1-X,Y1-Y,X,Y,X1-X,Y1-Y);
+    ctx.globalCompositeOperation='lighter';ctx.globalAlpha=1;
+  }
+  rimG&&(rimG.globalCompositeOperation='source-over');
 }
 function lightBucket(r){for(const v of LRAD)if(r<=v)return v;return 256;}
 // la carte de lumière est calculée à demi-résolution (texels de 2 x 2, dans l'esprit pixel art)
@@ -12658,6 +12734,7 @@ function renderLighting(bodies){
       ctx.globalAlpha=0.5;ctx.drawImage(maskC,X,Y,WW,HH,X,Y,WW,HH);
     }
   }
+  rimLight(bodies);
   ctx.globalAlpha=bodies.length<n0?0.2:0.13;ctx.drawImage(lightC,lx0,ly0,lx1-lx0,ly1-ly0,lx0*LS,ly0*LS,(lx1-lx0)*LS,(ly1-ly0)*LS);
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
 }

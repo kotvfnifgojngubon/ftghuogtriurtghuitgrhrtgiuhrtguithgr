@@ -15,7 +15,7 @@ function(){
     w=w|0||320;h=h|0||180;cvs.width=w;cvs.height=h;W=w;H=h;SCALE=1;VZ=1;TXS=1;zoomBoost=0;
     rocks=[];wrecks=[];enemies=[];allies=[];pickups=[];crates=[];spacers=[];bullets=[];missiles=[];beams=[];parts=[];
     floaters=[];shocks=[];flashes=[];blasts=[];trails=[];fballs=[];ambs=[];
-    try{puffs=[];xrings=[];}catch(e){}  // systèmes ajoutés par une version plus récente du jeu
+    try{puffs=[];xrings=[];laters=[];}catch(e){}  // systèmes ajoutés par une version plus récente du jeu
     try{clearSpecials();}catch(e){}
     player=null;shake=0;now=o.t||1;frameN=0;nukeFlash=0;
     if(o.sun!==undefined)sunA=o.sun;
@@ -67,7 +67,7 @@ function(){
       for(const L of [enemies,allies])for(const b of L){if(b.dead)continue;b.x+=b.vx*dt;b.y+=b.vy*dt;
         try{updateFires(b,dt);}catch(e){}try{coolBody(b,dt);}catch(e){}if(b.shield)try{updateShield(b,dt);}catch(e){}
         // agonie mise en scène par l'effet « death » : les mêmes appels que checkDeaths, puis la fin de finishEnemy
-        if(b._dying){try{if(bigShip(b))capDying(b,dt);else dyingBlasts(b,dt,2.4,3,0.1);}catch(e){}if(!bigShip(b)&&b.dyT===undefined)b.dyT=0;if(b._dyEnd<=now){b._dying=false;S.finale(b,b._dyO);}}}
+        if(b._dying){try{if(bigShip(b)){capDying(b,dt);b.dyT-=dt;}else dyingBlasts(b,dt,2.4,3,0.1);}catch(e){}if(!bigShip(b)&&b.dyT===undefined)b.dyT=0;if(b._dyEnd<=now){b._dying=false;S.finale(b,b._dyO);}}}
       // les épaves (morceaux d'un vaisseau éclaté) dérivent, tournent et brûlent comme en partie
       for(const w of wrecks){if(w.dead)continue;w.x+=w.vx*dt;w.y+=w.vy*dt;w.a+=(w.va||0)*dt;w.setAngle();try{if(w.fires.length)updateFires(w,dt);coolBody(w,dt);}catch(e){}}
       try{updateShocks(dt);}catch(e){}
