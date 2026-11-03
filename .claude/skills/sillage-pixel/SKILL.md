@@ -27,6 +27,9 @@ Les outils sont dans `.claude/skills/sillage-pixel/tools/` (abrégé `T/` plus b
 | `node T/ships.mjs <id> --zoom x,y,l,h` | gros plan d'une zone du gabarit (indispensable au-delà de 300 px de long) |
 | `node T/ships.mjs --draft fichier.js` | rend un brouillon de coque `shipDef(...)` à la place de l'original, ou comme une coque nouvelle |
 | `node T/fx.mjs list` / `node T/fx.mjs <effet> [--ship id] [--opts json]` | déroulé d'un effet, image par image (`records/fx/<nom>/sheet.png`, `--gif`) |
+| `node T/fx.mjs <effet> --times 0,0.03,0.1,0.3,1,2,4 --end 4` | photos aux instants choisis (attaque serrée, longue retombée) ; contrôle : éteint à `--end` |
+| `node T/fx.mjs <effet> --compare avant.html` | même effet, même graine, même instant : une rangée par version du jeu (avant / après) |
+| `node T/fx.mjs death --ship id --opts '{"pre":0.8}'` | agonie puis mort d'un vaisseau : explosions sur la coque, explosion finale, éclatement en épaves, onde du réacteur |
 | `node T/fx.mjs --draft effet.js` | rend un brouillon d'effet, une fonction `(x, y, o, S)` exécutée dans le jeu |
 | `node T/check.mjs <id> [--draft f]` | contrôle chiffré, comparé aux médianes de la faction (`tools/baseline.json`) |
 
@@ -78,6 +81,16 @@ Le compteur `particules : pic N, à la fin M` doit revenir près de 0 pour un ef
 - **Dégâts** : sur la planche `damage`, les cratères se lisent, le métal chauffe puis refroidit, et le feu reste sur la coque.
 - **Faction** : compare aux autres modèles de la faction (tableau dans `reference/moteur.md`). Un Xal'thar en tôles rivetées est raté, même s'il est beau.
 
+**Effet** (la barre de pixelfx, `docs/AUTHORING.md` de leur dépôt, adaptée au vide). Compare toujours avant et après avec `--compare` :
+1. **Des lignes et de la lumière, pas des aplats.** Anneaux d'un ou deux pixels, traits, étincelles. Un grand disque plein de couleur pâle ou saturée est presque toujours faux. Le blanc est réservé au cœur le plus chaud.
+2. **De la lumière partout, mais brève.** Une lueur large et faible, un point chaud serré, de la lumière sur les coques voisines (`flashAt`, lumières des bouffées).
+3. **Des volumes translucides.** La fumée est une forme fondue, ombrée en bas à droite, éclairée en haut à gauche, posée en transparence. Jamais un damier ni des bulles qui se recouvrent.
+4. **Un vrai mouvement.** Rapide à l'entrée, lent à la sortie (vitesse forte, freinage fort). Les étincelles s'étirent avec la vitesse. Les éclats tournent. Le feu refroidit en fumée. Dans le vide, rien ne monte ni ne tombe : tout part du centre et dérive avec la vitesse du vaisseau touché.
+5. **Une chorégraphie en phases.** Éclair (une ou deux images blanches), choc, boule, dispersion, longue retombée. Beaucoup de petits événements, chacun varié en taille, vitesse, retard et durée.
+6. **Un rythme.** Un impact claque en 0,3 à 0,8 s. Une grosse explosion traîne 2 à 4 s, le temps que la fumée se dissipe. Une petite ne doit pas noyer le vaisseau touché.
+7. **Lisible à l'échelle du jeu** : un point focal, pas de bruit à l'intérieur des formes.
+8. **Propre.** L'effet est éteint à la fin (`--end`). Le pic de particules reste loin de `PMAX`. Le coût d'une image reste raisonnable : surveille-le avec `--compare` et un profil (le rendu sans carte graphique des outils est plus lent qu'un vrai navigateur, mais l'écart entre versions compte).
+
 **Symptôme → correction** :
 
 | on voit | on corrige |
@@ -93,6 +106,11 @@ Le compteur `particules : pic N, à la fin M` doit revenir près de 0 pour un ef
 | effet en pointillés qui se défait | plus de particules, et des durées égales pour qu'il s'éteigne d'un bloc ; type 6 plutôt que 12 |
 | fumée en damier | type 10 (fumée tramée du jeu) plutôt que des points colorés |
 | effet qui ne finit jamais | durées bornées ; vérifier `pic → fin` dans la sortie de `fx.mjs` |
+| boule de feu en grappe de boules | bouffées plus serrées et plus lentes ; peindre tous les liserés, puis tous les corps (`drawPuffs`) |
+| fumée en bulles ou en tas de cailloux | la fondre dans un calque, ombres, corps et calottes en trois passes, puis la poser d'un bloc |
+| écran délavé par un grand souffle | un front lumineux et une bande fine, un voile très léger, au lieu d'un disque plein |
+| anneau lisse et flou, « vectoriel » | couronnes de pixels (`fillRing`), en paliers d'opacité, plutôt qu'un dégradé radial |
+| effet trop coûteux en combat | moins de bouffées sur les petites tailles, sprites en cache, lumières bornées (nombre et rayon) |
 
 ## 4. Intégrer dans le jeu
 

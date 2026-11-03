@@ -15,6 +15,7 @@ function(){
     w=w|0||320;h=h|0||180;cvs.width=w;cvs.height=h;W=w;H=h;SCALE=1;VZ=1;TXS=1;zoomBoost=0;
     rocks=[];wrecks=[];enemies=[];allies=[];pickups=[];crates=[];spacers=[];bullets=[];missiles=[];beams=[];parts=[];
     floaters=[];shocks=[];flashes=[];blasts=[];trails=[];fballs=[];ambs=[];
+    try{puffs=[];xrings=[];}catch(e){}  // systèmes ajoutés par une version plus récente du jeu
     try{clearSpecials();}catch(e){}
     player=null;shake=0;now=o.t||1;frameN=0;nukeFlash=0;
     if(o.sun!==undefined)sunA=o.sun;
@@ -64,7 +65,11 @@ function(){
   S.step=(dt,n)=>{dt=dt||1/60;n=n||1;
     for(let k=0;k<n;k++){now+=dt;frameN++;
       for(const L of [enemies,allies])for(const b of L){if(b.dead)continue;b.x+=b.vx*dt;b.y+=b.vy*dt;
-        try{updateFires(b,dt);}catch(e){}try{coolBody(b,dt);}catch(e){}if(b.shield)try{updateShield(b,dt);}catch(e){}}
+        try{updateFires(b,dt);}catch(e){}try{coolBody(b,dt);}catch(e){}if(b.shield)try{updateShield(b,dt);}catch(e){}
+        // agonie mise en scène par l'effet « death » : les mêmes appels que checkDeaths, puis la fin de finishEnemy
+        if(b._dying){try{if(bigShip(b))capDying(b,dt);else dyingBlasts(b,dt,2.4,3,0.1);}catch(e){}if(!bigShip(b)&&b.dyT===undefined)b.dyT=0;if(b._dyEnd<=now){b._dying=false;S.finale(b,b._dyO);}}}
+      // les épaves (morceaux d'un vaisseau éclaté) dérivent, tournent et brûlent comme en partie
+      for(const w of wrecks){if(w.dead)continue;w.x+=w.vx*dt;w.y+=w.vy*dt;w.a+=(w.va||0)*dt;w.setAngle();try{if(w.fires.length)updateFires(w,dt);coolBody(w,dt);}catch(e){}}
       try{updateShocks(dt);}catch(e){}
       updateParticles(dt);
       if(shake>0)shake=0;
@@ -77,11 +82,13 @@ function(){
     const sb=sunBucket(b);if(sb!==b.sunB){b.sunB=sb;b.dirty=true;}let k=0;while(b._d&&k++<400)b.repaint();}};
   S.render=()=>{S.settle();render();};
   // garde l'image courante (ou une zone centrée de taille w × h) pour la planche, avec une légende
-  S.snap=(label,w,h)=>{S.settle();render();const cw=w||cvs.width,ch=h||cvs.height,c=mkCanvas(cw,ch),g=c.getContext('2d');
+  const rms=[];S.renderMs=()=>{const v=rms.slice(1).sort((a,b)=>a-b);return {n:v.length,med:v[v.length>>1]||0,max:v[v.length-1]||0};};
+  const timed=()=>{const t0=performance.now();render();rms.push(performance.now()-t0);};
+  S.snap=(label,w,h)=>{S.settle();timed();const cw=w||cvs.width,ch=h||cvs.height,c=mkCanvas(cw,ch),g=c.getContext('2d');
     g.drawImage(cvs,Math.round((cvs.width-cw)/2),Math.round((cvs.height-ch)/2),cw,ch,0,0,cw,ch);shots.push({c,label:label||''});return shots.length-1;};
   // zone précise du canevas (x, y, largeur, hauteur en pixels de l'écran du jeu)
   S.snapRect=(label,x,y,w,h)=>{S.settle();render();const c=mkCanvas(w,h),g=c.getContext('2d');g.drawImage(cvs,Math.round(x),Math.round(y),w,h,0,0,w,h);shots.push({c,label:label||''});return shots.length-1;};
-  S.clearShots=()=>{shots.length=0;};
+  S.clearShots=()=>{shots.length=0;rms.length=0;};
   S.frames=()=>shots.map(s=>s.c.toDataURL());
   // planche contact : images agrandies au plus proche voisin, en grille, légendes en dessous
   S.sheet=(o)=>{o=o||{};const k=o.scale||3,cols=o.cols||Math.min(shots.length,6),pad=6,lab=o.labels===false?0:14;
@@ -139,13 +146,21 @@ function(){
     flash:(x,y,o)=>{const c=O();flashAt(c.x+x,c.y+y,o.r||40,o.col||'#ffb066',o.life||0.3);},
     amblast:(x,y,o)=>{const c=O();amBlast(c.x+x,c.y+y,o.R||40,0,0);},
     nuke:(x,y,o)=>{const c=O();detonateNuke(c.x+x,c.y+y,0);},
+    // mort du dernier vaisseau posé : agonie de o.pre secondes (0,8 par défaut ; 0 = explosion immédiate), puis la fin
+    death:(x,y,o)=>{const b=o.b||S.last();if(!b)return;const pre=o.pre===undefined?0.8:o.pre;
+      if(pre>0){b._dying=true;b.dying=true;b.dyT=pre;b.boomT=0;b._dyEnd=now+pre;b._dyO=o;}else S.finale(b,o);},
     // dégâts sur le dernier vaisseau posé : cratère (lx, ly en pixels du gabarit, ou au hasard)
     hit:(x,y,o)=>{const b=o.b||S.last();if(!b)return;const lx=o.lx!==undefined?o.lx:b.w*(0.3+Math.random()*0.5),ly=o.ly!==undefined?o.ly:b.h*(0.3+Math.random()*0.4);
       damageAt(b,lx,ly,o.dmg||6,o.rad||4,o.fire===undefined?0.6:o.fire);explosion(b.wx(lx,ly),b.wy(lx,ly),o.k||0.8,0,0);},
   };
+  // fin d'un vaisseau, comme finishEnemy : explosion de taille k, éclatement en épaves, onde de choc du réacteur
+  S.finale=(b,o)=>{o=o||{};const k=o.k||(b.tpl&&b.tpl.small?1.4:2.4),sh=o.shock||[k,140+k*100];
+    explosion(b.x,b.y,k,b.vx,b.vy);try{if(b.giant)capitalDeath(b);}catch(e){}
+    try{if(bigShip(b)&&typeof bigDeath==='function')bigDeath(b);else shatter(b,o.power||1);}catch(e){b.dead=true;}
+    try{reactorShock(b,sh[0],sh[1]);}catch(e){}b.dead=true;};
   S.fx=(name,x,y,o)=>{const f=S.FX[name];if(!f)throw new Error('Effet inconnu : '+name+' (connus : '+Object.keys(S.FX).join(', ')+')');f(x||0,y||0,o||{});};
   // n'importe quel code du jeu, avec les mêmes repères (utile pour un effet qui n'a pas encore de nom)
   S.run=(src)=>eval(src);
-  S.counts=()=>({parts:parts.length,flashes:flashes.length,fballs:fballs.length,shocks:shocks.length,blasts:blasts.length,trails:trails.length});
+  S.counts=()=>({live:wrecks.filter(w=>!w.dead).length,puffs:typeof puffs!=='undefined'?puffs.length:0,rings:typeof xrings!=='undefined'?xrings.length:0,parts:parts.length,flashes:flashes.length,fballs:fballs.length,shocks:shocks.length,blasts:blasts.length,trails:trails.length});
   return S;
 }

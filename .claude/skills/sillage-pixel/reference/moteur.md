@@ -157,7 +157,7 @@ fait vieillir toutes les listes d'effets. Le rendu trie les particules par type 
 | type | rendu | palette (du jeune au vieux) |
 |---|---|---|
 | 0 | traînée de moteur | `ENGC` (blanc, cyan, bleu nuit) |
-| 1 | étincelle | `SPKC` |
+| 1 | étincelle (étirée en trait par sa vitesse au-delà de 70 px/s : tête vive, queue plus sombre) | `SPKC` |
 | 2 | débris opaque | couleur fixe |
 | 3 / 7 | moteurs corsaires / boss | `EENG` / `BENG` |
 | 5 | feu | `FIREC` |
@@ -173,13 +173,37 @@ fait vieillir toutes les listes d'effets. Le rendu trie les particules par type 
 
 Les opaques (2, 10, 11, 13, 14, 15) passent avant l'éclairage, les autres en mode additif.
 
+**Bouffées et anneaux** (le système des explosions, juste après `let fballs`) :
+- `addPuff(x,y,vx,vy,durée,rayon,feu,{drag,smk,delay,warm})` : une bouffée de feu (`feu` vrai) ou de fumée. Le feu
+  refroidit le long de `XFIRE` (9 tons, du blanc à la braise). `smk` lui fait laisser une fumée en mourant ;
+- **le feu** se peint en disques opaques, en trois passes : tous les liserés, tous les corps éclairés en haut à gauche, puis
+  les points chauds. Seule la silhouette de la boule garde un bord sombre ;
+- **la fumée** (`XSMOKE`) se peint opaque dans un calque à part, en trois passes (ombre en bas à droite, corps, calotte
+  éclairée), puis se pose d'un bloc à 50 % d'opacité. C'est un nuage, pas des bulles, et une coque reste lisible au travers ;
+- `addRing(x,y,vx,vy,r0,r1,durée,épaisseur,col)` : un anneau de choc (sortie en cubique, il s'amincit en s'éloignant).
+  Avec `col` nul, c'est l'éclair du départ : trois disques pleins, blanc au cœur, pendant une ou deux images ;
+- **le plafond** est `puffMax()` = `PMAX / 22`, qui baisse avec le plafond des particules quand la machine peine ;
+- **les sprites de disques** sont en cache (`discSprite`, `blitDisc`, pas plus grossier au-delà de 12 px de rayon) ;
+  `fillDisc` et `fillRing` dessinent ligne par ligne, en pixels nets ;
+- `updatePuffs` les fait vieillir, `drawPuffs` les dessine (après les débris opaques, avant la lumière additive) et `drawXRings`
+  dessine les anneaux, dans la passe additive.
+
 Autres effets :
-- `flashAt(x,y,r,col,durée)` : lueur en anneaux tramés ;
-- `fballs` : boules de feu (`drawFireballs`) ;
-- `addShock(x,y,puissance,max,{col})` : onde de choc ;
-- `blasts` et `amBlast` : souffles ;
+- `flashAt(x,y,r,col,durée)` : lueur en anneaux tramés (elle éclaire aussi les coques voisines) ;
+- `fballs` : anciennes boules de feu (`drawFireballs`), que `explosion` n'utilise plus ;
+- `addShock(x,y,puissance,max,{col})` : onde de choc de réacteur (dégâts compris), dessinée en couronnes de pixels nets
+  (halo, front blanc, traîne en deux paliers) ;
+- `blasts` (nucléaire) et `amBlast` (réacteur des grands vaisseaux, torpilles, missiles lourds) : souffles. Le dôme
+  d'`amBlast` est un front blanc et une bande bleutée, pas un aplat ; il laisse des bouffées de feu puis de fumée ;
 - `trails` : traits de rail ;
-- `explosion(x,y,k,vx,vy)` : la recette complète (éclair, boule de feu, braises, éclats, étincelles, fumée), à l'échelle `k` ;
+- `explosion(x,y,k,vx,vy)` : la recette complète, à l'échelle `k` (0,4 : une roquette ; 1 : un module ; 2,4 : une
+  frégate ; 3,4 : un croiseur), en six temps :
+  1. éclair ;
+  2. anneaux (un seul, fin, sous k = 0,9) ;
+  3. cœur chauffé à blanc ;
+  4. boule de bouffées serrées qui refroidissent ;
+  5. fumée de 1 à 2,5 s ;
+  6. retombée : étincelles étirées, braises, éclats.
 - `fxMuzzle`, `fxImpact`, `drawFxBullet` : bouches, impacts et projectiles propres à chaque faction (`fx` = `kin`, `kinp`, `xal`, `xalw`, `arc`, `fusion`) ;
 - `drawExhaust` : flammes en sprites (`flameSprite`, palettes `FLAME_PAL[trail]`, 4 images d'animation) ;
 - `drawShield` : bulle de bouclier ;
