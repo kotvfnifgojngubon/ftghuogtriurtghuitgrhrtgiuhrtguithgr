@@ -109,7 +109,9 @@ Le compteur `particules : pic N, à la fin M` doit revenir près de 0 pour un ef
 | boule de feu en grappe de boules | bouffées plus serrées et plus lentes ; peindre tous les liserés, puis tous les corps (`drawPuffs`) |
 | fumée en bulles ou en tas de cailloux | la fondre dans un calque, ombres, corps et calottes en trois passes, puis la poser d'un bloc |
 | écran délavé par un grand souffle | un front lumineux et une bande fine, un voile très léger, au lieu d'un disque plein |
-| anneau lisse et flou, « vectoriel » | couronnes de pixels (`fillRing`), en paliers d'opacité, plutôt qu'un dégradé radial |
+| anneau lisse et flou, « vectoriel » | couronnes de pixels (`fillRing`), en paliers d'opacité, plutôt qu'un dégradé radial (l'auteur du jeu ne veut plus d'ondes du tout sur les explosions : n'en remets pas) |
+| cercles concentriques dans le vide autour d'un éclair | la lumière de l'éclair ne doit éclairer que les coques (carte `rim` à part) |
+| coque blanchie ou verdie par une explosion | teinter (mélange) au lieu d'ajouter, et garder la lumière la plus forte (`lighten`) au lieu de les additionner |
 | effet trop coûteux en combat | moins de bouffées sur les petites tailles, sprites en cache, lumières bornées (nombre et rayon) |
 | une explosion à côté d'une coque ne l'éclaire pas | lumière avec `rim` : le bord tourné vers la source prend sa couleur (`rimLight`), posé par-dessus et non ajouté |
 | un géant meurt sans drame | une agonie qui monte en puissance (`p`), des chaînes d'explosions (`later`), des tronçons qui brûlent le long de la cassure |

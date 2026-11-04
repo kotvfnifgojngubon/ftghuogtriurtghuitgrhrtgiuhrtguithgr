@@ -6580,8 +6580,10 @@ let fballs=[];
    Le feu se dessine en disques opaques aux tons francs, éclairés en haut à gauche comme les coques, qui refroidissent
    le long de XFIRE ; la fumée en disques vraiment translucides, qui gonflent et s'éclaircissent pendant deux à trois
    secondes (jamais un damier). Les anneaux sont des couronnes de pixels nets, sans dégradé lisse. */
-const XFIRE=['#ffffff','#fff3a6','#ffe26b','#ffc23d','#ff8a2a','#f2561d','#c9281f','#8a1f17','#4a1712'];
-const XSMOKE=['#8a8494','#6c6878','#504c5c','#3a3744','#292731','#1c1b23'];
+// rampe tirée vers le rouge : un cœur blanc-jaune bref, puis orange, rouge vif, rouge sang, braise
+const XFIRE=['#fff6e8','#ffd98a','#ffa94a','#ff7a2e','#f04a1e','#d42e1c','#a81e18','#721614','#3e0e0e'];
+// fumée chaude : gris brun encore rougi par le feu, qui refroidit vers le noir violacé
+const XSMOKE=['#7e6466','#634c50','#4b393f','#36292f','#251c22','#181217'];
 let puffs=[],xrings=[],laters=[];
 // événements différés des effets (chaînes d'explosions le long d'une coque, sursauts d'une épave) : ils suivent le temps
 // du jeu (pause, ralenti) et sont vidés avec le monde
@@ -6606,6 +6608,13 @@ function discSprite(col,r){const q=r>40?4:r>24?2:r>12?1:0.5,rr=Math.max(0.5,Math
   const S=Math.ceil(rr*2)+2,h=S/2;c=mkCanvas(S,S);const g=c.getContext('2d');g.fillStyle=col;
   for(let y=0;y<S;y++){const dy=y+0.5-h,hw=Math.sqrt(Math.max(0,rr*rr-dy*dy)),xa=Math.round(h-hw),xb=Math.round(h+hw);if(xb>xa&&Math.abs(dy)<rr)g.fillRect(xa,y,xb-xa,1);}
   if(DSPR.size>1500)DSPR.clear();DSPR.set(key,c);return c;}
+// disque tramé (un pixel sur deux selon la matrice de Bayer) : la transition entre deux tons de flamme
+const DSPRD=new Map();
+function blitDiscD(g,col,cx,cy,r,th){if(r<2.6){return;}const q=r>40?4:r>24?2:r>12?1:0.5,rr=Math.max(0.5,Math.round(r/q)*q),key=col+rr+'|'+th;let c=DSPRD.get(key);
+  if(!c){const S=Math.ceil(rr*2)+2,h=S/2;c=mkCanvas(S,S);const gg=c.getContext('2d');gg.fillStyle=col;
+    for(let y=0;y<S;y++)for(let x=0;x<S;x++){const dx=x+0.5-h,dy=y+0.5-h;if(dx*dx+dy*dy<=rr*rr&&bay(x,y)<th)gg.fillRect(x,y,1,1);}
+    if(DSPRD.size>900)DSPRD.clear();DSPRD.set(key,c);}
+  g.drawImage(c,Math.round(cx-c.width/2),Math.round(cy-c.height/2));}
 function blitDisc(g,col,cx,cy,r){
   // petit disque : quelques lignes coûtent moins qu'une copie d'image
   if(r<2.6){g.fillStyle=col;if(r<1.2){g.fillRect(Math.round(cx-r),Math.round(cy-r),Math.max(1,Math.round(r*2)),Math.max(1,Math.round(r*2)));return;}
@@ -6644,7 +6653,8 @@ function drawPuffs(){
   const n=XFIRE.length,fs=[];
   for(const q of puffs){if(!q.f||q.delay>0)continue;const sx=q.x-ox,sy=q.y-oy,age=1-q.life/q.max;
     // la chaleur descend la rampe : blanc, jaune, orange, rouge, braise ; chaque bouffée a son propre rythme
-    const heat=Math.min(0.999,Math.pow(age,0.62)+q.sd*0.1),idx=Math.min(n-2,Math.floor(heat*(n-1)));
+    // (le blanc et le jaune ne durent qu'un instant : la flamme passe vite à l'orange puis au rouge)
+    const heat=Math.min(0.999,0.08+Math.pow(age,0.55)+q.sd*0.1),idx=Math.min(n-2,Math.floor(heat*(n-1)));
     const r=q.r*(0.55+0.45*Math.min(1,age*7))*(1-age*0.55);if(r<0.5||!onScreen(sx,sy,r+2))continue;
     fs.push([idx,sx,sy,r,age]);}
   fs.sort((a,b)=>b[0]-a[0]);   // les plus froides dessous, les plus chaudes dessus
@@ -6674,7 +6684,9 @@ function drawPuffs(){
   }
   // ---- feu
   for(const [idx,sx,sy,r] of fs)if(idx<n-3)blitDisc(ctx,XFIRE[Math.min(n-1,idx+2)],sx,sy,r);                          // liserés
+  for(const [idx,sx,sy,r] of fs)if(idx<n-3)blitDiscD(ctx,XFIRE[Math.min(n-1,idx+1)],sx-r*0.08,sy-r*0.11,r*0.92,0.5);      // trame de transition
   for(const [idx,sx,sy,r] of fs)if(idx<n-3)blitDisc(ctx,XFIRE[idx],sx-r*0.16,sy-r*0.22,r*0.78);                       // corps
+  for(const [idx,sx,sy,r] of fs)if(idx<=4&&r>3)blitDiscD(ctx,XFIRE[Math.max(0,idx-1)],sx-r*0.22,sy-r*0.28,r*0.52,0.5);   // halo tramé du point chaud
   for(const [idx,sx,sy,r] of fs)if(idx<=3&&r>1.8)blitDisc(ctx,XFIRE[Math.max(0,idx-1)],sx-r*0.28,sy-r*0.34,r*0.36);   // points chauds
 }
 // anneaux de choc et éclairs, en lumière additive
@@ -6682,7 +6694,7 @@ function drawXRings(){
   for(const r of xrings){const sx=r.x-ox,sy=r.y-oy,k=r.life/r.max;
     if(!r.col){// éclair : trois disques pleins, une ou deux images, blanc au cœur
       const R=r.r1*(0.8+0.2*k);if(!onScreen(sx,sy,R+2))continue;ctx.globalAlpha=1;
-      blitDisc(ctx,XFIRE[5],sx,sy,R+1.2);blitDisc(ctx,k>0.45?XFIRE[1]:XFIRE[2],sx,sy,R);blitDisc(ctx,k>0.45?'#ffffff':XFIRE[1],sx,sy,R*0.6);continue;}
+      blitDisc(ctx,XFIRE[5],sx,sy,R+1.2);blitDisc(ctx,k>0.45?XFIRE[1]:XFIRE[2],sx,sy,R);blitDisc(ctx,k>0.45?XFIRE[0]:XFIRE[1],sx,sy,R*0.6);continue;}
     const e=1-k*k*k,R=r.r0+(r.r1-r.r0)*e,th=Math.max(1,r.th*k+0.4);if(!onScreen(sx,sy,R+2))continue;
     ctx.fillStyle=r.col;ctx.globalAlpha=Math.min(1,k*1.6);fillRing(sx,sy,Math.max(0,R-th),R);
   }
@@ -6736,11 +6748,11 @@ function explosion(x,y,k,vx,vy,lite){
   vx=vx||0;vy=vy||0;const K=Math.min(5,k),R=4+5.5*K,P=Math.sqrt(K),cvx=vx*0.6,cvy=vy*0.6,lk=lite?0.5:1;
   // 1) éclair : un disque blanc d'une ou deux images, une lueur large qui retombe vite, un point chaud serré
   addRing(x,y,cvx,cvy,0,R*0.7,0.045+0.015*K,0,null);
-  flashAt(x,y,22+16*K,'#ffb066',0.14+0.08*K);if(K>=1.2)flashAt(x,y,6+5*K,'#fff4d8',0.07);
-  // 2) anneaux de choc : partent vite et freinent, s'amincissent et s'éteignent en s'éloignant
-  // (une petite explosion, sur une coque qui agonise par exemple, n'a qu'un anneau fin et court)
-  if(K<0.9)addRing(x,y,cvx,cvy,R*0.4,R*1.9,0.18,1,XFIRE[3]);
-  else{addRing(x,y,cvx,cvy,R*0.45,R*2.6,0.26+0.05*K,1.6+0.7*K,XFIRE[2]);if(K>=1.5)addRing(x,y,cvx,cvy,R*0.3,R*1.6,0.2,1.2+0.3*K,XFIRE[4]);}
+  flashAt(x,y,22+16*K,'#ff7a3c',0.14+0.08*K);if(K>=1.2)flashAt(x,y,6+5*K,'#ffd0a0',0.07);
+  // 2) (plus d'anneau de choc : la boule de feu porte seule l'explosion)
+  // langues de feu : de petites bouffées projetées loin et vite, qui découpent le bord de la boule en flammèches
+  for(let i=0,n=Math.round((5+5*K)*lk);i<n;i++){const a=Math.random()*TAU,v=rnd(110,260)*P;
+    addPuff(x,y,cvx+Math.cos(a)*v,cvy+Math.sin(a)*v,rnd(0.18,0.4),R*rnd(0.1,0.17),1,{drag:5.5});}
   // 3) cœur : quelques grosses bouffées chauffées à blanc, presque immobiles
   for(let i=0;i<(2+K)*(lite?0.6:1);i++)addPuff(x+rnd(-0.15,0.15)*R,y+rnd(-0.15,0.15)*R,cvx+rnd(-10,10),cvy+rnd(-10,10),rnd(0.22,0.36)*(0.8+0.25*P),R*rnd(0.45,0.6),1,{drag:4,smk:Math.random()<0.5?1:0});
   // 4) boule : des bouffées serrées qui se chevauchent (une seule masse de feu, pas des pastilles), poussées
@@ -6756,9 +6768,9 @@ function explosion(x,y,k,vx,vy,lite){
   for(let i=0,n=Math.round(sn*lk);i<n;i++){const a=Math.random()*TAU,d=rnd(0,R*0.4),v=sk?rnd(25,70):rnd(8,45)*P;
     addPuff(x+Math.cos(a)*d,y+Math.sin(a)*d,cvx+Math.cos(a)*v,cvy+Math.sin(a)*v,rnd(1.4,2.4)*(0.55+0.3*P)*(sk?0.75:1),R*rnd(0.3,0.52),0,{drag:sk?0.8:1.3,delay:rnd(0.06,0.35)});}
   // 6) retombée : étincelles étirées par leur vitesse, braises qui refroidissent, éclats de coque qui tournent
-  for(let i=0;i<16*K;i++){const a=Math.random()*TAU,v=rnd(90,340)*P;addP(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(0.25,0.7),1,null,2.4,Math.random()<0.3?2:1);}
-  for(let i=0;i<4*K;i++){const a=Math.random()*TAU,v=rnd(20,110)*P;addP(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(1.2,2.6),13,null,0.9,Math.random()<0.25?2:1);}
-  for(let i=0;i<2.5*K;i++){const a=Math.random()*TAU,v=rnd(15,70)*P;addShard(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(1.2,3),Math.random()<0.3?'#ff9a3c':Math.random()<0.5?'#4a5468':'#2c3240',Math.random()<0.4?3:2);}
+  for(let i=0;i<20*K;i++){const a=Math.random()*TAU,v=rnd(90,340)*P;addP(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(0.25,0.7),1,null,2.4,Math.random()<0.3?2:1);}
+  for(let i=0;i<7*K;i++){const a=Math.random()*TAU,v=rnd(20,120)*P;addP(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(1.2,2.8),13,null,0.9,Math.random()<0.25?2:1);}
+  for(let i=0;i<4*K;i++){const a=Math.random()*TAU,v=rnd(15,80)*P;addShard(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(1.2,3.2),Math.random()<0.35?'#ff6a2a':Math.random()<0.5?'#4a5468':'#2c3240',Math.random()<0.4?3:2);}
 }
 function floater(x,y,txt,col){for(const f of floaters)if(f.life>1.1&&Math.abs(f.x-x)<textW(txt)/2+8&&Math.abs(f.y-y)<7*TXS)y=f.y-8*TXS;floaters.push({x,y,txt,col,life:1.5});if(floaters.length>28)floaters.shift();}
 function addShake(v){if(!REDUCED)shake=Math.min(12,shake+v);}
@@ -10944,23 +10956,29 @@ function bigDeath(b){
   // les grands tronçons fument et pètent encore le long de leur cassure (les cellules restées chaudes)
   for(const nb of out)if(nb.big){nb._brk=nb.hot.slice(0,600);nb._burn0=nb._burnT=rnd(4.5,7);nb._burnK=clamp(b.rad/260,0.7,2);}
   b.pieces=out;b.dead=true;return out;}
-// nouvelle explosion (torpilles, missiles, réacteurs) : éclair aveuglant, dôme de choc blanc bleuté qui s'étend,
-// puis un noyau rouge et blanc qui persiste, cerclé d'une onde fine
+// grande explosion (torpilles, missiles, réacteurs des grands vaisseaux) : éclair aveuglant, boule de feu rouge en
+// bouffées et langues de feu, noyau rouge et blanc qui persiste, longue fumée
 let ambs=[];
 function amBlast(x,y,R,vx,vy){
   vx=vx||0;vy=vy||0;if(ambs.length>=24)ambs.shift();
   ambs.push({x,y,vx:vx*0.5,vy:vy*0.5,t:0,R,max:R>90?3.6:R>30?2.6:1.5,ph:Math.random()*9});
-  flashAt(x,y,R*2.4,'#ffffff',0.1+Math.min(0.3,R/400));flashAt(x,y,R*1.3,'#bfe0ff',0.22);
-  const n=Math.min(70,8+R*0.7);for(let k=0;k<n;k++){const a=Math.random()*TAU,v=rnd(0.5,1.5)*Math.max(40,R*2);addP(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(0.25,0.75),6,k%3?'#d8ecff':'#ffffff',2.4);}
-  for(let k=0;k<Math.min(14,2+R*0.12);k++){const a=Math.random()*TAU,v=rnd(10,60)*Math.sqrt(R/10);addShard(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(1,2.6),Math.random()<0.4?'#ff9a6a':'#3a4252',2);}
+  flashAt(x,y,R*2.4,'#ff6a3a',0.1+Math.min(0.3,R/400));flashAt(x,y,R*1.3,'#ff3a1c',0.3);
+  const n=Math.min(70,8+R*0.7);for(let k=0;k<n;k++){const a=Math.random()*TAU,v=rnd(0.5,1.5)*Math.max(40,R*2);addP(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(0.25,0.75),6,k%3?'#ffb070':'#ffe8d0',2.4);}
+  for(let k=0;k<Math.min(20,3+R*0.16);k++){const a=Math.random()*TAU,v=rnd(10,70)*Math.sqrt(R/10);addShard(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(1,2.8),Math.random()<0.45?'#ff6a2a':'#3a4252',2);}
+  for(let k=0;k<Math.min(60,6+R*0.25);k++){const a=Math.random()*TAU,v=rnd(20,110)*Math.sqrt(R/20);addP(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(1.4,3.2),13,null,0.8,Math.random()<0.3?2:1);}
   if(R>40&&player&&hyp(x-player.x,y-player.y)<Math.max(W,H)*0.7)nukeFlash=Math.max(nukeFlash,REDUCED?0.15:Math.min(0.6,R/300));
-  // ce qui reste quand le dôme est passé : des bouffées de feu au cœur, puis une fumée qui gonfle et dure (le vide
-  // ne se vide pas d'un coup) ; leur nombre ne dépend pas de la taille, seul leur rayon grandit
-  const cv=vx*0.5,cw=vy*0.5,pr=Math.min(R,240);
+  // la boule de feu (il n'y a plus de dôme) : une gerbe de bouffées qui part vite et freine fort, des langues de feu
+  // qui la découpent, puis des bouffées plus lentes au cœur et une fumée qui gonfle et dure (le vide ne se vide pas
+  // d'un coup) ; leur nombre ne dépend pas de la taille, seul leur rayon grandit
+  const cv=vx*0.5,cw=vy*0.5,pr=Math.min(R,240),sq=Math.sqrt(pr/20);
+  for(let k=0;k<14;k++){const a=Math.random()*TAU,d=rnd(0,pr*0.12),v=rnd(30,140)*sq;
+    addPuff(x+Math.cos(a)*d,y+Math.sin(a)*d,cv+Math.cos(a)*v,cw+Math.sin(a)*v,rnd(0.5,0.95)*(R>90?1.4:1.1),pr*rnd(0.14,0.26),1,{drag:3.2,delay:rnd(0,0.12),smk:Math.random()<0.6?1.4:0});}
+  for(let k=0;k<10;k++){const a=Math.random()*TAU,v=rnd(120,280)*sq;
+    addPuff(x,y,cv+Math.cos(a)*v,cw+Math.sin(a)*v,rnd(0.25,0.5),pr*rnd(0.06,0.1),1,{drag:5,delay:rnd(0,0.08)});}
   for(let k=0;k<7;k++){const a=Math.random()*TAU,d=rnd(0,pr*0.18),v=rnd(10,60)*Math.sqrt(pr/20);
     addPuff(x+Math.cos(a)*d,y+Math.sin(a)*d,cv+Math.cos(a)*v,cw+Math.sin(a)*v,rnd(0.6,1.1)*(R>90?1.6:1.2),pr*rnd(0.12,0.2),1,{drag:3,delay:rnd(0.15,0.4),smk:1.6});}
-  for(let k=0;k<10;k++){const a=Math.random()*TAU,d=rnd(pr*0.05,pr*0.35),v=rnd(6,30)*Math.sqrt(pr/20);
-    addPuff(x+Math.cos(a)*d,y+Math.sin(a)*d,cv+Math.cos(a)*v,cw+Math.sin(a)*v,rnd(2.2,3.4),pr*rnd(0.1,0.16),0,{drag:1.1,delay:rnd(0.35,0.8)});}
+  for(let k=0;k<14;k++){const a=Math.random()*TAU,d=rnd(pr*0.05,pr*0.4),v=rnd(6,34)*sq;
+    addPuff(x+Math.cos(a)*d,y+Math.sin(a)*d,cv+Math.cos(a)*v,cw+Math.sin(a)*v,rnd(2.2,3.6),pr*rnd(0.1,0.17),0,{drag:1.1,delay:rnd(0.3,0.8)});}
 }
 function amDisc(sx,sy,r,col,al,st,wob,t){if(r<0.8||al<=0.01)return;ctx.globalAlpha=Math.min(1,al);ctx.fillStyle=col;
   for(let y=-Math.ceil(r);y<=r;y+=st){const hw=Math.sqrt(Math.max(0,r*r-y*y))*(1+wob*Math.sin(y*0.37+t*7)+wob*0.6*Math.sin(y*1.21-t*11));if(hw<0.5)continue;const yy=Math.round(sy+y);if(yy<-st||yy>=H)continue;ctx.fillRect(Math.round(sx-hw),yy,Math.max(1,Math.round(hw*2)),st);}}
@@ -10968,19 +10986,12 @@ function amRing(sx,sy,r,col,al,th){if(r<2||al<=0.01)return;ctx.globalAlpha=Math.
 function drawAmBlasts(){
   if(!ambs.length)return;ctx.globalCompositeOperation='lighter';
   for(const b of ambs){const t=b.t,R=b.R,sx=b.x-ox,sy=b.y-oy;if(!onScreen(sx,sy,R*2.4+10))continue;const st=R>80?2:1,M=b.max;
-    // 1. éclair blanc
-    if(t<0.09)amDisc(sx,sy,R*0.6*Math.sqrt(t/0.09+0.05),'#ffffff',1,st,0.02,t);
-    // 2. dôme de choc qui gonfle : voile blanc bleuté, bord brillant
-    // (de la lumière en lignes plutôt qu'un aplat : un voile très léger, une bande bleutée derrière le front, le front blanc)
-    if(t<0.85){const u=t/0.85,r=R*(1-Math.exp(-t*7))*1.05,bw=Math.max(2,r*0.16);
-      amDisc(sx,sy,r,'#bcdcff',0.14*(1-u),st,0.04,t+b.ph);
-      ctx.globalAlpha=0.5*(1-u);ctx.fillStyle='#bcdcff';fillRing(sx,sy,Math.max(0,r-bw),r);
-      amRing(sx,sy,r,'#ffffff',0.9*(1-u),R>60?3:R>25?2:1);}
-    // 3. noyau : rouge sombre, orangé, cœur blanc qui persiste
+    // 1. éclair d'une ou deux images, blanc chaud
+    if(t<0.06)amDisc(sx,sy,R*0.42*Math.sqrt(t/0.06+0.05),'#ffe8d0',1,st,0.02,t);
+    // (plus de dôme ni d'onde : la boule de feu en bouffées porte l'expansion)
+    // 2. noyau qui persiste : rouge sang, rouge vif, orangé, cœur blanc chaud
     if(t>0.05){const u=Math.min(1,(t-0.05)/(M-0.05)),f=u<0.45?1:1-(u-0.45)/0.55,rc=R*0.42*(1-0.45*u);
-      amDisc(sx,sy,rc,'#c4202a',0.55*f,st,0.08,t+b.ph);amDisc(sx,sy,rc*0.72,'#ff6a4a',0.7*f,st,0.07,t*1.2+b.ph);amDisc(sx,sy,rc*0.45,'#ffd8c0',0.85*f,st,0.05,t);amDisc(sx,sy,rc*0.22,'#ffffff',f,st,0.03,t);}
-    // 4. onde fine qui file au-delà du dôme
-    if(t>0.2){const u=(t-0.2)/(M-0.2);amRing(sx,sy,R*(0.95+1.3*u),'#9fd0ff',0.55*(1-u),1);if(R>60)amRing(sx,sy,R*(0.9+1.1*u),'#ffffff',0.25*(1-u),1);}
+      amDisc(sx,sy,rc,'#a81e18',0.62*f,st,0.08,t+b.ph);amDisc(sx,sy,rc*0.72,'#e0361a',0.72*f,st,0.07,t*1.2+b.ph);amDisc(sx,sy,rc*0.45,'#ff6a3a',0.75*f,st,0.05,t);amDisc(sx,sy,rc*0.16,'#ffd8b8',0.75*f,st,0.03,t);}
   }
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';}
 function capitalDeath(b){
@@ -11002,7 +11013,7 @@ function capDying(b,dt){
       for(let k=0;k<3+p*6;k++){const a=Math.random()*TAU,r=Math.sqrt(Math.random())*hr,x=Math.floor(R.lx+Math.cos(a)*r),y=Math.floor(R.ly+Math.sin(a)*r);
         if(x>=0&&y>=0&&x<b.w&&y<b.h){const i=y*b.w+x;if(b.type[i])b.heatCell(i,0.45+0.5*p);}}
       // le réacteur pulse : un éclair de plus en plus fort, qui éclaire la coque autour
-      if(Math.random()<0.08+0.17*p)flashAt(b.wx(R.lx,R.ly),b.wy(R.lx,R.ly),24+p*Math.min(110,b.rad*0.4),'#ffd9a0',0.1+0.12*p);}
+      if(Math.random()<0.08+0.17*p)flashAt(b.wx(R.lx,R.ly),b.wy(R.lx,R.ly),24+p*Math.min(110,b.rad*0.4),'#ff8a4a',0.1+0.12*p);}
     // (sur une machine qui peine, le jeu abaisse PMAX : les explosions de l'agonie s'espacent d'autant)
     b.boomT=(b.boomT||0)-dt;if(b.boomT>0)return;b.boomT=rnd(0.1,0.24)*(1-0.6*p)/Math.max(0.3,PMAX/3600);
     const sx=Math.max(5,b.w*0.45)*(0.3+0.7*p),sy=Math.max(4,b.h*0.42)*(0.4+0.6*p),x=R.lx+rnd(-1,1)*sx,y=R.ly+rnd(-1,1)*sy;
@@ -12628,6 +12639,13 @@ function lightSprite(r,col){
   g.putImageData(img,0,0);LSPR.set(key,c);return c;
 }
 // rim : cette lumière peut allumer le bord des coques tournées vers elle (éclairs d'explosion, feu ; pas les moteurs)
+// lumière d'explosion : mêmes paliers que lightSprite, mais leurs bords sont tramés (matrice de Bayer) au lieu d'être nets,
+// pour que la flaque de lumière sur une coque ne dessine pas d'anneaux
+function lightSpriteD(r,col){const key='D'+col+r;let s=LSPR.get(key);if(s)return s;
+  const S=r*2+1,c=mkCanvas(S,S),g=c.getContext('2d'),img=g.createImageData(S,S),d=img.data,[R,G,B]=hex(col),LV=[0,0.15,0.34,0.62,1];
+  for(let y=0;y<S;y++)for(let x=0;x<S;x++){const dd=Math.hypot(x-r,y-r)/r;if(dd>1)continue;const v=Math.pow(1-dd,1.2)*4,l=clamp(Math.floor(v+bay(x,y)),0,4),o=(y*S+x)*4;
+    if(!l)continue;d[o]=R;d[o+1]=G;d[o+2]=B;d[o+3]=LV[l]*255;}
+  g.putImageData(img,0,0);LSPR.set(key,c);return c;}
 function addLight(x,y,r,col,a,rim){if(lights.length<180)lights.push({x,y,r,col,a,rim:rim||0});}
 function collectLights(){
   lights.length=0;
@@ -12653,7 +12671,7 @@ function collectLights(){
   for(const f of fballs)addLight(f.x,f.y,f.R*1.9,'#ff9a3c',0.45*(1-f.t/f.max));
   // les bouffées de feu encore chaudes éclairent les coques voisines : 8 au plus, rayon borné (la carte de lumière
   // coûte selon la surface éclairée, et une grande coque en couvre beaucoup)
-  {let n=0;for(const q of puffs){if(!q.f||q.delay>0||n>=8)continue;const u=1-q.life/q.max;if(u>0.5||q.r<4)continue;n++;addLight(q.x,q.y,Math.min(90,q.r*2+6),u<0.2?'#ffe2a0':'#ff8a3c',0.24*(1-u/0.5),1);}}
+  {let n=0;for(const q of puffs){if(!q.f||q.delay>0||n>=8)continue;const u=1-q.life/q.max;if(u>0.5||q.r<4)continue;n++;addLight(q.x,q.y,Math.min(90,q.r*2+6),u<0.2?'#ffb070':'#ff5a2a',0.24*(1-u/0.5),1);}}
   for(const f of ambs){const u=f.t/f.max;addLight(f.x,f.y,Math.min(256,f.R*(u<0.3?2.2:1.2)),u<0.3?'#d8ecff':'#ff6a4a',0.7*(1-u));}
   for(const q of missiles)if(q.W&&q.W.bomb)addLight(q.x,q.y,6+q.size*2,'#7fb4ff',0.4);else addLight(q.x,q.y,q.kind==='nuke'?34:8+q.size*3,q.kind==='nuke'?'#ff4f6a':'#ffb347',0.6);
   for(const f of flashes)addLight(f.x,f.y,f.r,f.col,Math.min(0.8,f.life/f.max),1);
@@ -12708,52 +12726,49 @@ function renderLighting(bodies){
   lightG.globalCompositeOperation='source-over';lightG.globalAlpha=1;lightG.clearRect(0,0,lw,lh);lightG.globalCompositeOperation='lighter';
   // on ne travaille que dans les rectangles utiles : celui des lumières et celui des coques éclairées
   let lx0=lw,ly0=lh,lx1=0,ly1=0;
-  for(const L of lights){
+  const paint=rim=>{for(const L of lights){if(!!L.rim!==rim)continue;
     const r0=Math.min(L.r,300),sx=(L.x-ox)/LS,sy=(L.y-oy)/LS,rr=r0/LS;if(sx<-rr||sy<-rr||sx>lw+rr||sy>lh+rr)continue;
     lightG.globalAlpha=clamp(L.a,0,1);
-    const r=lightBucket(rr),s=lightSprite(r,L.col),R=Math.max(r,rr);
+    const r=lightBucket(rr),s=rim?lightSpriteD(r,L.col):lightSprite(r,L.col),R=Math.max(r,rr);
     if(rr>r+2){const k=rr/r;lightG.drawImage(s,Math.round(sx-rr),Math.round(sy-rr),Math.round(s.width*k),Math.round(s.height*k));}
     else lightG.drawImage(s,Math.round(sx)-r,Math.round(sy)-r);
-    lx0=Math.min(lx0,sx-R);ly0=Math.min(ly0,sy-R);lx1=Math.max(lx1,sx+R);ly1=Math.max(ly1,sy+R);
-  }
-  if(lx1<=lx0)return;
-  lx0=Math.max(0,Math.floor(lx0));ly0=Math.max(0,Math.floor(ly0));lx1=Math.min(lw,Math.ceil(lx1));ly1=Math.min(lh,Math.ceil(ly1));
-  lightG.globalAlpha=1;lightG.globalCompositeOperation='source-over';
-  let bx0=W,by0=H,bx1=0,by1=0;
-  for(const b of bodies){const sx=b.x-ox,sy=b.y-oy,r=b.rad+2;bx0=Math.min(bx0,sx-r);by0=Math.min(by0,sy-r);bx1=Math.max(bx1,sx+r);by1=Math.max(by1,sy+r);}
-  // intersection avec le rectangle des lumières, aligné sur la grille de la carte de lumière
-  bx0=Math.max(bx0,lx0*LS);by0=Math.max(by0,ly0*LS);bx1=Math.min(bx1,lx1*LS);by1=Math.min(by1,ly1*LS);
-  ctx.globalCompositeOperation='lighter';
-  if(bx1>bx0&&by1>by0){
+    lx0=Math.min(lx0,sx-R);ly0=Math.min(ly0,sy-R);lx1=Math.max(lx1,sx+R);ly1=Math.max(ly1,sy+R);}};
+  // passe sur les coques : masque des coques, multiplié par la carte de lumière, ajouté (lumières douces) ou mélangé
+  // (tint : la coque prend la couleur de la source)
+  const hullPass=tint=>{if(lx1<=lx0)return;
+    const LX0=Math.max(0,Math.floor(lx0)),LY0=Math.max(0,Math.floor(ly0)),LX1=Math.min(lw,Math.ceil(lx1)),LY1=Math.min(lh,Math.ceil(ly1));
+    let bx0=W,by0=H,bx1=0,by1=0;
+    for(const b of bodies){const sx=b.x-ox,sy=b.y-oy,r=b.rad+2;bx0=Math.min(bx0,sx-r);by0=Math.min(by0,sy-r);bx1=Math.max(bx1,sx+r);by1=Math.max(by1,sy+r);}
+    // intersection avec le rectangle des lumières, alignée sur la grille de la carte de lumière
+    bx0=Math.max(bx0,LX0*LS);by0=Math.max(by0,LY0*LS);bx1=Math.min(bx1,LX1*LS);by1=Math.min(by1,LY1*LS);if(bx1<=bx0||by1<=by0)return;
     const qx0=Math.max(0,Math.floor(bx0/LS)),qy0=Math.max(0,Math.floor(by0/LS)),qx1=Math.min(lw,Math.ceil(bx1/LS)),qy1=Math.min(lh,Math.ceil(by1/LS));
-    const X=qx0*LS,Y=qy0*LS,WW=(qx1-qx0)*LS,HH=(qy1-qy0)*LS;
-    if(WW>0&&HH>0){
-      maskG.globalCompositeOperation='source-over';maskG.clearRect(X,Y,WW,HH);
-      for(const b of bodies)drawBody(b,maskG);
-      maskG.globalCompositeOperation='source-in';maskG.drawImage(lightC,qx0,qy0,qx1-qx0,qy1-qy0,X,Y,WW,HH);
-      ctx.globalAlpha=0.5;ctx.drawImage(maskC,X,Y,WW,HH,X,Y,WW,HH);
-    }
+    const X=qx0*LS,Y=qy0*LS,WW=(qx1-qx0)*LS,HH=(qy1-qy0)*LS;if(WW<=0||HH<=0)return;
+    maskG.globalCompositeOperation='source-over';maskG.clearRect(X,Y,WW,HH);
+    for(const b of bodies)drawBody(b,maskG);
+    maskG.globalCompositeOperation='source-in';maskG.drawImage(lightC,qx0,qy0,qx1-qx0,qy1-qy0,X,Y,WW,HH);
+    if(tint){ctx.globalCompositeOperation='source-over';ctx.globalAlpha=0.6;}else{ctx.globalCompositeOperation='lighter';ctx.globalAlpha=0.5;}
+    ctx.drawImage(maskC,X,Y,WW,HH,X,Y,WW,HH);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';};
+  // 1) lumières douces (moteurs, faisceaux, tirs) : elles teintent aussi le vide autour d'elles, et s'ajoutent aux coques
+  paint(false);
+  if(lx1>lx0){const X0=Math.max(0,Math.floor(lx0)),Y0=Math.max(0,Math.floor(ly0)),X1=Math.min(lw,Math.ceil(lx1)),Y1=Math.min(lh,Math.ceil(ly1));
+    if(X1>X0&&Y1>Y0){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=bodies.length<n0?0.2:0.13;ctx.drawImage(lightC,X0,Y0,X1-X0,Y1-Y0,X0*LS,Y0*LS,(X1-X0)*LS,(Y1-Y0)*LS);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';}}
+  hullPass(false);
+  // 2) éclairs d'explosion et feu : une carte à part, qui ne touche que les coques. Elle les teinte vers sa couleur (une
+  //    lumière ajoutée saturait au blanc sur une coque claire, et virait au vert en se mêlant au bleu des moteurs), en
+  //    paliers tramés (pas d'anneaux nets sur la tôle), puis elle dessine le liseré
+  if(lights.some(L=>L.rim)){
+    // (les lumières y gardent la plus forte au lieu de s'additionner : une somme d'oranges plafonne le rouge et vire au jaune)
+    lightG.globalCompositeOperation='source-over';lightG.globalAlpha=1;lightG.clearRect(0,0,lw,lh);lightG.globalCompositeOperation='lighten';
+    lx0=lw;ly0=lh;lx1=0;ly1=0;paint(true);lightG.globalAlpha=1;lightG.globalCompositeOperation='source-over';
+    hullPass(true);rimLight(bodies);
   }
-  rimLight(bodies);
-  ctx.globalAlpha=bodies.length<n0?0.2:0.13;ctx.drawImage(lightC,lx0,ly0,lx1-lx0,ly1-ly0,lx0*LS,ly0*LS,(lx1-lx0)*LS,(ly1-ly0)*LS);
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
 }
 const HEXRGB={};function hexRGB(c){return HEXRGB[c]||(HEXRGB[c]=[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)]);}
 function drawShocks(){
   ctx.globalCompositeOperation='lighter';
-  for(const s of shocks){
-    if(s.nuke)continue;const f=s.r/s.max,a=Math.pow(1-f,0.8);if(a<0.03)continue;const sx=s.x-ox,sy=s.y-oy;if(!onScreen(sx,sy,s.r+40))continue;
-    const th=Math.min(70,8+s.power*7)*(0.5+0.8*f),r0=Math.max(0,s.r-th),[cr,cg,cb]=hexRGB(s.col);
-    // anneau en paliers de pixels nets (plus de dégradé lisse) : halo léger à l'extérieur, front blanc éclatant,
-    // traîne colorée en trois paliers qui s'efface vers le centre
-    const fw=Math.max(1.5,Math.min(4,1+s.power*0.6)),R=s.r;ctx.fillStyle=s.col;
-    ctx.globalAlpha=0.22*a;fillRing(sx,sy,R+1,R+1+Math.max(1,th*0.22));
-    ctx.globalAlpha=0.3*a;fillRing(sx,sy,Math.max(0,R-fw-th*0.35),R-fw);
-    ctx.globalAlpha=0.12*a;fillRing(sx,sy,r0,Math.max(0,R-fw-th*0.35));
-    ctx.fillStyle='#ffffff';ctx.globalAlpha=0.95*a;fillRing(sx,sy,Math.max(0,R-fw),R+1);
-    // éclair de chaleur au départ : trois disques en paliers
-    if(f<0.25){const r=s.r*0.8,k=(0.25-f)*1.6;ctx.fillStyle='#fff0d2';ctx.globalAlpha=k*0.3;fillDisc(sx,sy,r);ctx.globalAlpha=k*0.35;fillDisc(sx,sy,r*0.6);ctx.globalAlpha=k*0.45;fillDisc(sx,sy,r*0.32);}
-  }
+  // (les ondes de choc ordinaires ne se dessinent plus : leurs dégâts restent, l'explosion porte seule l'effet ;
+  // seule l'onde nucléaire garde son front, qui montre la zone mortelle)
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
   for(const s of shocks){if(!s.nuke)continue;
     const a=Math.pow(1-s.r/s.max,0.7);if(a<0.03)continue;const sx=s.x-ox,sy=s.y-oy;

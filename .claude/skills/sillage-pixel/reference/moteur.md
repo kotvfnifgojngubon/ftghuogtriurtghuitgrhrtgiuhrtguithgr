@@ -175,13 +175,16 @@ Les opaques (2, 10, 11, 13, 14, 15) passent avant l'éclairage, les autres en mo
 
 **Bouffées et anneaux** (le système des explosions, juste après `let fballs`) :
 - `addPuff(x,y,vx,vy,durée,rayon,feu,{drag,smk,delay,warm})` : une bouffée de feu (`feu` vrai) ou de fumée. Le feu
-  refroidit le long de `XFIRE` (9 tons, du blanc à la braise). `smk` lui fait laisser une fumée en mourant ;
-- **le feu** se peint en disques opaques, en trois passes : tous les liserés, tous les corps éclairés en haut à gauche, puis
-  les points chauds. Seule la silhouette de la boule garde un bord sombre ;
-- **la fumée** (`XSMOKE`) se peint opaque dans un calque à part, en trois passes (ombre en bas à droite, corps, calotte
+  refroidit le long de `XFIRE` (9 tons tirés vers le rouge : un cœur blanc-jaune bref, puis orange, rouge vif, rouge sang,
+  braise), vite (le blanc et le jaune ne durent qu'un instant). `smk` lui fait laisser une fumée en mourant ;
+- **le feu** se peint en disques opaques, en passes : tous les liserés, une trame de transition (`blitDiscD`, un pixel sur
+  deux selon Bayer), tous les corps éclairés en haut à gauche, le halo tramé puis le point chaud. Seule la silhouette de la
+  boule garde un bord sombre ;
+- **la fumée** (`XSMOKE`, gris brun chaud) se peint opaque dans un calque à part, en trois passes (ombre en bas à droite, corps, calotte
   éclairée), puis se pose d'un bloc à 50 % d'opacité. C'est un nuage, pas des bulles, et une coque reste lisible au travers ;
-- `addRing(x,y,vx,vy,r0,r1,durée,épaisseur,col)` : un anneau de choc (sortie en cubique, il s'amincit en s'éloignant).
-  Avec `col` nul, c'est l'éclair du départ : trois disques pleins, blanc au cœur, pendant une ou deux images ;
+- `addRing(x,y,vx,vy,r0,r1,durée,épaisseur,col)` : un anneau (sortie en cubique, il s'amincit en s'éloignant). Les
+  explosions n'en posent **plus** (décision de l'auteur du jeu : pas d'ondes). Il reste l'éclair du départ (`col` nul) :
+  trois disques pleins, blanc chaud au cœur, pendant une ou deux images ;
 - **le plafond** est `puffMax()` = `PMAX / 22`, qui baisse avec le plafond des particules quand la machine peine ;
 - **les sprites de disques** sont en cache (`discSprite`, `blitDisc`, pas plus grossier au-delà de 12 px de rayon) ;
   `fillDisc` et `fillRing` dessinent ligne par ligne, en pixels nets ;
@@ -204,8 +207,14 @@ Il sert aux chaînes d'explosions le long d'une coque et à la couronne d'explos
    crache du feu et pète encore le long de la cassure (`updatePuffs`).
 
 **Lumière** (`collectLights`, puis `renderLighting`) :
-- `addLight(x,y,r,col,a,rim)` ajoute une lumière. La carte de lumière est calculée à demi-résolution, posée sur les coques
-  (masque, à 50 %) et, très faiblement, sur tout l'écran ;
+- `addLight(x,y,r,col,a,rim)` ajoute une lumière. Il y a deux cartes de lumière, à demi-résolution :
+  - **lumières douces** (moteurs, faisceaux, tirs) : elles s'ajoutent aux coques (à 50 %) et teintent très faiblement le
+    vide autour d'elles ;
+  - **lumières `rim`** (éclairs d'explosion, feu) : une carte à part, qui ne touche **que les coques**. Leurs paliers
+    dessinaient des anneaux concentriques dans le vide. Les lumières y gardent la plus forte (`lighten`) au lieu de
+    s'additionner : une somme d'oranges plafonne le rouge et vire au jaune-vert. Leurs paliers sont tramés
+    (`lightSpriteD`), donc sans anneaux nets sur la tôle, et elles **teintent** la coque vers leur couleur (mélange à 60 %)
+    au lieu de s'y ajouter : une explosion rougit la tôle au lieu de la blanchir ;
 - `rim` : la lumière peut allumer le **liseré** des coques tournées vers elle (`rimLight`). Ont ce droit les éclairs
   (`flashAt`) et les bouffées de feu, pas les moteurs. Le liseré, c'est la coque moins la coque décalée de 2 px vers la
   source, coloré par la carte de lumière (amplifiée ×4) et **posé par-dessus**, pas ajouté (sur une coque claire, une
@@ -216,15 +225,16 @@ Il sert aux chaînes d'explosions le long d'une coque et à la couronne d'explos
 Autres effets :
 - `flashAt(x,y,r,col,durée)` : lueur en anneaux tramés (elle éclaire aussi les coques voisines, liseré compris) ;
 - `fballs` : anciennes boules de feu (`drawFireballs`), que `explosion` n'utilise plus ;
-- `addShock(x,y,puissance,max,{col})` : onde de choc de réacteur (dégâts compris), dessinée en couronnes de pixels nets
-  (halo, front blanc, traîne en deux paliers) ;
-- `blasts` (nucléaire) et `amBlast` (réacteur des grands vaisseaux, torpilles, missiles lourds) : souffles. Le dôme
-  d'`amBlast` est un front blanc et une bande bleutée, pas un aplat ; il laisse des bouffées de feu puis de fumée ;
+- `addShock(x,y,puissance,max,{col})` : onde de choc de réacteur. Ses dégâts restent, mais elle **n'est plus dessinée**
+  (pas d'ondes) ; seule l'onde nucléaire garde son front, qui montre la zone mortelle ;
+- `blasts` (nucléaire) et `amBlast` (réacteur des grands vaisseaux, torpilles, missiles lourds) : souffles. `amBlast` n'a
+  plus de dôme ni d'anneaux. C'est un éclair blanc chaud de 0,06 s, une boule de feu rouge en bouffées et langues de feu,
+  un noyau rouge qui persiste, des braises, puis une longue fumée ;
 - `trails` : traits de rail ;
-- `explosion(x,y,k,vx,vy)` : la recette complète, à l'échelle `k` (0,4 : une roquette ; 1 : un module ; 2,4 : une
-  frégate ; 3,4 : un croiseur), en six temps :
+- `explosion(x,y,k,vx,vy,lite)` : la recette complète, à l'échelle `k` (0,4 : une roquette ; 1 : un module ; 2,4 : une
+  frégate ; 3,4 : un croiseur ; jusqu'à 5 sur la coque d'un géant), en six temps (`lite` : deux fois moins de bouffées) :
   1. éclair ;
-  2. anneaux (un seul, fin, sous k = 0,9) ;
+  2. langues de feu (petites bouffées projetées loin, qui découpent le bord de la boule) ;
   3. cœur chauffé à blanc ;
   4. boule de bouffées serrées qui refroidissent ;
   5. fumée de 1 à 2,5 s ;
