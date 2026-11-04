@@ -191,6 +191,17 @@ Les opaques (2, 10, 11, 13, 14, 15) passent avant l'éclairage, les autres en mo
 - `updatePuffs` les fait vieillir, `drawPuffs` les dessine (après les débris opaques, avant la lumière additive) et `drawXRings`
   dessine les anneaux, dans la passe additive.
 
+**Débris** (`addChunk(x,y,vx,vy,durée,taille,chaleur,sillage)`, liste `chunks`) :
+- ce sont de petits morceaux de coque irréguliers de 2 à 6 px. Ils sont ombrés comme les coques (reflet en haut à gauche,
+  ombre, contour sombre) et tournent par crans de 45°. Il y a 24 formes en cache (`chunkSprite`) ;
+- `chaleur` (0 à 1) : un débris sort chauffé à blanc ou au rouge et refroidit vers le métal (palettes `CHK`). Avec
+  `sillage`, tant qu'il est chaud, il laisse un trait serré de particules de feu puis de fumée (des particules, pas des
+  bouffées : il ne prend pas la place de la fumée de l'explosion) ;
+- le plafond est `chunkMax()` = `PMAX / 45` ;
+- `explosion` en lance 4 + 4k, dont un sur deux brûlant (version `lite` : moins de débris, sans sillage) ;
+- `bigBlast` en lance de plus gros sur toute la coque ;
+- les braises (type 13) sont plus nombreuses et scintillent en refroidissant.
+
 **Événements différés** : `later(délai, fn)` exécute `fn` plus tard, au rythme du jeu (240 au plus, vidés avec le monde).
 Il sert aux chaînes d'explosions le long d'une coque et à la couronne d'explosions qui précède une rupture.
 

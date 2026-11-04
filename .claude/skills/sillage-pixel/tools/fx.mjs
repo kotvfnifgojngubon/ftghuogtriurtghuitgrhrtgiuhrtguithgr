@@ -87,9 +87,9 @@ if (main) {
 }
 
 function report(tag, r) {
-  const e = r.end, live = e.parts + e.flashes + e.fballs + e.shocks + e.blasts + (e.puffs || 0) + (e.rings || 0);
+  const e = r.end, live = e.parts + e.flashes + e.fballs + e.shocks + e.blasts + (e.puffs || 0) + (e.rings || 0) + (e.chunks || 0);
   const T = r.times[r.times.length - 1], p = s => (tag ? tag + ' · ' : '') + s;
-  console.log(p(`particules : pic ${r.peak} (${Math.round(100 * r.peak / r.pmax)} % du plafond PMAX ${r.pmax}), à ${T.toFixed(2)} s : ${e.parts} particules, ${e.puffs || 0} bouffées, ${e.rings || 0} anneaux, ${e.flashes} lueurs, ${e.fballs} boules de feu, ${e.shocks} ondes, ${e.live} épaves`));
+  console.log(p(`particules : pic ${r.peak} (${Math.round(100 * r.peak / r.pmax)} % du plafond PMAX ${r.pmax}), à ${T.toFixed(2)} s : ${e.parts} particules, ${e.puffs || 0} bouffées, ${e.chunks || 0} débris, ${e.rings || 0} anneaux, ${e.flashes} lueurs, ${e.fballs} boules de feu, ${e.shocks} ondes, ${e.live} épaves`));
   console.log(p(`rendu d'une image : médiane ${r.ms.med.toFixed(2)} ms, pire ${r.ms.max.toFixed(2)} ms`));
   let bad = 0;
   const end = A.end !== undefined ? +A.end : null;

@@ -15,7 +15,7 @@ function(){
     w=w|0||320;h=h|0||180;cvs.width=w;cvs.height=h;W=w;H=h;SCALE=1;VZ=1;TXS=1;zoomBoost=0;
     rocks=[];wrecks=[];enemies=[];allies=[];pickups=[];crates=[];spacers=[];bullets=[];missiles=[];beams=[];parts=[];
     floaters=[];shocks=[];flashes=[];blasts=[];trails=[];fballs=[];ambs=[];
-    try{puffs=[];xrings=[];laters=[];}catch(e){}  // systèmes ajoutés par une version plus récente du jeu
+    try{puffs=[];xrings=[];laters=[];chunks=[];}catch(e){}  // systèmes ajoutés par une version plus récente du jeu
     try{clearSpecials();}catch(e){}
     player=null;shake=0;now=o.t||1;frameN=0;nukeFlash=0;
     if(o.sun!==undefined)sunA=o.sun;
@@ -161,6 +161,6 @@ function(){
   S.fx=(name,x,y,o)=>{const f=S.FX[name];if(!f)throw new Error('Effet inconnu : '+name+' (connus : '+Object.keys(S.FX).join(', ')+')');f(x||0,y||0,o||{});};
   // n'importe quel code du jeu, avec les mêmes repères (utile pour un effet qui n'a pas encore de nom)
   S.run=(src)=>eval(src);
-  S.counts=()=>({live:wrecks.filter(w=>!w.dead).length,puffs:typeof puffs!=='undefined'?puffs.length:0,rings:typeof xrings!=='undefined'?xrings.length:0,parts:parts.length,flashes:flashes.length,fballs:fballs.length,shocks:shocks.length,blasts:blasts.length,trails:trails.length});
+  S.counts=()=>({live:wrecks.filter(w=>!w.dead).length,puffs:typeof puffs!=='undefined'?puffs.length:0,rings:typeof xrings!=='undefined'?xrings.length:0,chunks:typeof chunks!=='undefined'?chunks.length:0,parts:parts.length,flashes:flashes.length,fballs:fballs.length,shocks:shocks.length,blasts:blasts.length,trails:trails.length});
   return S;
 }
