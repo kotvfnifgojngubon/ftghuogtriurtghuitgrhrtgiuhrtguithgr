@@ -175,12 +175,12 @@ Les opaques (2, 10, 11, 13, 14, 15) passent avant l'éclairage, les autres en mo
 
 **Bouffées et anneaux** (le système des explosions, juste après `let fballs`) :
 - `addPuff(x,y,vx,vy,durée,rayon,feu,{drag,smk,delay,warm})` : une bouffée de feu (`feu` vrai) ou de fumée. Le feu
-  refroidit le long de `XFIRE` (9 tons tirés vers le rouge : un cœur blanc-jaune bref, puis orange, rouge vif, rouge sang,
-  braise), vite (le blanc et le jaune ne durent qu'un instant). `smk` lui fait laisser une fumée en mourant ;
+  refroidit le long de `XFIRE` (9 tons, du blanc au jaune, à l'orange, au rouge et à la braise ; l'auteur du jeu a essayé
+  une rampe plus rouge et préféré celle-ci). `smk` lui fait laisser une fumée en mourant ;
 - **le feu** se peint en disques opaques, en passes : tous les liserés, une trame de transition (`blitDiscD`, un pixel sur
   deux selon Bayer), tous les corps éclairés en haut à gauche, le halo tramé puis le point chaud. Seule la silhouette de la
   boule garde un bord sombre ;
-- **la fumée** (`XSMOKE`, gris brun chaud) se peint opaque dans un calque à part, en trois passes (ombre en bas à droite, corps, calotte
+- **la fumée** (`XSMOKE`, gris violacé) se peint opaque dans un calque à part, en trois passes (ombre en bas à droite, corps, calotte
   éclairée), puis se pose d'un bloc à 50 % d'opacité. C'est un nuage, pas des bulles, et une coque reste lisible au travers ;
 - `addRing(x,y,vx,vy,r0,r1,durée,épaisseur,col)` : un anneau (sortie en cubique, il s'amincit en s'éloignant). Les
   explosions n'en posent **plus** (décision de l'auteur du jeu : pas d'ondes). Il reste l'éclair du départ (`col` nul) :
@@ -201,8 +201,8 @@ Il sert aux chaînes d'explosions le long d'une coque et à la couronne d'explos
    - des conduites cèdent en chaîne (`later`).
 
    Ces explosions sont en version allégée (`explosion(…, lite)`) et s'espacent quand le jeu abaisse `PMAX`.
-2. **La rupture** (`bigDeath`) : une couronne d'explosions court sur toute la coque en un tiers de seconde, puis le souffle
-   du réacteur (`amBlast`, éclair de 0,09 s) et la coupure en tronçons.
+2. **La rupture** (`bigDeath`) : la cascade de `bigBlast`, puis la coupure en tronçons, avec des explosions serrées tout le
+   long de la cassure.
 3. **L'après** : chaque grand tronçon garde ses cellules de cassure (`_brk`) et, pendant 4,5 à 7 s (`_burnT`), il fume,
    crache du feu et pète encore le long de la cassure (`updatePuffs`).
 
@@ -227,9 +227,19 @@ Autres effets :
 - `fballs` : anciennes boules de feu (`drawFireballs`), que `explosion` n'utilise plus ;
 - `addShock(x,y,puissance,max,{col})` : onde de choc de réacteur. Ses dégâts restent, mais elle **n'est plus dessinée**
   (pas d'ondes) ; seule l'onde nucléaire garde son front, qui montre la zone mortelle ;
-- `blasts` (nucléaire) et `amBlast` (réacteur des grands vaisseaux, torpilles, missiles lourds) : souffles. `amBlast` n'a
-  plus de dôme ni d'anneaux. C'est un éclair blanc chaud de 0,06 s, une boule de feu rouge en bouffées et langues de feu,
-  un noyau rouge qui persiste, des braises, puis une longue fumée ;
+- `blasts` (nucléaire) et `amBlast` (torpilles, missiles lourds) : souffles. `amBlast` n'a plus de dôme ni d'anneaux.
+  C'est un éclair blanc de 0,06 s, une boule de feu en bouffées et langues de feu, un noyau rouge et blanc qui persiste,
+  des braises, puis une longue fumée ;
+- `bigBlast(b)` : la fin d'un grand vaisseau, **sans grosse boule** (demande de l'auteur du jeu). C'est une cascade
+  d'explosions de la recette des petites :
+  - au réacteur : une seule explosion de la taille de celle d'un croiseur ;
+  - la chambre du réacteur cède en quelques coups serrés ;
+  - puis, sur 10 à 34 points du bord et de l'intérieur, chaque point explose d'autant plus tard qu'il est loin du réacteur
+    (une seconde environ), plus gros au cœur et plus petit aux extrémités ;
+  - éclats et braises.
+
+  Les positions sont prises avant la rupture et suivent la dérive du vaisseau. `bigDeath` y ajoute une rangée
+  d'explosions serrées le long de la cassure ;
 - `trails` : traits de rail ;
 - `explosion(x,y,k,vx,vy,lite)` : la recette complète, à l'échelle `k` (0,4 : une roquette ; 1 : un module ; 2,4 : une
   frégate ; 3,4 : un croiseur ; jusqu'à 5 sur la coque d'un géant), en six temps (`lite` : deux fois moins de bouffées) :

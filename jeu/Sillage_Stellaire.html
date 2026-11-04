@@ -6580,10 +6580,8 @@ let fballs=[];
    Le feu se dessine en disques opaques aux tons francs, éclairés en haut à gauche comme les coques, qui refroidissent
    le long de XFIRE ; la fumée en disques vraiment translucides, qui gonflent et s'éclaircissent pendant deux à trois
    secondes (jamais un damier). Les anneaux sont des couronnes de pixels nets, sans dégradé lisse. */
-// rampe tirée vers le rouge : un cœur blanc-jaune bref, puis orange, rouge vif, rouge sang, braise
-const XFIRE=['#fff6e8','#ffd98a','#ffa94a','#ff7a2e','#f04a1e','#d42e1c','#a81e18','#721614','#3e0e0e'];
-// fumée chaude : gris brun encore rougi par le feu, qui refroidit vers le noir violacé
-const XSMOKE=['#7e6466','#634c50','#4b393f','#36292f','#251c22','#181217'];
+const XFIRE=['#ffffff','#fff3a6','#ffe26b','#ffc23d','#ff8a2a','#f2561d','#c9281f','#8a1f17','#4a1712'];
+const XSMOKE=['#8a8494','#6c6878','#504c5c','#3a3744','#292731','#1c1b23'];
 let puffs=[],xrings=[],laters=[];
 // événements différés des effets (chaînes d'explosions le long d'une coque, sursauts d'une épave) : ils suivent le temps
 // du jeu (pause, ralenti) et sont vidés avec le monde
@@ -6653,8 +6651,7 @@ function drawPuffs(){
   const n=XFIRE.length,fs=[];
   for(const q of puffs){if(!q.f||q.delay>0)continue;const sx=q.x-ox,sy=q.y-oy,age=1-q.life/q.max;
     // la chaleur descend la rampe : blanc, jaune, orange, rouge, braise ; chaque bouffée a son propre rythme
-    // (le blanc et le jaune ne durent qu'un instant : la flamme passe vite à l'orange puis au rouge)
-    const heat=Math.min(0.999,0.08+Math.pow(age,0.55)+q.sd*0.1),idx=Math.min(n-2,Math.floor(heat*(n-1)));
+    const heat=Math.min(0.999,Math.pow(age,0.62)+q.sd*0.1),idx=Math.min(n-2,Math.floor(heat*(n-1)));
     const r=q.r*(0.55+0.45*Math.min(1,age*7))*(1-age*0.55);if(r<0.5||!onScreen(sx,sy,r+2))continue;
     fs.push([idx,sx,sy,r,age]);}
   fs.sort((a,b)=>b[0]-a[0]);   // les plus froides dessous, les plus chaudes dessus
@@ -6748,7 +6745,7 @@ function explosion(x,y,k,vx,vy,lite){
   vx=vx||0;vy=vy||0;const K=Math.min(5,k),R=4+5.5*K,P=Math.sqrt(K),cvx=vx*0.6,cvy=vy*0.6,lk=lite?0.5:1;
   // 1) éclair : un disque blanc d'une ou deux images, une lueur large qui retombe vite, un point chaud serré
   addRing(x,y,cvx,cvy,0,R*0.7,0.045+0.015*K,0,null);
-  flashAt(x,y,22+16*K,'#ff7a3c',0.14+0.08*K);if(K>=1.2)flashAt(x,y,6+5*K,'#ffd0a0',0.07);
+  flashAt(x,y,22+16*K,'#ffb066',0.14+0.08*K);if(K>=1.2)flashAt(x,y,6+5*K,'#fff4d8',0.07);
   // 2) (plus d'anneau de choc : la boule de feu porte seule l'explosion)
   // langues de feu : de petites bouffées projetées loin et vite, qui découpent le bord de la boule en flammèches
   for(let i=0,n=Math.round((5+5*K)*lk);i<n;i++){const a=Math.random()*TAU,v=rnd(110,260)*P;
@@ -6770,7 +6767,7 @@ function explosion(x,y,k,vx,vy,lite){
   // 6) retombée : étincelles étirées par leur vitesse, braises qui refroidissent, éclats de coque qui tournent
   for(let i=0;i<20*K;i++){const a=Math.random()*TAU,v=rnd(90,340)*P;addP(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(0.25,0.7),1,null,2.4,Math.random()<0.3?2:1);}
   for(let i=0;i<7*K;i++){const a=Math.random()*TAU,v=rnd(20,120)*P;addP(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(1.2,2.8),13,null,0.9,Math.random()<0.25?2:1);}
-  for(let i=0;i<4*K;i++){const a=Math.random()*TAU,v=rnd(15,80)*P;addShard(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(1.2,3.2),Math.random()<0.35?'#ff6a2a':Math.random()<0.5?'#4a5468':'#2c3240',Math.random()<0.4?3:2);}
+  for(let i=0;i<4*K;i++){const a=Math.random()*TAU,v=rnd(15,80)*P;addShard(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(1.2,3.2),Math.random()<0.3?'#ff9a3c':Math.random()<0.5?'#4a5468':'#2c3240',Math.random()<0.4?3:2);}
 }
 function floater(x,y,txt,col){for(const f of floaters)if(f.life>1.1&&Math.abs(f.x-x)<textW(txt)/2+8&&Math.abs(f.y-y)<7*TXS)y=f.y-8*TXS;floaters.push({x,y,txt,col,life:1.5});if(floaters.length>28)floaters.shift();}
 function addShake(v){if(!REDUCED)shake=Math.min(12,shake+v);}
@@ -10927,13 +10924,8 @@ function capitalArrives(e){
 // les deux tronçons, éteints, dérivent en s'écartant ; quelques débris seulement
 function bigDeath(b){
   if(b.crew){for(const c of b.crew)spaceCrew(b,c,rnd(30,90));b.crew=null;}
-  // la coque entière lâche : une couronne d'explosions secondaires court sur toute la longueur en un tiers de seconde
-  // (positions prises avant la rupture, elles suivent la dérive du vaisseau)
-  if(b.samples&&b.samples.length){const n=Math.round(clamp(b.rad/40,4,12)),bvx=b.vx,bvy=b.vy;
-    for(let k=0;k<n;k++){const i=b.samples[(Math.random()*b.samples.length)|0],px=b.wx(i%b.w+0.5,((i/b.w)|0)+0.5),py=b.wy(i%b.w+0.5,((i/b.w)|0)+0.5),d=rnd(0.02,0.34);
-      later(d,()=>explosion(px+bvx*d,py+bvy*d,rnd(1.4,2.6)*clamp(b.rad/200,0.8,1.9),bvx,bvy));}}
   const R=reactorPos(b),wx=b.wx(R.lx,R.ly),wy=b.wy(R.lx,R.ly);
-  amBlast(wx,wy,clamp(b.rad*0.85,40,420),b.vx,b.vy);
+  bigBlast(b);
   sfx.play('boomL',wx,wy,{direct:true,vol:1.2});sfx.play('shock',wx,wy,{delay:0.1,vol:1});if(b.rad>120){sfx.play('boomL',wx,wy,{delay:0.35,vol:0.9});sfx.duck(0.35,0.4,1.2);}
   addShake(b.giant?10:6);if(b.giant)shakeHold=Math.max(shakeHold,1);
   let x0=b.w,x1=0;for(let i=0;i<b.n;i++)if(b.type[i]){const x=i%b.w;if(x<x0)x0=x;if(x>x1)x1=x;}
@@ -10948,6 +10940,11 @@ function bigDeath(b){
       if(d===0){removeCell(b,i,x,y,cx,y+0.5,true);}else{b.heatCell(i,1-d/3.5);if(b.scorch[i]<3)b.scorch[i]++;}}
     if((y&3)===0&&Math.random()<0.5){const q=b.wx(cx,y),r=b.wy(cx,y);addShard(q,r,b.vx+rnd(-60,60),b.vy+rnd(-60,60),rnd(1.5,3.5),Math.random()<0.4?'#ffb066':'#4a5468',2);}}
   b.dmark(0,0,b.w-1,b.h-1);
+  // la cassure crache du feu sur toute sa longueur : des explosions serrées le long de la coupure, là où il y a de la coque
+  {const m=Math.round(clamp(b.h/30,5,16)),bvx=b.vx,bvy=b.vy,gk=clamp(b.rad/300,1,1.9);
+    for(let k=0;k<m;k++){const y=(k+rnd(0.2,0.8))/m*b.h,cx=c0+sl*(y-R.ly),yi=Math.floor(y);
+      const on=dx=>{const x=Math.floor(cx+dx);return x>=0&&x<b.w&&yi>=0&&yi<b.h&&b.type[yi*b.w+x];};if(!on(4)&&!on(-4))continue;
+      const px=b.wx(cx,y),py=b.wy(cx,y),d=rnd(0.05,0.45);later(d,()=>explosion(px+bvx*d,py+bvy*d,rnd(1,2)*gk,bvx,bvy,true));}}
   b.va=clamp(b.va||0,-0.12,0.12);const comps=components(b),out=[];comps.sort((a,c)=>c.cells.length-a.cells.length);
   for(const cp of comps){let sx=0;for(const i of cp.cells)sx+=i%b.w;const mx=sx/cp.cells.length,dir=mx<c0?-1:1,big=cp.cells.length>60;
     const nb=detach(b,cp.cells,0.3);if(!nb)continue;const sp=big?rnd(9,22):rnd(30,80);
@@ -10956,15 +10953,35 @@ function bigDeath(b){
   // les grands tronçons fument et pètent encore le long de leur cassure (les cellules restées chaudes)
   for(const nb of out)if(nb.big){nb._brk=nb.hot.slice(0,600);nb._burn0=nb._burnT=rnd(4.5,7);nb._burnK=clamp(b.rad/260,0.7,2);}
   b.pieces=out;b.dead=true;return out;}
-// grande explosion (torpilles, missiles, réacteurs des grands vaisseaux) : éclair aveuglant, boule de feu rouge en
-// bouffées et langues de feu, noyau rouge et blanc qui persiste, longue fumée
+// grande explosion (torpilles, missiles lourds) : éclair aveuglant, boule de feu en bouffées et langues de feu, noyau
+// rouge et blanc qui persiste, longue fumée (les grands vaisseaux, eux, finissent en cascade : voir bigBlast)
 let ambs=[];
+// fin d'un grand vaisseau : pas une grosse boule, mais une cascade d'explosions détaillées (la recette des petites) qui
+// part du réacteur et gagne toute la coque en une seconde environ : les plus grosses au cœur, les plus petites aux
+// extrémités, sur le bord comme à l'intérieur. Positions prises avant la rupture : elles suivent la dérive du vaisseau
+function bigBlast(b){
+  const R=reactorPos(b),rx=b.wx(R.lx,R.ly),ry=b.wy(R.lx,R.ly),bvx=b.vx,bvy=b.vy,gk=clamp(b.rad/300,1,1.9),far=Math.max(1,Math.hypot(b.w,b.h)*0.5);
+  // le réacteur lui-même : une explosion du gabarit d'un croiseur, pas un soleil
+  explosion(rx,ry,2.8*gk,bvx,bvy);flashAt(rx,ry,Math.min(300,60+b.rad*0.5),'#ffb066',0.35);
+  const at=(lx,ly,d,k,lite)=>{const px=b.wx(lx,ly),py=b.wy(lx,ly);later(d,()=>explosion(px+bvx*d,py+bvy*d,k,bvx,bvy,lite));};
+  // autour du réacteur : la chambre qui cède, en quelques coups serrés
+  for(let k=0;k<6;k++){const a=Math.random()*TAU,r=Math.sqrt(Math.random())*Math.min(b.h*0.4,60);at(R.lx+Math.cos(a)*r,R.ly+Math.sin(a)*r,rnd(0.03,0.25),rnd(1.6,2.6)*gk,k>2);}
+  // puis le long de la coque : chaque point explose d'autant plus tard qu'il est loin du réacteur
+  const S=b.samples,n=Math.round(clamp(b.rad/20,10,34));
+  for(let k=0;k<n;k++){let lx,ly;
+    if(S&&S.length&&k%2){const i=S[(Math.random()*S.length)|0];lx=i%b.w+0.5;ly=((i/b.w)|0)+0.5;}   // sur le bord
+    else{let i=-1;for(let t=0;t<8&&i<0;t++){const j=(Math.random()*b.n)|0;if(b.type[j])i=j;}if(i<0)continue;lx=i%b.w+0.5;ly=((i/b.w)|0)+0.5;}   // à l'intérieur
+    const dd=Math.min(1,Math.hypot(lx-R.lx,ly-R.ly)/far);at(lx,ly,0.06+dd*0.8+rnd(0,0.2),rnd(1.1,2.3)*gk*(1.2-dd*0.55),k>8);}
+  // la coque se disperse : éclats et braises
+  for(let k=0;k<Math.min(40,10+b.rad*0.05);k++){const a=Math.random()*TAU,v=rnd(20,110)*Math.sqrt(gk);addShard(rx,ry,bvx+Math.cos(a)*v,bvy+Math.sin(a)*v,rnd(1.4,3.4),Math.random()<0.35?'#ff9a3c':Math.random()<0.5?'#4a5468':'#2c3240',Math.random()<0.5?3:2);}
+  if(player&&hyp(rx-player.x,ry-player.y)<Math.max(W,H)*0.7)nukeFlash=Math.max(nukeFlash,REDUCED?0.08:0.22);
+}
 function amBlast(x,y,R,vx,vy){
   vx=vx||0;vy=vy||0;if(ambs.length>=24)ambs.shift();
   ambs.push({x,y,vx:vx*0.5,vy:vy*0.5,t:0,R,max:R>90?3.6:R>30?2.6:1.5,ph:Math.random()*9});
-  flashAt(x,y,R*2.4,'#ff6a3a',0.1+Math.min(0.3,R/400));flashAt(x,y,R*1.3,'#ff3a1c',0.3);
-  const n=Math.min(70,8+R*0.7);for(let k=0;k<n;k++){const a=Math.random()*TAU,v=rnd(0.5,1.5)*Math.max(40,R*2);addP(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(0.25,0.75),6,k%3?'#ffb070':'#ffe8d0',2.4);}
-  for(let k=0;k<Math.min(20,3+R*0.16);k++){const a=Math.random()*TAU,v=rnd(10,70)*Math.sqrt(R/10);addShard(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(1,2.8),Math.random()<0.45?'#ff6a2a':'#3a4252',2);}
+  flashAt(x,y,R*2.4,'#ffffff',0.1+Math.min(0.3,R/400));flashAt(x,y,R*1.3,'#bfe0ff',0.22);
+  const n=Math.min(70,8+R*0.7);for(let k=0;k<n;k++){const a=Math.random()*TAU,v=rnd(0.5,1.5)*Math.max(40,R*2);addP(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(0.25,0.75),6,k%3?'#d8ecff':'#ffffff',2.4);}
+  for(let k=0;k<Math.min(20,3+R*0.16);k++){const a=Math.random()*TAU,v=rnd(10,70)*Math.sqrt(R/10);addShard(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(1,2.8),Math.random()<0.4?'#ff9a6a':'#3a4252',2);}
   for(let k=0;k<Math.min(60,6+R*0.25);k++){const a=Math.random()*TAU,v=rnd(20,110)*Math.sqrt(R/20);addP(x,y,vx+Math.cos(a)*v,vy+Math.sin(a)*v,rnd(1.4,3.2),13,null,0.8,Math.random()<0.3?2:1);}
   if(R>40&&player&&hyp(x-player.x,y-player.y)<Math.max(W,H)*0.7)nukeFlash=Math.max(nukeFlash,REDUCED?0.15:Math.min(0.6,R/300));
   // la boule de feu (il n'y a plus de dôme) : une gerbe de bouffées qui part vite et freine fort, des langues de feu
@@ -10987,11 +11004,11 @@ function drawAmBlasts(){
   if(!ambs.length)return;ctx.globalCompositeOperation='lighter';
   for(const b of ambs){const t=b.t,R=b.R,sx=b.x-ox,sy=b.y-oy;if(!onScreen(sx,sy,R*2.4+10))continue;const st=R>80?2:1,M=b.max;
     // 1. éclair d'une ou deux images, blanc chaud
-    if(t<0.06)amDisc(sx,sy,R*0.42*Math.sqrt(t/0.06+0.05),'#ffe8d0',1,st,0.02,t);
+    if(t<0.06)amDisc(sx,sy,R*0.42*Math.sqrt(t/0.06+0.05),'#ffffff',1,st,0.02,t);
     // (plus de dôme ni d'onde : la boule de feu en bouffées porte l'expansion)
-    // 2. noyau qui persiste : rouge sang, rouge vif, orangé, cœur blanc chaud
+    // 2. noyau qui persiste : rouge sombre, orangé, cœur blanc
     if(t>0.05){const u=Math.min(1,(t-0.05)/(M-0.05)),f=u<0.45?1:1-(u-0.45)/0.55,rc=R*0.42*(1-0.45*u);
-      amDisc(sx,sy,rc,'#a81e18',0.62*f,st,0.08,t+b.ph);amDisc(sx,sy,rc*0.72,'#e0361a',0.72*f,st,0.07,t*1.2+b.ph);amDisc(sx,sy,rc*0.45,'#ff6a3a',0.75*f,st,0.05,t);amDisc(sx,sy,rc*0.16,'#ffd8b8',0.75*f,st,0.03,t);}
+      amDisc(sx,sy,rc,'#c4202a',0.55*f,st,0.08,t+b.ph);amDisc(sx,sy,rc*0.72,'#ff6a4a',0.7*f,st,0.07,t*1.2+b.ph);amDisc(sx,sy,rc*0.45,'#ffd8c0',0.85*f,st,0.05,t);amDisc(sx,sy,rc*0.22,'#ffffff',f,st,0.03,t);}
   }
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';}
 function capitalDeath(b){
@@ -11013,7 +11030,7 @@ function capDying(b,dt){
       for(let k=0;k<3+p*6;k++){const a=Math.random()*TAU,r=Math.sqrt(Math.random())*hr,x=Math.floor(R.lx+Math.cos(a)*r),y=Math.floor(R.ly+Math.sin(a)*r);
         if(x>=0&&y>=0&&x<b.w&&y<b.h){const i=y*b.w+x;if(b.type[i])b.heatCell(i,0.45+0.5*p);}}
       // le réacteur pulse : un éclair de plus en plus fort, qui éclaire la coque autour
-      if(Math.random()<0.08+0.17*p)flashAt(b.wx(R.lx,R.ly),b.wy(R.lx,R.ly),24+p*Math.min(110,b.rad*0.4),'#ff8a4a',0.1+0.12*p);}
+      if(Math.random()<0.08+0.17*p)flashAt(b.wx(R.lx,R.ly),b.wy(R.lx,R.ly),24+p*Math.min(110,b.rad*0.4),'#ffd9a0',0.1+0.12*p);}
     // (sur une machine qui peine, le jeu abaisse PMAX : les explosions de l'agonie s'espacent d'autant)
     b.boomT=(b.boomT||0)-dt;if(b.boomT>0)return;b.boomT=rnd(0.1,0.24)*(1-0.6*p)/Math.max(0.3,PMAX/3600);
     const sx=Math.max(5,b.w*0.45)*(0.3+0.7*p),sy=Math.max(4,b.h*0.42)*(0.4+0.6*p),x=R.lx+rnd(-1,1)*sx,y=R.ly+rnd(-1,1)*sy;
@@ -12671,7 +12688,7 @@ function collectLights(){
   for(const f of fballs)addLight(f.x,f.y,f.R*1.9,'#ff9a3c',0.45*(1-f.t/f.max));
   // les bouffées de feu encore chaudes éclairent les coques voisines : 8 au plus, rayon borné (la carte de lumière
   // coûte selon la surface éclairée, et une grande coque en couvre beaucoup)
-  {let n=0;for(const q of puffs){if(!q.f||q.delay>0||n>=8)continue;const u=1-q.life/q.max;if(u>0.5||q.r<4)continue;n++;addLight(q.x,q.y,Math.min(90,q.r*2+6),u<0.2?'#ffb070':'#ff5a2a',0.24*(1-u/0.5),1);}}
+  {let n=0;for(const q of puffs){if(!q.f||q.delay>0||n>=8)continue;const u=1-q.life/q.max;if(u>0.5||q.r<4)continue;n++;addLight(q.x,q.y,Math.min(90,q.r*2+6),u<0.2?'#ffe2a0':'#ff8a3c',0.24*(1-u/0.5),1);}}
   for(const f of ambs){const u=f.t/f.max;addLight(f.x,f.y,Math.min(256,f.R*(u<0.3?2.2:1.2)),u<0.3?'#d8ecff':'#ff6a4a',0.7*(1-u));}
   for(const q of missiles)if(q.W&&q.W.bomb)addLight(q.x,q.y,6+q.size*2,'#7fb4ff',0.4);else addLight(q.x,q.y,q.kind==='nuke'?34:8+q.size*3,q.kind==='nuke'?'#ff4f6a':'#ffb347',0.6);
   for(const f of flashes)addLight(f.x,f.y,f.r,f.col,Math.min(0.8,f.life/f.max),1);
@@ -16413,7 +16430,7 @@ function netRemoveLocal(E,how){NET.ents.delete(E.id);NET.gone.set(E.id,now);cons
   else if(E.ty==='C'){const i=crates.indexOf(o);if(i>=0)crates.splice(i,1);}}
 function netDeathFx(b,how){const enemy=enemies.includes(b);
   if(how==='boom'){
-    if(bigShip(b)){const R=reactorPos(b),wx=b.wx(R.lx,R.ly),wy=b.wy(R.lx,R.ly);amBlast(wx,wy,clamp(b.rad*0.85,40,420),b.vx,b.vy);sfx.play('boomL',wx,wy,{direct:true,vol:1.2});addShake(b.giant?10:6);if(b.giant)shakeHold=Math.max(shakeHold,1);}
+    if(bigShip(b)){const R=reactorPos(b),wx=b.wx(R.lx,R.ly),wy=b.wy(R.lx,R.ly);bigBlast(b);sfx.play('boomL',wx,wy,{direct:true,vol:1.2});addShake(b.giant?10:6);if(b.giant)shakeHold=Math.max(shakeHold,1);}
     else{explosion(b.x,b.y,b.fighter?1.2:b.cls&&b.cls.key==='raider'?1.4:2.4,b.vx,b.vy);sfx.explode(2,b.x,b.y);addShake(b.fighter?1:3);}
     if(b.giant&&!b.stc&&b.samples)capitalDeath(b);
     if(b.cls&&b.cls.shock)reactorShock(b,b.cls.shock[0],b.cls.shock[1]);else reactorShock(b,b.giant?6:b.fighter?1:2,b.giant?1000:b.fighter?220:360);

@@ -115,6 +115,7 @@ Le compteur `particules : pic N, à la fin M` doit revenir près de 0 pour un ef
 | effet trop coûteux en combat | moins de bouffées sur les petites tailles, sprites en cache, lumières bornées (nombre et rayon) |
 | une explosion à côté d'une coque ne l'éclaire pas | lumière avec `rim` : le bord tourné vers la source prend sa couleur (`rimLight`), posé par-dessus et non ajouté |
 | un géant meurt sans drame | une agonie qui monte en puissance (`p`), des chaînes d'explosions (`later`), des tronçons qui brûlent le long de la cassure |
+| un géant finit en une grosse boule | une cascade de petites explosions détaillées (`bigBlast`), du réacteur vers les extrémités, et le long de la cassure (l'auteur du jeu ne veut pas de grosse boule) |
 | un petit vaisseau noyé dans la fumée | peu de fumée, rapide, sur les petites explosions : elle doit quitter la coque touchée |
 
 ## 4. Intégrer dans le jeu
