@@ -143,6 +143,25 @@ Chaque entrée a un rayon `r` et une fonction `f(x, y)` qui renvoie `[matière, 
 Les fûts (`HBAR`, `MBAR`, `XBAR`) sont décrits par leur décalage, leur longueur, leur frein de bouche, leur recul (`rec`) et leur retour (`ret`).
 La lumière vient d'en haut à gauche de l'écran, quel que soit l'angle de la tourelle.
 
+### Munitions d'aile et missiles spécialisés
+
+Les munitions sous les ailes et en vol sont aussi des fonctions de forme, nez vers +x : `ordShape(code, L)` (missile `a`,
+roquettes `u` et `d`, torpille) et `smisShape(s, L)` pour les douze missiles spécialisés (`SMIS`, codes `α` à `μ`).
+`ordSprite(code, L, angle, chargement)` les met en cache par angle (64 pas). Le plan `s` d'un missile spécialisé donne :
+rayon du corps `r`, nez `nk` (`cone`, `ogive`, `facet`, `reinf`, `lens`, `blunt`), ailettes (`fin`, `fh`, `fl`, `tri`),
+canards, bandes, hachures, rayures, anneaux, antennes, renflement.
+
+Deux pièges vus en les dessinant :
+- la forme doit renvoyer 0 hors de sa longueur (`u < 0` ou `u > 1`), sinon la tuyère et la pointe filent jusqu'au bord de
+  l'image en un trait d'un pixel ;
+- un nez se compte en pixels (2 à 4), pas en fraction de la longueur : un nez long n'est qu'une aiguille, en pointillé
+  une fois tournée.
+
+En vol, `smisFx` ajoute la flamme (cycle de trois images, palette `SFLM` du blanc au rouge, deux pixels d'épaisseur pour
+les lourds) et les voyants animés (anneaux de l'Ancre Noire, reflet de la lentille du Faux-Spectre). Les leurres des
+contre-mesures (`CMLURES`, dessinés par `drawCMLures`) suivent la même règle : rampes de couleurs courtes, cycles de 3 ou 4
+images, aucun anticrénelage, et un `flashAt` bref quand ils doivent éclairer la scène.
+
 ## 4. Les vaisseaux modulaires (ancien chantier)
 
 `buildShip(rows, pal)` assemble des modules de 10 × 10 pixels (`MS`), écrits comme une grille de lettres (`PRESETS`, `ENEMY_DESIGNS`).

@@ -481,6 +481,9 @@ body.touch .hud-bottom{padding-bottom:276px}
 .lo-opt{font:inherit;font-size:13px;color:var(--ink);background:var(--panel-solid);border:2px solid var(--line);padding:6px 10px;cursor:pointer}
 .lo-opt:hover{border-color:#5d86d8}
 .lo-opt.on{border-color:#8cb8ff;background:#141a33}
+.lo-spec{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:3px 12px;font-size:12px}
+.lo-spec span{color:var(--dim)}
+.lo-spec b{font-weight:500;color:var(--ink)}
 .prof i{font-style:normal;font-family:var(--f-label);font-size:10px;letter-spacing:.04em;padding:2px 5px;border:1px solid}
 .prof i.up{color:#7ef0a8;border-color:#2f7a52}
 .prof i.dn{color:#ff9aa8;border-color:#7a2f3c}
@@ -732,7 +735,7 @@ body.touch .hud-bottom{padding-bottom:276px}
           <div class="comp-btns"><button class="chip" id="cFilt" type="button">Vue : salles</button><button class="chip" id="cAuto" type="button">Auto : non</button><button class="chip" id="cClose" type="button">Tout fermer · V</button><button class="chip" id="cOpen" type="button">Tout ouvrir</button><button class="chip" id="cBig" type="button">Agrandir</button><button class="chip" id="cRecall" type="button" hidden>Rappeler l’équipe · E</button><button class="chip" id="cView" type="button" hidden>Voir mon vaisseau</button></div>
         </div>
       </div>
-      <p class="hint" id="keyHint"><kbd>Souris</kbd> viser et orienter · <kbd>Clic gauche</kbd> canons et laser · <kbd>Clic droit</kbd> missiles · <kbd>ZQSD</kbd> pousser et glisser · <kbd>L</kbd> cap fixe · <kbd>O</kbd> boucliers · <kbd>I</kbd> moteurs · <kbd>Maj</kbd> boost · <kbd>1 2 3</kbd> priorité d’énergie · <kbd>N</kbd> nucléaire · <kbd>C</kbd> croisière · <kbd>J</kbd> saut de sillage · <kbd>E</kbd> amarrer ou aborder · <kbd>K</kbd> assaut des marines · <kbd>X</kbd> capsules (siège éjectable sur un petit appareil) · <kbd>T</kbd> remorqueur · <kbd>F1</kbd> ordinateur de bord · <kbd>M</kbd> carte · <kbd>R</kbd> tracteur · <kbd>B</kbd> plan du vaisseau · <kbd>V</kbd> portes · <kbd>Molette</kbd> zoom · <kbd>F2</kbd> performances</p>
+      <p class="hint" id="keyHint"><kbd>Souris</kbd> viser et orienter · <kbd>Clic gauche</kbd> canons et laser · <kbd>Clic droit</kbd> missiles · <kbd>H</kbd> contre-mesures · <kbd>ZQSD</kbd> pousser et glisser · <kbd>L</kbd> cap fixe · <kbd>O</kbd> boucliers · <kbd>I</kbd> moteurs · <kbd>Maj</kbd> boost · <kbd>1 2 3</kbd> priorité d’énergie · <kbd>N</kbd> nucléaire · <kbd>C</kbd> croisière · <kbd>J</kbd> saut de sillage · <kbd>E</kbd> amarrer ou aborder · <kbd>K</kbd> assaut des marines · <kbd>X</kbd> capsules (siège éjectable sur un petit appareil) · <kbd>T</kbd> remorqueur · <kbd>F1</kbd> ordinateur de bord · <kbd>M</kbd> carte · <kbd>R</kbd> tracteur · <kbd>B</kbd> plan du vaisseau · <kbd>V</kbd> portes · <kbd>Molette</kbd> zoom · <kbd>F2</kbd> performances</p>
     </div>
     <div class="prompt-wrap"><button id="prompt" class="prompt" type="button" hidden disabled></button></div>
     <div class="radar-wrap" id="radarWrap">
@@ -747,7 +750,7 @@ body.touch .hud-bottom{padding-bottom:276px}
   <div id="touchBtns">
     <button class="tbtn" id="tNuke" type="button" hidden>Nucléaire</button><button class="tbtn" id="tPower" type="button">Énergie</button>
     <button class="tbtn" id="tCruise" type="button">Croisière</button><button class="tbtn" id="tBoost" type="button">Boost</button>
-    <button class="tbtn" id="tAlt" type="button">Missiles</button><button class="tbtn" id="tFire" type="button">Tir</button>
+    <button class="tbtn" id="tCM" type="button" hidden>Leurres</button><button class="tbtn" id="tAlt" type="button">Missiles</button><button class="tbtn" id="tFire" type="button">Tir</button>
   </div>
 </div>
 
@@ -1227,6 +1230,65 @@ const MODS={
   T:{name:'Grappin d’abordage',short:'Grappin',tier:2,cost:150,mass:1.2,hp:1.2,weapon:true,desc:'Crochet à câble : la cible accrochée est tirée vers le corsaire. Clic droit.'},
   w:{name:'Mitrailleuse d’aile',short:'Mitrailleuse',tier:1,cost:80,mass:0.8,hp:1.2,weapon:true,desc:'Mitrailleuse fixe au bout de l’aile : elle tire droit devant, dans l’axe du vaisseau. Clic gauche.'}
 };
+/* ---------- missiles spécialisés et contre-mesures des petits appareils ----------
+   Réservés aux intercepteurs, chasseurs et chasseurs-bombardiers humains, sur les pylônes d'aile (le Brise-Coque :
+   chasseurs-bombardiers seulement). Le guidage décide de ce qui les trompe :
+     radar    (actif)        : leurres radar (LC-4), nuée (LC-18), brouillard (LC-12) ; furtivité (LC-6)
+     ir       (infrarouge)   : leurres thermiques (LC-1), brouillard ; moteurs coupés = plus de chaleur à suivre
+     passif   (émissions)    : leurre énergétique (LC-15) ; furtivité ; cible discrète
+     optique  (silhouette)   : leurres optiques (LC-9), nuée, brouillard ; champ d'astéroïdes ou d'épaves encombré
+     inertiel (puis radar)   : aveugle à tout leurre tant qu'il vole sur sa centrale, puis radar actif
+   Ogive : frag (fragmentation, contre les appareils légers), disp (fléchettes en salve), perf (perforante compacte),
+   pen (pénétrante : elle traverse la coque et explose dedans), brech (brèche interne et incendie), thrust (étouffe la
+   propulsion). Les chiffres affichés sont ceux de la fiche ; le jeu les traduit à son échelle (vitesse × 0,09, G → virage). */
+const SMIS=[
+  {c:'α',id:'M-3',n:'Vif-Éclair',role:'Interception légère',len:2.4,dia:18,kg:95,kmh:4800,rng:800,g:32,seek:'radar',guid:'Radar actif (chasseurs, intercepteurs)',wh:'frag',whT:'Petite fragmentation (moteurs, surfaces de contrôle)',look:'Corps fin, pointe blanche, ailettes courtes jaunes',plus:'Très rapide et très agile',moins:'Peu efficace contre les cibles blindées',
+    W:{dmg:3.6,rad:5,sdmg:16,reload:4.5,pdk:0.6,size:1},s:{r:0.9,body:0xc9cfd7,hi:0xeef1f4,nose:0xffffff,nk:'cone',fin:0xf0c020,fh:1.2,fl:0.1}},
+  {c:'β',id:'M-7',n:'Brûle-Aile',role:'Poursuite thermique',len:3,dia:22,kg:150,kmh:3600,rng:700,g:24,seek:'ir',guid:'Infrarouge (moteurs, chaleur)',wh:'frag',whT:'Fragmentation légère (propulseurs, radiateurs)',look:'Nez noir facetté, bandes orange, ailettes rouges',plus:'Accroche tout ce qui chauffe',moins:'Vulnérable aux leurres thermiques',
+    W:{dmg:4.6,rad:5.5,sdmg:20,reload:5.5,pdk:0.7,size:1},s:{r:1,body:0xb4bac4,hi:0xd6dbe2,nose:0x1c1e24,nose2:0x3e434e,nk:'facet',fin:0xd83030,fh:1.5,fl:0.14,bands:[[0.3,0.35,0xff8a20],[0.55,0.6,0xff8a20]]}},
+  {c:'γ',id:'M-11',n:'Foudre Grise',role:'Attaque radar',len:4.2,dia:28,kg:310,kmh:5200,rng:1000,g:14,seek:'radar',guid:'Radar actif',wh:'frag',whT:'Fragmentation moyenne (chasseurs lourds, petits transports)',look:'Gris clair, nez conique, ailettes repliables',plus:'Rapide et puissant',moins:'Moins agile ; sensible aux leurres radar',
+    W:{dmg:7.5,rad:7,sdmg:32,reload:8,pdk:0.55,size:2},s:{r:1.1,body:0xb9bdc2,hi:0xdcdfe2,nose:0xe6e9ec,nk:'cone',fin:0x8e949a,fh:0.9,fl:0.12,canard:[0.62,0.68,0.6]}},
+  {c:'δ',id:'M-14',n:'Veilleur',role:'Attaque passive',len:3.5,dia:24,kg:230,kmh:4000,rng:900,g:18,seek:'passif',guid:'Passif (émissions radar de la cible)',wh:'perf',whT:'Perforante compacte (antennes, systèmes externes)',look:'Bleu nuit mat, antennes affleurantes, marquages violets',plus:'Ignore les leurres radar et thermiques',moins:'Perd son avantage contre un vaisseau silencieux',
+    W:{dmg:8,rad:5,sdmg:26,reload:7,pdk:0.65,size:2},s:{r:1,body:0x1e2a48,hi:0x2c3a60,nose:0x34446a,nk:'ogive',fin:0x24304e,fh:1.1,fl:0.12,bands:[[0.4,0.44,0x9a5ae0],[0.7,0.73,0x9a5ae0]],ant:0x7a8ab0}},
+  {c:'ε',id:'M-20',n:'Croc-de-Lune',role:'Pénétration anti-vaisseau',len:6.8,dia:55,kg:1250,kmh:2700,rng:600,g:8,seek:'radar',guid:'Radar actif (vaisseaux moyens et grands)',wh:'pen',whT:'Ogive pénétrante : explose après avoir traversé la coque',look:'Noir massif, pointe renforcée, grandes ailettes',plus:'Défonce les grosses coques',moins:'Lent, facile à repérer',
+    W:{dmg:13,rad:8,sdmg:60,reload:12,pdk:0.6,size:3,pen:9},s:{r:1.7,body:0x24272d,hi:0x34383f,nose:0x6a6e76,nk:'reinf',fin:0x2c2f35,fe:0x50545c,fh:2.6,fl:0.2}},
+  {c:'ζ',id:'M-23',n:'Brise-Coque',role:'Attaque lourde anti-frégate',len:9,dia:78,kg:2600,kmh:2200,rng:800,g:5,seek:'radar',desig:true,guid:'Radar ou désignation alliée (vaisseaux lourds)',wh:'brech',whT:'Pénétrante à effet interne : ouvre une brèche',look:'Fuselage large, bandes noires et blanches, nez renforcé',plus:'Ouvre une frégate de l’intérieur',moins:'Réservé aux chasseurs-bombardiers ; très lent à virer',cats:['chbomb'],
+    W:{dmg:19,rad:10,sdmg:90,reload:16,pdk:0.5,size:3,pen:12,fire:0.8},s:{r:2.1,body:0xe8eaec,hi:0xf6f7f8,nose:0x5a5e66,nk:'reinf',fin:0x2a2d33,fh:2.2,fl:0.16,stripe:0x1c1e22}},
+  {c:'η',id:'M-27',n:'Faux-Spectre',role:'Attaque furtive optique',len:4.8,dia:30,kg:390,kmh:3300,rng:700,g:12,seek:'optique',guid:'Imagerie optique (silhouette de la cible)',wh:'perf',whT:'Perforante légère (capteurs, passerelle)',look:'Anguleux, noir mat, lentille bleutée',plus:'Insensible aux leurres radar et thermiques',moins:'Moins sûr si la cible est masquée ou au milieu des débris',
+    W:{dmg:8.5,rad:5,sdmg:28,reload:8,pdk:0.55,size:2},s:{r:1.2,body:0x17181c,hi:0x24262c,nose:0x6ad0ff,nk:'lens',fin:0x222429,fh:1.3,fl:0.16,facet:1}},
+  {c:'θ',id:'M-31',n:'Serre',role:'Combat tournoyant',len:2.9,dia:20,kg:135,kmh:3900,rng:500,g:42,seek:'radar',guid:'Radar actif courte portée',wh:'frag',whT:'Fragmentation légère',look:'Compact, ailettes orientables, marquages rouges',plus:'Le plus agile : vire dans un mouchoir',moins:'Courte portée',
+    W:{dmg:3.8,rad:5,sdmg:16,reload:4.5,pdk:0.75,size:1},s:{r:0.95,body:0xcdd2d8,hi:0xeceef1,nose:0xe8ebee,nk:'ogive',fin:0x9aa0a8,fh:1.3,fl:0.12,canard:[0.7,0.78,1.1],bands:[[0.5,0.56,0xe03a3a]]}},
+  {c:'ι',id:'M-36',n:'Pique-Soleil',role:'Frappe lourde rapprochée',len:7.5,dia:48,kg:1050,kmh:4600,rng:1000,g:7,seek:'inertiel',guid:'Inertiel, puis radar actif (cible désignée)',wh:'pen',whT:'Anti-vaisseau lourde (moteurs ou blindage)',look:'Long fuselage blanc, section centrale épaisse',plus:'Aveugle aux leurres pendant sa course inertielle',moins:'Tout droit au début : une cible qui vire l’esquive',
+    W:{dmg:15,rad:8,sdmg:70,reload:13,pdk:0.4,size:3,pen:8},s:{r:1.4,body:0xe9ecef,hi:0xf8f9fa,nose:0xd6dbe1,nk:'ogive',fin:0xb4bac2,fh:1.6,fl:0.14,bulge:[0.35,0.65,0.5]}},
+  {c:'κ',id:'M-42',n:'Éteigneur',role:'Neutralisation de propulsion',len:4.4,dia:34,kg:480,kmh:3000,rng:650,g:10,seek:'ir',guid:'Infrarouge (propulseurs actifs)',wh:'thrust',whT:'Effet dirigé qui étouffe la poussée',look:'Nez cuivré, ailettes épaisses, bandes jaunes et noires',plus:'La cible touchée se traîne plusieurs secondes',moins:'Peu de dégâts à la coque',
+    W:{dmg:3.4,rad:5,sdmg:18,reload:9,pdk:0.6,size:2,cut:4},s:{r:1.25,body:0x666a72,hi:0x82868e,nose:0xc8743a,nose2:0xe8a070,nk:'ogive',fin:0x4a4e56,fh:1.5,fl:0.2,hazard:[0.46,0.62]}},
+  {c:'λ',id:'M-48',n:'Écharde',role:'Salve anti-chasseurs',len:1.8,dia:14,kg:58,kmh:4200,rng:400,g:28,seek:'radar',guid:'Radar actif proche',wh:'disp',whT:'Fléchettes à dispersion (appareils légers)',look:'Petite fléchette argentée, ailettes triangulaires',plus:'Part en salve de trois',moins:'Inefficace contre le blindage',
+    W:{dmg:1.7,rad:3,sdmg:7,reload:6,pdk:0.9,size:1,salvo:3,gap:0.09},s:{r:0.8,body:0xd8dde4,hi:0xf4f6f8,nose:0xffffff,nk:'cone',fin:0xaab2bc,fh:1.4,fl:0.3,tri:1}},
+  {c:'μ',id:'M-55',n:'Ancre Noire',role:'Neutralisation de vaisseaux lourds',len:8.2,dia:62,kg:2100,kmh:1900,rng:900,g:4,seek:'passif',alt:'radar',guid:'Passif ou radar (émissions, grands contacts)',wh:'pen',whT:'Pénétrante + fragmentation interne (propulsion, énergie)',look:'Sombre, pointe épaisse, anneaux lumineux rouges',plus:'Coupe l’énergie et la poussée d’un gros vaisseau',moins:'Lente, facile à intercepter',
+    W:{dmg:17,rad:9,sdmg:80,reload:16,pdk:0.85,size:3,pen:10,cut:2.5,drain:0.5},s:{r:1.85,body:0x1a1c20,hi:0x2a2c32,nose:0x3a3d44,nk:'blunt',fin:0x26282d,fh:2,fl:0.16,rings:[0.32,0.58]}}];
+const SMIS_BY={};for(const S of SMIS){SMIS_BY[S.c]=S;S.cats=S.cats||['intercepteur','chasseur','chbomb'];}
+const SMIS_CODES=SMIS.map(S=>S.c).join('');
+// contre-mesures : une par appareil, déclenchée par H (ou le bouton tactile) ; les appareils ennemis les lancent seuls
+//   kind : flare (thermique), chaff (radar), stealth (signature réduite), optic, mixed, energy (leurre énergétique), swarm
+//   cats : catégories qui peuvent l'emporter ('chasseur+' : chasseur lourd, dont les pylônes portent une charge complète)
+const CMS=[
+  {id:'LC1',code:'LC-1',n:'Phénix',role:'Leurres thermiques',len:1.2,cats:['intercepteur','chasseur'],kind:'flare',ch:6,rech:18,use:'6 salves, recharge 18 s',vs:'Missiles infrarouges (Brûle-Aile, Éteigneur)',lim:'Inutile contre les missiles radar',look:'Boîtiers latéraux à trappes orange'},
+  {id:'LC4',code:'LC-4',n:'Miroir',role:'Leurres radar',len:1.6,cats:['chasseur','chbomb'],kind:'chaff',ch:4,rech:24,use:'4 salves, recharge 24 s',vs:'Missiles à radar actif (Vif-Éclair, Foudre Grise, Serre)',lim:'Moins efficace contre les missiles passifs',look:'Capsules argentées sous les ailes'},
+  {id:'LC6',code:'LC-6',n:'Silence',role:'Réduction de signature radar',len:2,cats:['chasseur+','chbomb'],kind:'stealth',ch:3,rech:40,dur:8,use:'3 activations de 8 s, recharge 40 s',vs:'Réduit l’acquisition radar et passive',lim:'N’arrête pas un missile déjà très proche',look:'Panneaux absorbants sombres'},
+  {id:'LC9',code:'LC-9',n:'Halo',role:'Leurres optiques',len:1.4,cats:['intercepteur','chasseur'],kind:'optic',ch:5,rech:20,use:'5 salves, recharge 20 s',vs:'Missiles optiques (Faux-Spectre)',lim:'Sans effet sur radar et infrarouge',look:'Petits éclats lumineux bleus'},
+  {id:'LC12',code:'LC-12',n:'Brouillard',role:'Contre-mesures polyvalentes',len:2.3,cats:['chbomb'],kind:'mixed',ch:3,rech:35,use:'3 salves mixtes, recharge 35 s',vs:'Radar, optique et infrarouge, efficacité modérée',lim:'Moins sûr qu’un leurre spécialisé',look:'Boîtier ventral à trois voyants'},
+  {id:'LC15',code:'LC-15',n:'Faux-Cœur',role:'Leurre de signature énergétique',len:2.1,cats:['chasseur+','chbomb'],kind:'energy',ch:2,rech:50,dur:12,use:'2 leurres de 12 s, recharge 50 s',vs:'Missiles passifs visant énergie et propulsion (Veilleur, Ancre Noire)',lim:'Le vaisseau se voit de plus loin pendant l’activation',look:'Nacelle arrière lumineuse'},
+  {id:'LC18',code:'LC-18',n:'Nuée',role:'Leurres contre les salves',len:1.8,cats:['intercepteur','chasseur'],kind:'swarm',ch:2,rech:45,use:'2 déploiements de mini-leurres, recharge 45 s',vs:'Salves radar et optiques à courte portée',lim:'Presque inutile contre les grosses ogives pénétrantes',look:'Compartiment dorsal de mini-leurres'}];
+const CM_BY={};for(const C of CMS)CM_BY[C.id]=C;
+// efficacité d'un leurre contre chaque guidage (chance de détourner le missile)
+const CM_EFF={radar:{chaff:0.8,swarm:0.65,mixed:0.5,energy:0.1},ir:{flare:0.85,mixed:0.5,energy:0.3,optic:0.1},passif:{energy:0.9,chaff:0.25,mixed:0.3,swarm:0.1},
+  optique:{optic:0.85,swarm:0.6,mixed:0.5,flare:0.15,chaff:0.1},inertiel:{chaff:0.8,swarm:0.65,mixed:0.5,energy:0.1}};
+// guidage des missiles d'origine (et des harpons corsaires qui en dérivent)
+const LSEEK={J:'ir',G:'radar',Y:'radar',a:'radar'};
+const SEEK_LBL={radar:'RADAR',ir:'IR',passif:'PASSIF',optique:'OPTIQUE',inertiel:'INERTIEL'};
+const SMIS_CATS=new Set(['intercepteur','chasseur','chbomb']);
+// modules : un par missile spécialisé (le pylône garde son point d'emport ; la masse suit celle du missile)
+for(const S of SMIS)MODS[S.c]={name:'Missile '+S.n+' ('+S.id+')',short:S.n,tier:S.kg>1000?3:S.kg>300?2:1,cost:Math.round(60+S.kg*0.12),mass:0.3+S.kg/1100,hp:1,weapon:true,desc:S.role+' : '+S.guid.toLowerCase()+'. '+S.plus+' ; '+S.moins.toLowerCase()+'.'};
 MODS.c={name:'Canon orbital titanesque',short:'Canon titan',tier:4,cost:9000,mass:40,hp:2.4,weapon:true,big:true,capOnly:true,desc:'Arme des structures orbitales : la plateforme pivote lentement dans un arc borné, charge, puis tire un trait qui traverse tout.'};
 // réacteur : le petit (R) ou le capital (r)
 const isR=c=>c==='R'||c==='r';
@@ -4015,7 +4077,7 @@ function loOf(M){
       if(pos('bli')||pos('eco'))O.push({id:'roq',name:'4 roquettes non guidées',pyl:{i:'u',o:'u'}});
       if(pos('feu')||pos('bli'))O.push({id:'mix',name:'2 missiles + 2 roquettes',pyl:{i:'a',o:'u'}});}
     else if(hp>=3&&slots.has('o'))O.push({id:'mix',name:'2 missiles + 2 roquettes',pyl:{i:'a',o:'u'}});
-    L.opts=O;L.note=hp<=2?'Appareil léger et rapide : deux pylônes utilisables, pas de roquettes.':hp>=4?'Structure renforcée : les quatre pylônes portent une charge complète.':'Charge moyenne : les pylônes extérieurs ne prennent que des roquettes.';
+    L.hp=hp;L.opts=O;L.note=hp<=2?'Appareil léger et rapide : deux pylônes utilisables, pas de roquettes.':hp>=4?'Structure renforcée : les quatre pylônes portent une charge complète.':'Charge moyenne : les pylônes extérieurs ne prennent que des roquettes.';
   }else if(base.key==='bombes'){
     const bays=mods.filter(m=>'bhl'.includes(m[0])).length||1,hasH=mods.some(m=>m[0]==='h'),k=Math.max(1,Math.round(bays/2+0.5*pos('cap')+0.5*pos('bli')-0.5*pos('vit')-0.5*Math.max(0,-(P.cap||0)))),u=M.cat==='bombardier'?[3,6,10]:[1,2,4];
     const O=[],nm=(n,w)=>n+(n>1?' bombes '+w+'s':' bombe '+w);if((hasH||pos('bli')||pos('cap'))&&(P.vit||0)<2)O.push({id:'l',name:nm(u[0]*k,'lourde'),code:'h',n:u[0]*k});
@@ -4039,7 +4101,17 @@ function defaultLo(M){const LO=loOf(M);if(!LO||!LO.opts)return '';
   const d=ownShip(M)||hullDef(M.hull),n={J:0,G:0,Y:0};for(const m of d.mods)if(m[0] in n)n[m[0]]++;return Object.keys(n).sort((a,b)=>n[b]-n[a])[0];}
 function loadoutOf(id){const M=MODEL_BY[id];if(!M)return '';const LO=loOf(M),lo=game.loadout&&game.loadout[id];return LO&&LO.opts&&LO.opts.some(o=>o.id===lo)?lo:defaultLo(M);}
 // gabarit du joueur : celui de son emport (les chasseurs embarqués, eux, se choisissent au décollage, sans reconstruire la coque)
-function shipKey(id){const M=MODEL_BY[id];if(!M)return id;const LO=loOf(M);if(!LO||!LO.opts||LO.key==='ftr')return id;const lo=loadoutOf(id);return lo!==defaultLo(M)?id+'@'+lo:id;}
+function shipKey(id){const M=MODEL_BY[id];if(!M)return id;const LO=loOf(M),ex=smisKey(M);if(!LO||!LO.opts||LO.key==='ftr')return ex?id+'@'+ex:id;const lo=loadoutOf(id);return lo!==defaultLo(M)||ex?id+'@'+lo+ex:id;}
+// missiles spécialisés et contre-mesures qu'un appareil peut emporter : selon sa catégorie et la charge de ses pylônes
+// (2 : léger et rapide, 3 : moyen, 4 : renforcé ; les chasseurs-bombardiers portent tout, Brise-Coque compris)
+const SMIS_KG={2:400,3:1300,4:2200,5:3000};
+function smisFac(M){const f=M.fac||'humain';return f==='humain'||f==='pirate';}
+function pylCap(M){if(M.cat==='chbomb')return 5;const LO=loOf(M);return(LO&&LO.hp)||3;}
+function misOptsOf(M){if(!M||!SMIS_CATS.has(M.cat)||!smisFac(M))return[];const d=ownShip(M)||hullDef(M.hull);if(!(d.pyl||[]).some(q=>q[3]==='i'))return[];const kg=SMIS_KG[pylCap(M)];return SMIS.filter(S=>S.cats.includes(M.cat)&&S.kg<=kg);}
+function cmOptsOf(M){if(!M||!SMIS_CATS.has(M.cat)||!smisFac(M))return[];const hv=M.cat==='chasseur'&&pylCap(M)>=4;return CMS.filter(C=>C.cats.some(c=>c===M.cat||(c==='chasseur+'&&hv)));}
+function smisSel(M){const c=game.smis&&game.smis[M.id];return c&&misOptsOf(M).some(S=>S.c===c)?c:'';}
+function cmSel(M){const c=game.scm&&game.scm[M.id];return c&&cmOptsOf(M).some(C=>C.id===c)?c:'';}
+function smisKey(M){const a=smisSel(M),c=cmSel(M);return a||c?'~'+a+'~'+c:'';}
 // Ombre-7 : chaque exemplaire sort de l'atelier avec un petit défaut, tiré au début de la partie
 for(const M of MODELS)if(M.trait==='defaut')M.flaw=[['spd','vitesse'],['acc','accélération'],['turn','rotation'],['energy','énergie']][(Math.random()*4)|0];
 const UNIQ_TPL={};
@@ -4102,7 +4174,7 @@ function profileMods(d,M,spec){
 // puissance de feu d'un module : les armes ajoutées pour le Feu sont compensées, la puissance reste celle du profil
 function wpow(code){const W=WEAP[code];if(!W||W.kind==='pd')return 0;if(W.kind==='laser')return W.dps;if(W.kind==='gun')return W.dmg/W.cd;return W.dmg*(W.salvo||1)/(W.reload||W.cd||1);}
 function modelTpl(M,lo){
-  const B=BRANDS[M.b],d=ownShip(M)||hullDef(M.hull),spec=modelSpec(M),info=modelInfo(M),P=M.P,LO=loOf(M),sel=lo||defaultLo(M);
+  const lp=String(lo||'').split('~'),B=BRANDS[M.b],d=ownShip(M)||hullDef(M.hull),spec=modelSpec(M),info=modelInfo(M),P=M.P,LO=loOf(M),sel=lp[0]||defaultLo(M);
   const small=SMALL_CATS.has(M.cat);
   // les petits appareils n'ont pas de sas : ils se posent directement sur le relais
   let mods=d.mods.concat(profileMods(d,M,spec),(M.extra||[]).map(([cd,fx,fy])=>[cd,d.L*fx,d.H/2+d.H*fy])).filter(m=>!(small&&m[0]==='I')),bomb=null;
@@ -4112,11 +4184,14 @@ function modelTpl(M,lo){
   if(LO&&LO.key==='bombes'){bomb=LO.opts.find(o=>o.id===sel)||LO.opts[0];mods=mods.map(m=>'bhl'.includes(m[0])?[bomb.code,m[1],m[2]]:m);}
   // armes d'aile : selon l'emport pour les chasseurs, imposées pour les chasseurs-bombardiers et les bombardiers
   const opt=LO&&LO.key==='ail'?(LO.opts||[]).find(o=>o.id===sel):null;
-  const pyl=(d.pyl||[]).map(([x,y,len,sl])=>{const code=opt?opt.pyl&&opt.pyl[sl]:M.cat==='chbomb'?(sl==='i'?'a':'u'):M.cat==='bombardier'?'d':'';return code?[code,x,y,len]:null;}).filter(Boolean);
+  const SM=SMIS_BY[lp[1]],pyl=(d.pyl||[]).map(([x,y,len,sl])=>{let code=opt?opt.pyl&&opt.pyl[sl]:M.cat==='chbomb'?(sl==='i'?'a':'u'):M.cat==='bombardier'?'d':'';
+    // missile spécialisé choisi : sur les pylônes intérieurs, et sur les extérieurs s'il ne pèse pas plus de 500 kg
+    if(code==='a'&&SM&&(sl==='i'||SM.kg<=500))code=SM.c;return code?[code,x,y,len]:null;}).filter(Boolean);
   // tuyères plus grandes pour les rapides, plus petites pour les lents ; coque mate et sobre pour les discrets
   const kv=clamp(1+0.3*(P.vit||0),0.7,1.6),kh=clamp(1+0.14*(P.vit||0),0.85,1.3);
   const t=buildUnique(Object.assign({},d,{liv:B.liv,tint:B.tint||d.tint||(P.dis>0?'mat':undefined),tag:M.tag,pirate:M.fac==='pirate',fac:M.fac||'humain',pal:B.pal,emb:FEMBLEM[M.fac||'humain'],seed:M.fac==='pirate'?(d.seed||7)+M.id.length*13+M.n.charCodeAt(0):d.seed,st:spec,info,prof:P,bombCap:['bombardier','chbomb','furtif'].includes(M.cat),
     clean:d.clean||P.dis>0||P.eco>0,edge:P.bli<0?false:d.edge,engines:(d.engines||[]).map(e=>Object.assign({},e,{len:e.len*kv,h:e.h*kh,fast:P.vit>0})),mods,pyl}));
+  t.cm=lp[2]&&CM_BY[lp[2]]?lp[2]:'';
   if(bomb){const bays=t.mods.filter(m=>m.code===bomb.code);bays.forEach((m,i)=>{m.sv=Math.floor(bomb.n/bays.length)+(i<bomb.n%bays.length?1:0);});}
   const hk=1+0.12*(P.bli||0);if(hk!==1)for(let i=0;i<t.hp.length;i++)t.hp[i]*=hk;
   let F0=0,F1=0;for(const m of t.mods){if(m.ex===2)continue;const p=wpow(m.code);F1+=p;if(!m.ex)F0+=p;}
@@ -4237,6 +4312,10 @@ const WEAP={
 };
 // toutes les armes frappent 50 % plus fort
 for(const k in WEAP){const W=WEAP[k];for(const f of ['dmg','sdmg','dps','sdps'])if(W[f])W[f]*=1.5;}
+// armes des missiles spécialisés : vitesse de la fiche × 0,09, virage d'après les G, durée de vol d'après la portée
+for(const S of SMIS){const sp=S.kmh*0.09,life=S.rng/sp*1.6+0.8;
+  WEAP[S.c]=Object.assign({kind:'missile',wing:true,salvo:1,gap:0,range:S.rng,sp0:S.kg>1000?90:140,spMax:sp,acc:sp*(S.kg>1000?0.55:S.kg>300?0.8:1.1),turn:1+0.14*S.g,life,fire:S.kg>1000?0.5:0.25,
+    seek:S.seek,alt:S.alt,wh:S.wh,sm:S,cmK:S.desig?0.6:1,inert:S.seek==='inertiel'?0.45*life:0},S.W);}
 // armes bricolées des corsaires : les mêmes tourelles et lanceurs que les humains, modifiés à l'atelier du clan
 const PWEAP={};{const mod=(k,o)=>{PWEAP[k]=Object.assign({},WEAP[k],o(WEAP[k]));};
   mod('C',W=>({scatter:3,spread:0.11,dmg:W.dmg*0.55,sdmg:W.sdmg*0.6,range:W.range*0.8,life:W.life*0.8,pc:'#ff9a2a'}));
@@ -6342,6 +6421,10 @@ const RECIPES={
   missTone(r){const [L]=mkBuf(0.075,1);let p=0;
     for(let i=0;i<L.length;i++){const t=i/SR;p+=1560/SR;L[i]=(Math.sin(p*TAU)+0.3*Math.sin(3*p*TAU))*Math.min(1,t/0.003)*Math.max(0,Math.min(1,(0.065-t)/0.008))*0.5;}
     return finish([L],0.6,6200);},
+  // contre-mesure : coup sourd de l'éjecteur et souffle de la cartouche
+  cmPop(r){const [L]=mkBuf(0.32,1);let ph=0,lp=0;
+    for(let i=0;i<L.length;i++){const t=i/SR;ph+=swp(t,0.05,170,70)/SR;lp+=(r()-lp)*0.35;L[i]=Math.sin(ph*TAU)*ev(t,0.002,0.03)*0.8+lp*ev(t,0.004,0.09)*0.7;}
+    return finish([L],0.6,3800);},
   pickup(r){const [L]=mkBuf(0.16,1),f=1+Math.abs(r())*0.12;let ph=0;
     for(let i=0;i<L.length;i++){const t=i/SR;ph+=swp(t,0.04,520*f,860*f)/SR;L[i]=(Math.sin(ph*TAU)+0.12*Math.sin(2*ph*TAU))*ev(t,0.003,0.05);}return finish([L],0.55,3500);},
   crate(r){const [L]=mkBuf(0.5,1);
@@ -6435,7 +6518,7 @@ const SND_JOBS=[
   ['pd',r=>RECIPES.pd(r),3],['fire',r=>RECIPES.fire(r),3],['decompress',r=>RECIPES.decompress(r),3],['weldSnap',r=>RECIPES.weldSnap(r),1],['foam',r=>RECIPES.foam(r),2],
   ['click',r=>RECIPES.click(r),1],['buy',r=>RECIPES.mallet(r,[523,784],0.08,0.5),1],['fail',r=>RECIPES.mallet(r,[330,247],0.14,0.7),1],
   ['contract',r=>RECIPES.bell(r,[523,659,784,1047],0.09),1],['scan',r=>RECIPES.bell(r,[659,784,988],0.1),1],['dock',r=>RECIPES.bell(r,[392,587],0.12),1],
-  ['alarm',r=>RECIPES.alarm(r),1],['lockTone',r=>RECIPES.lockTone(r),1],['missTone',r=>RECIPES.missTone(r),1],['pickup',r=>RECIPES.pickup(r),3],['crate',r=>RECIPES.crate(r),1],['power',r=>RECIPES.power(r),1],
+  ['alarm',r=>RECIPES.alarm(r),1],['lockTone',r=>RECIPES.lockTone(r),1],['missTone',r=>RECIPES.missTone(r),1],['cmPop',r=>RECIPES.cmPop(r),2],['pickup',r=>RECIPES.pickup(r),3],['crate',r=>RECIPES.crate(r),1],['power',r=>RECIPES.power(r),1],
   ['cruiseOn',r=>RECIPES.cruise(r,true),1],['cruiseOff',r=>RECIPES.cruise(r,false),1],['shock',r=>RECIPES.shock(r),2],['arc',r=>RECIPES.arc(r),1],
   ['nukeLaunch',r=>RECIPES.nukeLaunch(r),1],['nuke',r=>RECIPES.nuke(r),1],['horn',r=>RECIPES.horn(r),1],['warp',r=>RECIPES.warp(r),1],
   ['doorClose',r=>RECIPES.door(r,true),2],['doorOpen',r=>RECIPES.door(r,false),2],['seal',r=>RECIPES.seal(r),2],
@@ -6453,7 +6536,7 @@ const SNDV={cannon:[0.14,0.1,5,45],zap:[0.09,0.1,4,55],howitzer:[0.46,0.28,3,0],
   boomS:[0.36,0.3,5,30],boomM:[0.52,0.36,3,0],boomL:[0.7,0.42,3,0],crack:[0.28,0.22,3,70],metal:[0.06,0.12,3,90],rock:[0.15,0.08,3,70],
   shieldHit:[0.15,0.3,3,70],shieldDown:[0.42,0.4,2,0],shieldUp:[0.24,0.36,2,0],pd:[0.07,0.05,2,70],fire:[0.07,0.08,2,160],decompress:[0.14,0.26,2,160],
   weldSnap:[0.36,0.26,2,0],foam:[0.06,0.08,2,200],click:[0.16,0.04,3,0],buy:[0.12,0.22,2,0],fail:[0.14,0.22,2,0],contract:[0.13,0.36,1,0],scan:[0.13,0.36,1,0],dock:[0.12,0.32,1,0],
-  alarm:[0.12,0.2,1,900],lockTone:[0.12,0.03,1,0],missTone:[0.12,0.02,2,0],pickup:[0.05,0.1,3,70],crate:[0.08,0.22,2,0],power:[0.2,0.14,2,0],cruiseOn:[0.24,0.28,1,0],cruiseOff:[0.2,0.28,1,0],shock:[0.42,0.42,2,0],
+  alarm:[0.12,0.2,1,900],lockTone:[0.12,0.03,1,0],missTone:[0.12,0.02,2,0],cmPop:[0.22,0.14,3,60],pickup:[0.05,0.1,3,70],crate:[0.08,0.22,2,0],power:[0.2,0.14,2,0],cruiseOn:[0.24,0.28,1,0],cruiseOff:[0.2,0.28,1,0],shock:[0.42,0.42,2,0],
   nukeLaunch:[0.5,0.36,1,0],nuke:[0.85,0.5,1,0],horn:[0.5,0.45,2,0],warp:[0.55,0.42,2,0],doorClose:[0.26,0.18,3,60],doorOpen:[0.22,0.18,3,60],seal:[0.07,0.2,2,150],
   dockServo:[0.2,0.15,2,200],dockClamp:[0.32,0.22,2,60],dockHiss:[0.3,0.32,2,100],dockOk:[0.14,0.3,1,0],cutter:[0.16,0.15,2,0],pod:[0.2,0.18,4,70]};
 // réverbération : une queue sombre et lisse
@@ -6654,7 +6737,7 @@ const music={
 /* =========================================================
    État du jeu
    ========================================================= */
-const game={faction:null,ship:'epervier',owned:[],loadout:{},torpLv:1,tut:{dock:0,board:0},rankFloor:0,autoDoors:false,sfxVol:0.8,crewLost:0,credits:5000,design:DEFAULT_DESIGN.slice(),livery:'acier',lv6:true,hull:'std',capDesign:CAP_PRESETS[0].rows.slice(),cargo:[0,0,0],muted:false,music:true,complete:false,kills:0,mined:0,earned:0,time:0,leviathan:false,stock:{},contract:null,lost:null,arenaBest:0,contracts:0,route:[],visited:{halcyon:1}};
+const game={faction:null,ship:'epervier',owned:[],loadout:{},smis:{},scm:{},torpLv:1,tut:{dock:0,board:0},rankFloor:0,autoDoors:false,sfxVol:0.8,crewLost:0,credits:5000,design:DEFAULT_DESIGN.slice(),livery:'acier',lv6:true,hull:'std',capDesign:CAP_PRESETS[0].rows.slice(),cargo:[0,0,0],muted:false,music:true,complete:false,kills:0,mined:0,earned:0,time:0,leviathan:false,stock:{},contract:null,lost:null,arenaBest:0,contracts:0,route:[],visited:{halcyon:1}};
 let player=null,playerTpl=null;
 let rocks=[],wrecks=[],enemies=[],allies=[],pickups=[],crates=[],spacers=[],bullets=[],missiles=[],beams=[],parts=[],floaters=[],shocks=[],flashes=[],blasts=[],trails=[];
 let state='loading',paused=false,docked=false,mapOpen=false,completeOpen=false,yardOpen=false,running=false;
@@ -6681,7 +6764,7 @@ const PWM={
 };
 let powerKey='bal';
 
-function serialize(){return{faction:game.faction,ship:game.ship,owned:game.owned.slice(),loadout:Object.assign({},game.loadout),torpLv:game.torpLv,credits:game.credits,design:game.design,livery:game.livery,lv6:true,hull:game.hull,capDesign:game.capDesign,cargo:game.cargo,muted:game.muted,music:game.music,complete:game.complete,kills:game.kills,mined:game.mined,earned:game.earned,time:game.time,leviathan:game.leviathan,structDown:game.structDown||{},scanned:ALL_PLANETS.filter(p=>p.scanned).map(p=>p.id),stock:game.stock,contract:null,missionSystemVersion:MISSION_SYSTEM_VERSION,shipComputerVersion:SHIP_COMPUTER_VERSION,navDest:game.navDest||null,lost:game.lost?{x:Math.round(game.lost.x),y:Math.round(game.lost.y),cargo:game.lost.cargo.slice(),sys:game.lost.sys||'halcyon'}:null,arenaBest:game.arenaBest,contracts:game.contracts,tut:game.tut,rankFloor:game.rankFloor,prog:1,autoDoors:game.autoDoors,sfxVol:game.sfxVol,world:WS*GS*PS,relay:STATION.relay.id,sys:SYS.id,route:game.route.slice(),visited:game.visited,mis:misSave()};}
+function serialize(){return{faction:game.faction,ship:game.ship,owned:game.owned.slice(),loadout:Object.assign({},game.loadout),smis:Object.assign({},game.smis||{}),scm:Object.assign({},game.scm||{}),torpLv:game.torpLv,credits:game.credits,design:game.design,livery:game.livery,lv6:true,hull:game.hull,capDesign:game.capDesign,cargo:game.cargo,muted:game.muted,music:game.music,complete:game.complete,kills:game.kills,mined:game.mined,earned:game.earned,time:game.time,leviathan:game.leviathan,structDown:game.structDown||{},scanned:ALL_PLANETS.filter(p=>p.scanned).map(p=>p.id),stock:game.stock,contract:null,missionSystemVersion:MISSION_SYSTEM_VERSION,shipComputerVersion:SHIP_COMPUTER_VERSION,navDest:game.navDest||null,lost:game.lost?{x:Math.round(game.lost.x),y:Math.round(game.lost.y),cargo:game.lost.cargo.slice(),sys:game.lost.sys||'halcyon'}:null,arenaBest:game.arenaBest,contracts:game.contracts,tut:game.tut,rankFloor:game.rankFloor,prog:1,autoDoors:game.autoDoors,sfxVol:game.sfxVol,world:WS*GS*PS,relay:STATION.relay.id,sys:SYS.id,route:game.route.slice(),visited:game.visited,mis:misSave()};}
 // rang de pilote : missions remplies, ou au moins le vaisseau qu'on pilotait déjà (anciennes sauvegardes)
 function rankAt(n){let r=0;for(let i=0;i<SHIP_RANKS.length;i++)if(n>=SHIP_RANKS[i].need)r=i;return r;}
 // tous les vaisseaux sont disponibles au chantier (la progression par missions est mise de côté)
@@ -6711,6 +6794,7 @@ function applySave(d){
   game.faction=FACTIONS.some(f=>f.playable&&f.id===d.faction)?d.faction:null;game.ship=MODEL_BY[d.ship]?d.ship:OLD_SHIP[d.ship]||'epervier';
   game.owned=Array.isArray(d.owned)?d.owned.filter(id=>MODEL_BY[id]):[];if(!game.owned.includes(game.ship))game.owned.push(game.ship);
   game.loadout={};if(d.loadout&&typeof d.loadout==='object')for(const k in d.loadout)if(MODEL_BY[k]&&typeof d.loadout[k]==='string')game.loadout[k]=d.loadout[k];
+  game.smis={};game.scm={};for(const [o,T] of [[d.smis,SMIS_BY],[d.scm,CM_BY]])if(o&&typeof o==='object')for(const k in o)if(MODEL_BY[k]&&T[o[k]])(T===SMIS_BY?game.smis:game.scm)[k]=o[k];
   game.torpLv=clamp(d.torpLv|0,1,10);
   // v6 : l'ancienne livrée par défaut devient l'acier sombre (l'ivoire reste disponible au chantier)
   if(!d.lv6&&(!d.livery||d.livery==='ivoire'))game.livery='acier';
@@ -7372,6 +7456,8 @@ function makeShip(tpl,kind){
   if(tpl.emi){b.emi.set(tpl.emi);b.lc.set(tpl.lc);b.dist.set(tpl.dist);b.ndirty=false;}
   b.recount();b.orig=b.cells;b.coreOrig=b.coreN;b.kind=kind;b.ship=true;b.tpl=tpl;b.modOf=tpl.modOf;
   b.mods=tpl.mods.map((m,i)=>({len:m.len,sv:m.sv,code:m.code,lx:m.lx,ly:m.ly,total:m.total,alive:m.total,active:m.total>0,mx:m.mx,my:m.my,n:m.n,ang:0,cool:rnd(0.3,1.2),reload:WING_CODES.has(m.code)?0:rnd(0.5,2),salvo:0,salvoT:0,barrel:0,recoil:0,tgt:null,eff:1,manned:false,burnN:0,ti:i}));
+  // contre-mesure : celle du gabarit ; les petits appareils humains et corsaires de l'IA en reçoivent une au hasard
+  if(tpl.cm)cmInit(b,tpl.cm);else if(kind!=='player'&&tpl.small&&tpl.model){const L=cmOptsOf(tpl.model);if(L.length&&Math.random()<0.7)cmInit(b,L[(Math.random()*L.length)|0].id);}
   b.nozzles=tpl.nozzles;b.samples=tpl.samples;b.emit=0;b.dying=false;b.tplOff={dx:0,dy:0};b.extraMass=0;b.pw=PWM.bal;b.shMul=1;b.engEff=1;b.shTake=1;
   b.st=statsOf(tpl,tpl.mass,null,tpl.cells);b.energy=b.st.energyMax;
   b.shield=(tpl.count.S||tpl.count.s)&&b.st.shieldMax>0?makeShield(b):null;
@@ -7551,6 +7637,8 @@ function launchMissile(b,m,W,own,target,tx,ty,mul){
   let lx=m.lx,ly=m.ly;const Hh=b.tpl.faction==='humain'&&hatchOf(m),hk=Hh&&Hh.cells?Math.sqrt(Math.min(1,W.salvo/Hh.t.length)):1;
   if(Hh){const k=(m.tube=((m.tube||0)+1)%Hh.t.length);lx+=Hh.t[k][0];ly+=Hh.t[k][1];m.hfired=(m.hfired||0)|1<<k;m.hold=0.5;m.hatch=Math.max(m.hatch||0,0.75);}
   const mx=b.wx(lx,ly),my=b.wy(lx,ly);
+  // cible en signature réduite (LC-6) : radar et passif n'accrochent qu'à courte portée
+  if(target&&target.cmSil>0&&W.kind==='missile'&&!W.torp){const sk=W.seek||LSEEK[m.code];if(sk&&sk!=='ir'&&sk!=='optique'&&hyp(target.x-mx,target.y-my)>(W.range||900)*0.35)target=null;}
   if(Hh){const big=W.size||2;for(let k=0;k<2+big;k++)addP(mx,my,b.vx+rnd(-25,25),b.vy+rnd(-25,25),rnd(0.5,1.1),10,null,1.4,big>2?2:1);flashAt(mx,my,6+big*3,'#ffd9a0',0.06);}
   let ang;
   if(W.mine)ang=b.a+PI+rnd(-0.5,0.5);
@@ -7561,6 +7649,7 @@ function launchMissile(b,m,W,own,target,tx,ty,mul){
   else ang=b.a+(Math.random()<0.5?-1:1)*rnd(0.9,1.6);
   const TL=W.torp?(b===player?game.torpLv||1:4):0,T=TL?torpStats(TL):W;
   missiles.push({dud:!!(W.dud&&Math.random()<W.dud),x:mx,y:my,vx:b.vx+Math.cos(ang)*W.sp0,vy:b.vy+Math.sin(ang)*W.sp0,a:ang,own,kind:W.kind,code:m.code,W,target,tx,ty,life:W.life,dmg:T.dmg*mul*hk,rad:T.rad*Math.sqrt(hk),sdmg:T.sdmg*mul*hk,sp:W.sp0,trail:0,dead:false,tl:target?(m.tgtL||null):null,age:0,size:TL?(TL>=7?8:7):W.size||2,src:b,armed:W.kind!=='nuke',torp:TL});
+  if(W.inert){const q=missiles[missiles.length-1];if(target){const tt=hyp(target.x-mx,target.y-my)/W.spMax;q.ipx=target.x+target.vx*tt;q.ipy=target.y+target.vy*tt;}else{q.ipx=tx;q.ipy=ty;}}
   if(W.kind==='rocket')sfx.rocket(mx,my,W.size);
   else if(W.kind==='nuke'){sfx.nukeLaunch();floater(mx,my-14,'TETE NUCLEAIRE LANCEE','#ffd23c');toast('Missile nucléaire lancé','Éloigne-toi du point d’impact : l’onde de choc ne fait pas de différence.','danger');}
   else sfx.missile(mx,my,W.size);
@@ -7606,7 +7695,7 @@ function shipWeapons(b,dt,tx,ty,primary,secondary,target,own){
       const rng=pl?W.range:W.erange;
       if(primary&&okS&&(!pl||b.energy>1)&&(pl||hyp(tx-mx,ty-my)<rng*1.5)){if(pl)b.energy-=W.drain*dt;firingLaser=Math.max(firingLaser,W.heavy?2:1);fireLaser(b,m,W,mx,my,dt,own,(pl?mul:mul*0.55)*eff,rng);}
     }else{
-      if(!pl&&target===player&&W.kind==='missile'&&!W.mine&&!W.aimPt&&b.dmLock!==false&&hyp(tx-mx,ty-my)<(W.range||900)*1.15)lockBy=game.time;
+      if(!pl&&target===player&&W.kind==='missile'&&!W.mine&&!W.aimPt&&b.dmLock!==false){const dd=hyp(tx-mx,ty-my),sk=W.seek||LSEEK[m.code];if(dd<(W.range||900)*1.15&&!(player.cmSil>0&&sk!=='ir'&&sk!=='optique'&&dd>(W.range||900)*0.35))lockBy=game.time;}
       m.reload-=dt*eff;
       const want=W.kind==='nuke'?(pl&&b.nukeReq):secondary,Hh=hf&&hatchOf(m),full=Hh&&W.kind!=='nuke';
       if(Hh){if(m.hold>0)m.hold-=dt;const op=m.salvo>0||m.hold>0;m.hatch=clamp((m.hatch||0)+(op?dt/0.16:-dt/0.35),0,1);if(!m.hatch)m.hfired=0;}
@@ -7651,13 +7740,130 @@ function pointDefense(b,m,W,mx,my,own){
 function updateLockWarn(dt){
   const p=player;let lvl=0,dm=1e9;lockW.ms.length=0;
   if(p&&!p.dead&&!p.dying){
-    for(const q of missiles)if(q.target===p&&!q.dead&&q.kind!=='rocket'&&!q.W.mine&&q.own!==0){const d=hyp(q.x-p.x,q.y-p.y);if(d<dm)dm=d;if(lockW.ms.length<8)lockW.ms.push(q);}
+    for(const q of missiles)if(q.target===p&&!q.dead&&q.kind!=='rocket'&&!q.W.mine&&q.own!==0){const d=hyp(q.x-p.x,q.y-p.y);if(d<dm){dm=d;lockW.sk=SEEK_LBL[seekOf(q)]||'';}if(lockW.ms.length<8)lockW.ms.push(q);}
     lvl=lockW.ms.length?2:game.time-lockBy<0.45?1:0;}
   if(lvl!==lockW.lvl){if(lvl>lockW.lvl)lockW.t=0;if(lvl===2&&lockW.lvl===0)lockW.blink=game.time;}
   lockW.lvl=lvl;lockW.d=dm;lockW.t-=dt;
   if(lvl&&lockW.t<=0){
     if(lvl===2){sfx.play('missTone',undefined,undefined,{direct:true,var:0,rate:dm<500?1.06:1});lockW.t=clamp(0.07+dm/2400,0.1,0.45);}
     else{sfx.play('lockTone',undefined,undefined,{direct:true,var:0});lockW.t=0.95;}}
+}
+/* ---------- guidage, contre-mesures et leurres des petits appareils ---------- */
+let CMLURES=[];
+// guidage d'un missile en vol : celui de sa fiche, ou celui des missiles d'origine (rien pour roquettes, torpilles, mines)
+function seekOf(q){if(q.kind!=='missile'||q.torp||!q.W||q.W.mine||q.W.aimPt)return null;return q.W.seek||LSEEK[q.code]||null;}
+function loseLock(q){q.target=null;q.tl=null;q.tx=q.x+Math.cos(q.a)*700;q.ty=q.y+Math.sin(q.a)*700;}
+// chance qu'un leurre de ce type détourne ce missile (aucune pendant la course inertielle)
+function cmEff(q,kind){const sk=seekOf(q),W=q.W;if(!sk||(W.inert&&q.age<W.inert))return 0;
+  let e=(CM_EFF[sk]||{})[kind]||0;if(W.alt)e=Math.max(e,((CM_EFF[W.alt]||{})[kind]||0)*0.5);
+  if(kind==='swarm'&&(W.wh==='pen'||W.wh==='brech'))e*=0.15;return e*(W.cmK||1);}
+function divertTo(q,l){q.target=l;q.tl=null;if(q.own!==0&&l.src===player&&now-(lockW.dvT||0)>0.6){lockW.dvT=now;floater(player.x,player.y-player.h*0.5-26*TXS,'MISSILE LEURRE','#8fd0ff');}}
+// ce que voit l'autodirecteur à chaque instant : furtivité, moteurs coupés, cible discrète, champ encombré, leurres en l'air
+function seekUpdate(q,dt){const T=q.target;if(!T||T.dead||T.cmLure)return;const sk=seekOf(q),W=q.W;if(!sk||(W.inert&&q.age<W.inert))return;
+  const d=hyp(T.x-q.x,T.y-q.y);
+  if(T.cmSil>0&&d>260&&sk!=='ir'&&sk!=='optique'&&Math.random()<dt*(sk==='passif'?1:0.6)){loseLock(q);return;}
+  if(sk==='ir'){const th=T.thrust!==undefined?T.thrust:T.thr;if((T.engOff||(th!==undefined&&th<0.08))&&Math.random()<dt*0.35){loseLock(q);return;}}
+  if(sk==='passif'&&!(T.cmHot>0)){const sg=(T.tpl&&T.tpl.sigK)||1;if(sg>1.02&&Math.random()<dt*0.7*(sg-1)){loseLock(q);return;}}
+  if(sk==='optique'&&player&&hyp(T.x-player.x,T.y-player.y)<1500){let n=0;for(const o of nearRocks)if(!o.dead&&hyp(o.x-T.x,o.y-T.y)<240+o.rad)n++;for(const o of nearWrecks)if(!o.dead&&hyp(o.x-T.x,o.y-T.y)<240+o.rad)n++;
+    if(n&&Math.random()<dt*Math.min(0.5,0.1*n)){loseLock(q);return;}}
+  // leurres encore en l'air autour de la cible : un missile qui arrive ensuite peut s'y laisser prendre
+  if(T.cmLureT>0&&Math.random()<dt*1.2){const L=CMLURES.filter(l=>l.src===T&&!l.dead);if(L.length){const l=L[(Math.random()*L.length)|0];if(Math.random()<cmEff(q,l.mix?'mixed':l.kind)*0.5)divertTo(q,l);}}
+}
+function cmInit(b,id){const D=CM_BY[id];b.cm=D?{d:D,n:D.ch,t:0,act:0,gap:0,ai:rnd(0.2,0.6)}:null;}
+// déclenche la contre-mesure : leurres éjectés des boîtiers, ou signature réduite (Silence), ou leurre énergétique (Faux-Cœur)
+function deployCM(b){const C=b.cm;if(!C||b.dead||b.dying||C.gap>0)return false;const D=C.d;
+  if(C.n<=0){if(b===player)floater(b.x,b.y-b.h*0.5-16*TXS,D.code+' : RECHARGE '+Math.ceil(D.rech-C.t)+' S','#ffb347');return false;}
+  C.n--;C.gap=D.kind==='stealth'||D.kind==='energy'?1:0.5;
+  const ca=Math.cos(b.a),sa=Math.sin(b.a),hw=Math.max(3,b.h*0.32),bl=Math.max(3,b.w*0.25),L=[];
+  const lure=(kind,ox,oy,vx,vy,life,o)=>{const l=Object.assign({decoy:true,cmLure:true,kind,x:b.x+ox,y:b.y+oy,vx:b.vx+vx,vy:b.vy+vy,life,max:life,src:b,dead:false,rad:3,ph:Math.random()*TAU,sd:(Math.random()*1e9)|0},o||{});CMLURES.push(l);L.push(l);return l;};
+  // leurres éjectés par les flancs, en arrière du vaisseau
+  const side=(k,sp,n,life)=>{for(let i=0;i<n;i++){const s=i%2?1:-1,a=b.a+s*(PI/2+rnd(0.2,0.7)),v=rnd(sp*0.6,sp);lure(k,-ca*bl*0.3-sa*hw*s*0.6,-sa*bl*0.3+ca*hw*s*0.6,Math.cos(a)*v-ca*30,Math.sin(a)*v-sa*30,life*rnd(0.85,1.1));}};
+  switch(D.kind){
+    case 'flare':side('flare',95,4,2.6);break;
+    case 'chaff':for(const s of [-1,1])lure('chaff',-sa*hw*s*0.5-ca*bl*0.2,ca*hw*s*0.5-sa*bl*0.2,-sa*s*40-ca*25,ca*s*40-sa*25,3.4,{n:22});break;
+    case 'optic':side('optic',110,3,2.2);break;
+    case 'mixed':side('flare',90,1,2.4);lure('chaff',-ca*bl*0.4,-sa*bl*0.4,-ca*30,-sa*30,3,{n:14});side('optic',100,1,2);for(const l of L)l.mix=true;break;
+    case 'swarm':for(let i=0;i<12;i++){const a=b.a+PI+rnd(-1.4,1.4),v=rnd(60,150);lure('swarm',-ca*bl*0.1,-sa*bl*0.1,Math.cos(a)*v,Math.sin(a)*v,rnd(2.2,3));}break;
+    case 'energy':lure('energy',-ca*bl*0.8,-sa*bl*0.8,-ca*45,-sa*45,D.dur);C.act=D.dur;b.cmHot=D.dur;break;
+    case 'stealth':C.act=D.dur;b.cmSil=D.dur;break;}
+  sfx.play(D.kind==='energy'?'shieldUp':'cmPop',b.x,b.y,{rate:{flare:1,chaff:0.8,optic:1.3,mixed:0.9,swarm:1.5,stealth:0.6}[D.kind]||1});
+  if(L.length){b.cmLureT=Math.max(...L.map(l=>l.life));flashAt(b.x-ca*bl*0.3,b.y-sa*bl*0.3,8,D.kind==='optic'?'#6ab8ff':D.kind==='chaff'?'#dfe6f0':'#ffb050',0.08);}
+  // missiles déjà lancés contre ce vaisseau : chacun peut mordre à l'un des leurres (moins sûr tout près ou très loin)
+  let nd=0,nt=0;
+  for(const q of missiles){if(q.dead||q.target!==b)continue;nt++;const d=hyp(q.x-b.x,q.y-b.y);
+    if(D.kind==='stealth'){const sk=seekOf(q);if(sk&&sk!=='ir'&&sk!=='optique'&&!(q.W.inert&&q.age<q.W.inert)&&d>260&&Math.random()<0.55){loseLock(q);nd++;}continue;}
+    if(!L.length)continue;const l=L[(Math.random()*L.length)|0];let e=cmEff(q,l.mix?'mixed':l.kind);if(d<150)e*=0.5;if(d>1500)e*=0.6;
+    if(Math.random()<e){divertTo(q,l);nd++;}}
+  if(b===player){floater(b.x,b.y-b.h*0.5-16*TXS,D.code+' '+D.n.toUpperCase()+(D.kind==='stealth'?' : SIGNATURE REDUITE':D.kind==='energy'?' : LEURRE ENERGETIQUE':''),'#8fd0ff');
+    if(nt&&!nd&&D.kind!=='energy')later(0.6,()=>{if(player&&missiles.some(q=>!q.dead&&q.target===player))floater(player.x,player.y-player.h*0.5-26*TXS,'SANS EFFET SUR CE GUIDAGE','#ffb347');});}
+  return true;
+}
+function playerCM(){const p=player;if(!p||p.dead||p.dying)return;if(!p.cm){floater(p.x,p.y-p.h*0.5-16*TXS,'AUCUNE CONTRE-MESURE A BORD','#ffb347');return;}deployCM(p);}
+function updateCMs(dt){
+  for(const Ls of [[player],enemies,allies])for(const b of Ls){if(!b||!b.cm||b.dead)continue;const C=b.cm,D=C.d;
+    if(C.n<D.ch){C.t+=dt;if(C.t>=D.rech){C.t=0;C.n++;}}else C.t=0;
+    if(C.gap>0)C.gap-=dt;if(C.act>0)C.act-=dt;if(b.cmSil>0)b.cmSil-=dt;if(b.cmHot>0)b.cmHot-=dt;if(b.cmLureT>0)b.cmLureT-=dt;
+    // les appareils de l'IA lancent leurs leurres seuls, avec un temps de réaction
+    if(b!==player&&!b.remote&&!b.copy&&!b.dying&&C.n>0&&C.gap<=0&&!(C.act>0)){C.ai-=dt;if(C.ai<=0){C.ai=rnd(0.3,0.6);
+      let th=false;for(const q of missiles)if(q.target===b&&!q.dead&&seekOf(q)&&hyp(q.x-b.x,q.y-b.y)<(D.kind==='stealth'||D.kind==='energy'?900:520)){th=true;break;}
+      if(th&&Math.random()<0.6)deployCM(b);}}}
+  for(let i=CMLURES.length-1;i>=0;i--){const l=CMLURES[i];l.life-=dt;
+    if(l.life<=0||l.dead){l.dead=true;CMLURES[i]=CMLURES[CMLURES.length-1];CMLURES.pop();continue;}
+    const k=Math.exp(-(l.kind==='chaff'?1.6:l.kind==='energy'?0.5:0.9)*dt);l.vx*=k;l.vy*=k;l.x+=l.vx*dt;l.y+=l.vy*dt;
+    if(!onScreen(l.x-ox,l.y-oy,60))continue;
+    // fumée et étincelles du leurre thermique ; éclairs brefs (qui éclairent la scène) des leurres optiques et énergétiques
+    if(l.kind==='flare'){if(Math.random()<dt*22)addP(l.x,l.y,rnd(-8,8),rnd(-8,8),rnd(0.5,1),2,Math.random()<0.5?'#8a8490':'#6a6470',0.6);if(Math.random()<dt*6)sparks(l.x,l.y,1,60,'#ffd070');if(Math.random()<dt*8)flashAt(l.x,l.y,9,'#ffb050',0.06);}
+    else if(l.kind==='optic'){if(Math.random()<dt*7)flashAt(l.x,l.y,12,'#6ab8ff',0.05);}
+    else if(l.kind==='energy'){if(Math.random()<dt*4)flashAt(l.x,l.y,14,'#ffd890',0.12);}}
+  // un missile qui poursuivait un leurre éteint repart tout droit et se perd
+  for(const q of missiles)if(q.target&&q.target.cmLure&&q.target.dead)loseLock(q);
+}
+// leurres à l'écran, à la main pixel par pixel (palettes en rampe, cycles de 3 ou 4 images, jamais d'anticrénelage)
+function drawCMLures(t){
+  for(const l of CMLURES){const sx=l.x-ox,sy=l.y-oy;if(!onScreen(sx,sy,40))continue;const X=Math.round(sx),Y=Math.round(sy),f=l.life/l.max,fr=(frameN+l.sd)&3;
+    if(l.kind==='flare'){
+      // cœur blanc, halo orange qui palpite, puis braise rouge qui s'éteint
+      const hot=f>0.25;ctx.globalCompositeOperation='lighter';ctx.globalAlpha=0.45*f+0.2;ctx.fillStyle=hot?'#ff8a20':'#a03010';
+      ctx.fillRect(X-1-(fr===0?1:0),Y-1-(fr===2?1:0),3+(fr===0?1:0),3+(fr===2?1:0));
+      ctx.globalAlpha=1;ctx.fillStyle=hot?(fr===1?'#ffd070':'#fff4d0'):'#ff6020';ctx.fillRect(X,Y,1,1);ctx.globalCompositeOperation='source-over';}
+    else if(l.kind==='chaff'){
+      // nuage de paillettes qui s'étale : chaque brin scintille blanc, argent ou gris selon sa phase
+      const n=l.n||18,age=l.max-l.life,R=4+age*14;ctx.globalAlpha=Math.min(1,f*1.6);
+      for(let i=0;i<n;i++){const h=(l.sd+i*2654435761)>>>0,a=(h%628)/100,rr=R*(((h>>>10)%100)/100),px=X+Math.round(Math.cos(a)*rr),py=Y+Math.round(Math.sin(a)*rr*0.8),ph=((frameN>>1)+i+(h>>>20))%5;
+        if(ph<3){ctx.fillStyle=ph===0?'#ffffff':ph===1?'#c8d0dc':'#7a8494';ctx.fillRect(px,py,1,1);}}
+      ctx.globalAlpha=1;}
+    else if(l.kind==='optic'){
+      // éclat bleu en croix, stroboscopique (trois images allumées, une éteinte)
+      if(fr!==3){const s=fr===0?2:1;ctx.globalCompositeOperation='lighter';ctx.globalAlpha=0.9*f+0.1;ctx.fillStyle='#4aa8ff';ctx.fillRect(X-s,Y,2*s+1,1);ctx.fillRect(X,Y-s,1,2*s+1);
+        ctx.fillStyle='#d8f0ff';ctx.fillRect(X,Y,1,1);ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}}
+    else if(l.kind==='swarm'){if(((frameN+l.sd)>>1)&1){ctx.fillStyle=f>0.3?'#e8f6ff':'#6a8ab0';ctx.fillRect(X,Y,1,1);}}
+    else if(l.kind==='energy'){
+      // nacelle lumineuse : cœur blanc-or, croix d'énergie qui pulse
+      const p=0.5+0.5*Math.sin(t*8+l.ph),r=2+Math.round(p*2);ctx.globalCompositeOperation='lighter';ctx.globalAlpha=(0.35+0.3*p)*Math.min(1,f*4);ctx.fillStyle='#ff9a3c';
+      ctx.fillRect(X-r,Y,2*r+1,1);ctx.fillRect(X,Y-r,1,2*r+1);ctx.globalAlpha=Math.min(1,f*4);ctx.fillStyle='#fff0c0';ctx.fillRect(X-1,Y-1,3,3);ctx.fillStyle='#ffffff';ctx.fillRect(X,Y,1,1);ctx.globalCompositeOperation='source-over';}}
+  ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+}
+// ogives : dégâts selon la cible (fragmentation contre les légers, pénétrante contre les gros), et la gerbe qui va avec
+function whK(W,o){const sm=o.tpl&&o.tpl.small,bg=bigShip(o)||o.giant;switch(W.wh){
+  case 'frag':return sm?1.3:bg?0.55:1;case 'disp':return sm?1.25:bg?0.3:0.6;case 'pen':return sm?0.5:bg?1.35:1.1;case 'brech':return sm?0.45:bg?1.5:1.2;case 'thrust':return 0.7;default:return 1;}}
+function whFx(q,W,x,y){const a=Math.atan2(q.vy,q.vx);
+  if(W.wh==='frag'||W.wh==='disp'){
+    // éclats : traits blancs et orange qui partent en étoile, quelques débris gris qui traînent
+    const n=W.wh==='disp'?6:10+q.size*3;for(let i=0;i<n;i++){const b=Math.random()*TAU,v=rnd(160,320);addP(x,y,Math.cos(b)*v,Math.sin(b)*v,rnd(0.08,0.2),6,Math.random()<0.6?'#fff0c0':'#ffa040',1.2);}
+    for(let i=0;i<3;i++){const b=Math.random()*TAU,v=rnd(40,90);addP(x,y,Math.cos(b)*v,Math.sin(b)*v,rnd(0.4,0.8),6,'#6a6470',1.5);}}
+  else if(W.wh==='perf'){for(let i=0;i<8;i++){const b=a+rnd(-0.18,0.18),v=rnd(200,380);addP(x,y,Math.cos(b)*v,Math.sin(b)*v,rnd(0.1,0.22),6,i%3?'#cfe8ff':'#ffffff',1);}}
+  else if(W.wh==='thrust'){for(let i=0;i<10;i++){const b=Math.random()*TAU,v=rnd(60,180);addP(x,y,Math.cos(b)*v,Math.sin(b)*v,rnd(0.15,0.35),6,i%2?'#fff27a':'#ffd23c',2);}flashAt(x,y,16,'#fff27a',0.12);}
+}
+// flamme et voyants des missiles spécialisés en vol : flamme sur trois images (blanc, jaune, orange), plus longue et plus
+// épaisse pour les lourds ; anneaux rouges de l'Ancre Noire qui clignotent ; reflet de la lentille du Faux-Spectre ;
+// autodirecteur du Pique-Soleil qui ne s'allume qu'à la fin de la course inertielle
+const SFLM=['#ffffff','#fff0c0','#ffd070','#ff9a3a','#c0501a','#7a3010'];
+function smisFx(q,S,sx,sy,ca,sa,L,t){const fr=(frameN+((q.age*30)|0))%3,hv=S.kg>1000,n=(hv?4:2)+fr,x0=sx-ca*L,y0=sy-sa*L;
+  for(let k=0;k<n;k++){const c=SFLM[Math.min(5,k+(fr===2?1:0))],z=hv&&k<2?2:1;ctx.fillStyle=c;ctx.fillRect(Math.round(x0-ca*k)-(z>1?1:0),Math.round(y0-sa*k)-(z>1?1:0),z,z);}
+  const s=S.s;
+  if(s.rings){const on=((t*6+q.age*2)|0)%2;for(const u of s.rings){const px=sx-ca*L*(1-u),py=sy-sa*L*(1-u);ctx.fillStyle=on?'#ff4040':'#ffa0a0';for(const o of [-1,1])ctx.fillRect(Math.round(px-sa*o*(s.r+0.5)),Math.round(py+ca*o*(s.r+0.5)),1,1);}}
+  if(s.nk==='lens'&&((t*7+q.age*3)|0)%3===0){ctx.fillStyle='#e8fbff';ctx.fillRect(Math.round(sx),Math.round(sy),1,1);}
+  if(S.seek==='inertiel'&&q.age>=q.W.inert&&((t*8)|0)%2){ctx.fillStyle='#ff4f4f';ctx.fillRect(Math.round(sx-ca),Math.round(sy-sa),1,1);}
 }
 function updateMissiles(dt){
   for(let i=missiles.length-1;i>=0;i--){
@@ -7670,9 +7876,11 @@ function updateMissiles(dt){
       q.sp=Math.min(W.spMax,q.sp+W.acc*dt);
       // un leurre psychique détourne le missile
       if(q.target&&q.target.decoyT>0&&!q.target.decoy&&!q.torp&&Math.random()<dt*1.3){const d=decoyOf(q.target);if(d){q.target=d;q.tl=null;}}
-      if(q.target&&q.target.decoy&&hyp(q.target.x-q.x,q.target.y-q.y)<16){q.target.life=Math.min(q.target.life,0.3);q.life=0;q.fizzle=true;}
+      seekUpdate(q,dt);
+      if(q.target&&q.target.decoy&&hyp(q.target.x-q.x,q.target.y-q.y)<16){q.target.life=Math.min(q.target.life,0.3);q.life=0;q.fizzle=!q.target.cmLure;}
       let gx=q.tx,gy=q.ty;
       if(q.target&&!q.target.dead){const T=q.target,lead=hyp(T.x-q.x,T.y-q.y)/Math.max(100,q.sp)*0.5,ok=q.tl&&T.type&&T.type[Math.floor(q.tl.ly)*T.w+Math.floor(q.tl.lx)];gx=(ok?T.wx(q.tl.lx,q.tl.ly):T.x)+T.vx*lead;gy=(ok?T.wy(q.tl.lx,q.tl.ly):T.y)+T.vy*lead;}
+      if(W.inert&&q.age<W.inert&&q.ipx!==undefined){gx=q.ipx;gy=q.ipy;}
       const T0=q.target,ecm=T0&&!T0.dead&&T0.ecmK||0;
       if(ecm&&!q.torp&&Math.random()<dt*0.05*ecm){q.target=null;q.tx=q.x+Math.cos(q.a)*500;q.ty=q.y+Math.sin(q.a)*500;}
       const turn=(q.age<0.35?0.6:1)*W.turn/(1+0.35*ecm);
@@ -7712,7 +7920,10 @@ function updateMissiles(dt){
       if(q.dud){sparks(hx,hy,8,90,'#ffb347');addP(hx,hy,0,0,0.4,10,null,1,2);sfx.metal(hx,hy);continue;}
       if(W.harpoon&&best&&!bsh&&best.ship&&!best.dead){best.harpT=Math.max(best.harpT||0,W.harpoon);best.harpX=hx;best.harpY=hy;if(best===player)floater(player.x,player.y-player.h*0.5-16*TXS,'HARPONNE : MOTEURS FREINES','#ffb347');}
       if(W.brulot&&best&&!bsh&&best.ship&&!best.dead){const lp=localPoint(best,hx,hy);if(lp)igniteAround(best,lp.lx,lp.ly,q.rad*1.2,9);}
-      if(q.torp){if(!(best&&best.ship&&!best.dead))amBlast(hx,hy,24+(q.torp||4)*3,0,0);}else if(q.kind==='missile'&&!W.mine&&!W.hook)amBlast(hx,hy,7+sz*5+(W.shock?6:0),best?best.vx:0,best?best.vy:0);else explosion(hx,hy,q.kind==='rocket'?0.5+sz*0.3:0.6+sz*0.4,0,0);addShake(0.6+sz*0.8);sfx.crack(hx,hy);
+      // ogive pénétrante : elle traverse la coque et explose dedans, quelques pixels plus loin dans l'axe
+      let ex=hx,ey=hy;if((W.wh==='pen'||W.wh==='brech')&&best&&!bsh&&best.type){const v=hyp(q.vx,q.vy)||1;for(let s2=W.pen||8;s2>=2;s2-=2){const xx=hx+q.vx/v*s2,yy=hy+q.vy/v*s2,lp=localPoint(best,xx,yy);if(lp&&best.type[Math.floor(lp.ly)*best.w+Math.floor(lp.lx)]){ex=xx;ey=yy;break;}}}
+      if(q.torp){if(!(best&&best.ship&&!best.dead))amBlast(hx,hy,24+(q.torp||4)*3,0,0);}else if(q.kind==='missile'&&!W.mine&&!W.hook){const R=7+sz*5+(W.shock?6:0),bvx=best?best.vx:0,bvy=best?best.vy:0;
+        if(ex!==hx||ey!==hy){const X=ex,Y=ey;sparks(hx,hy,6,140,'#ffd9a0');flashAt(hx,hy,7,'#ffe6b0',0.05);later(0.06,()=>amBlast(X,Y,R,bvx,bvy));}else amBlast(hx,hy,R,bvx,bvy);if(W.wh)whFx(q,W,hx,hy);}else explosion(hx,hy,q.kind==='rocket'?0.5+sz*0.3:0.6+sz*0.4,0,0);addShake(0.6+sz*0.8);sfx.crack(hx,hy);
       if(st!==null){damageStation(q.dmg*6,hx,hy);continue;}
       if(q.torp&&best&&best.ship&&!best.dead){
         // torpille : le bouclier cède d'un coup, la charge traverse la coque jusqu'au réacteur
@@ -7723,7 +7934,11 @@ function updateMissiles(dt){
       }
       else if(best&&bsh)shieldImpact(best,bphi,50+sz*25,q.sdmg,hx,hy);
       else{
-        for(const o of [...hostiles(q.own),...nearRocks,...nearWrecks]){if(o.dead)continue;if(hyp(o.x-hx,o.y-hy)>o.rad+q.rad+2)continue;if(o!==best&&shieldOn(o))continue;const BG=bigShip(o);hitWorld(o,hx,hy,q.dmg,BG?Math.max(2,q.rad*0.55):q.rad,W.fire||0);if(BG&&o.dm){const lp=localPoint(o,hx,hy);if(lp)dmHit(o,lp.lx,lp.ly,q.rad*0.9,clamp(0.02+q.dmg*0.004,0.02,0.2));}}
+        for(const o of [...hostiles(q.own),...nearRocks,...nearWrecks]){if(o.dead)continue;if(hyp(o.x-hx,o.y-hy)>o.rad+q.rad+2)continue;if(o!==best&&shieldOn(o))continue;const BG=bigShip(o),kd=W.wh?whK(W,o):1;hitWorld(o,ex,ey,q.dmg*kd,BG?Math.max(2,q.rad*0.55):q.rad,W.fire||0);const pf=W.wh==='perf'&&o===best;if((BG||pf)&&o.dm){const lp=localPoint(o,ex,ey);if(lp)dmHit(o,lp.lx,lp.ly,q.rad*(pf?1.6:0.9),pf?0.3:clamp(0.02+q.dmg*kd*0.004,0.02,0.2));}}
+        // effets d'ogive : poussée étouffée, énergie vidée, brèche qui s'enflamme et souffle une seconde fois
+        if(W.wh&&best&&best.ship&&!best.dead){const B=best;if(W.cut){B.harpT=Math.max(B.harpT||0,W.cut);if(B===player||q.own===0)floater(B.x,B.y-B.h*0.5-14*TXS,'PROPULSION ETOUFFEE','#fff27a');}
+          if(W.drain&&B.energy!==undefined)B.energy*=1-W.drain;
+          if(W.wh==='brech'){const lp=localPoint(B,ex,ey);if(lp){igniteAround(B,lp.lx,lp.ly,q.rad*1.3,8);const X=ex,Y=ey,dm=q.dmg,rd=q.rad;later(0.18,()=>{if(!B.dead){amBlast(X,Y,10+sz*3,B.vx,B.vy);hitWorld(B,X,Y,dm*0.4,rd*0.8,0.6);sfx.decompress(X,Y,0.8);}});}}}
       }
     }
   }
@@ -11400,7 +11615,7 @@ function arenaBegin(mode){
   ARENA.y=-(WORLD_R+12500);
   arena.saved={player,playerTpl,rocks,wrecks,enemies,allies,pickups,crates,spacers,bullets,missiles,parts,floaters,shocks,flashes,blasts,trails,cam:{x:cam.x,y:cam.y},waypoint,state,docked,lostBody,enemyTimer,powerKey,
     snap:JSON.stringify(serialize()),contract:game.contract,shopHidden:shopEl.hidden,hudHidden:hud.hidden,touchHidden:touchUI.hidden,titleHidden:titleEl.hidden,origin:yard.origin};
-  rocks=[];wrecks=[];enemies=[];allies=[];pickups=[];crates=[];spacers=[];bullets=[];missiles=[];parts=[];floaters=[];shocks=[];flashes=[];blasts=[];trails=[];puffs=[];xrings=[];laters=[];chunks=[];
+  rocks=[];wrecks=[];enemies=[];allies=[];pickups=[];crates=[];spacers=[];bullets=[];missiles=[];parts=[];floaters=[];shocks=[];flashes=[];blasts=[];trails=[];puffs=[];xrings=[];laters=[];chunks=[];CMLURES=[];
   lostBody=null;waypoint=null;game.contract=null;releaseWeld();powerKey='bal';
   Object.assign(arena,{on:true,mode,wave:0,waveDone:0,timer:2.5,over:0,t:0,kills:0,result:''});
 }
@@ -11461,7 +11676,7 @@ function openTrialPick(){
 function endArena(){
   if(!arena.on)return;
   const S=arena.saved,wave=arena.waveDone,mode=arena.mode,res=arena.result;
-  ({player,playerTpl,rocks,wrecks,enemies,allies,pickups,crates,spacers,bullets,missiles,parts,floaters,shocks,flashes,blasts,trails,waypoint,lostBody,enemyTimer,powerKey}=S);puffs=[];xrings=[];laters=[];chunks=[];
+  ({player,playerTpl,rocks,wrecks,enemies,allies,pickups,crates,spacers,bullets,missiles,parts,floaters,shocks,flashes,blasts,trails,waypoint,lostBody,enemyTimer,powerKey}=S);puffs=[];xrings=[];laters=[];chunks=[];CMLURES=[];
   cam.x=S.cam.x;cam.y=S.cam.y;
   applySave(JSON.parse(S.snap));game.contract=S.contract;
   if(mode==='waves')game.arenaBest=Math.max(game.arenaBest||0,wave);
@@ -11524,6 +11739,7 @@ function update(dt){
   updateBullets(dt);
   updateMissiles(dt);
   updateLockWarn(dt);
+  updateCMs(dt);
   updateShocks(dt);
   updateWeld(dt);
   updateVents(dt);
@@ -11704,7 +11920,7 @@ function updateEnemies(dt){
     e.pw=PWM[e.pwKey||'bal'];
     // choix de la cible : joueur, cargo escorté, relais attaqué, ou épave à piller
     let T=pAlive?p:null,mode='fight';
-    if(T===p&&!e.det){if(arena.on||dPl<radarRange(e)/((p.tpl&&p.tpl.sigK)||1))e.det=true;else T=null;}
+    if(T===p&&!e.det){if(arena.on||dPl<radarRange(e)*(p.cmHot>0?1.6:p.cmSil>0?0.4:1)/((p.tpl&&p.tpl.sigK)||1))e.det=true;else T=null;}
     if(e.target&&!e.target.dead&&!e.target.dying&&(e.target.convoy||e.target.traffic)){if(!(pAlive&&dPl<350))T=e.target;}
     else if(e.raid&&raidOn()){if(!(pAlive&&dPl<450))T=STATION_T;}
     else if(e.pillard&&lostBody&&!(pAlive&&dPl<650)){T=lostBody;mode='loot';}
@@ -12179,7 +12395,7 @@ function enterSystem(s){
   for(const p of PLANETS)freePlanet(p);
   poolClear();bgJobs.length=0;
   useSystem(s);resetSun();prepSun();bgJobs.push(skyJob(s));
-  rocks=[];wrecks=[];enemies=[];allies=[];pickups=[];crates=[];spacers=[];bullets=[];missiles=[];beams=[];shocks=[];flashes=[];blasts=[];trails=[];fballs=[];ambs=[];puffs=[];xrings=[];laters=[];chunks=[];clearSpecials();
+  rocks=[];wrecks=[];enemies=[];allies=[];pickups=[];crates=[];spacers=[];bullets=[];missiles=[];beams=[];shocks=[];flashes=[];blasts=[];trails=[];fballs=[];ambs=[];puffs=[];xrings=[];laters=[];chunks=[];CMLURES=[];clearSpecials();
   boardings.length=0;fuses.length=0;if(boardPick)closeBoardPick();if(eva){eva.d.evaBy=null;eva=null;}lostBody=null;offers=null;waypoint=null;hyperDest=null;lockTarget=null;scanning=null;enemyTimer=12;
   initFields();setRelay(RELAYS[0]);
   for(const p of PLANETS)p.scan=p.scanned?1:0;
@@ -12223,7 +12439,8 @@ function drawBody(b,g){
   const main=!g||g===ctx;g=g||ctx;const sx=b.x-ox,sy=b.y-oy;if(!onScreen(sx,sy,b.rad+4))return false;
   const sb=sunBucket(b);if(sb!==b.sunB){b.sunB=sb;b.dirty=true;}
   if(b.dirty)b.repaint();
-  g.save();g.translate(Math.round(sx),Math.round(sy));g.rotate(b.qa);g.drawImage(b.cv,-b.cx,-b.cy);
+  g.save();g.translate(Math.round(sx),Math.round(sy));g.rotate(b.qa);const sil=main&&b.cmSil>0;if(sil)g.globalAlpha=0.4+0.1*Math.sin(now*9);g.drawImage(b.cv,-b.cx,-b.cy);
+  if(sil){const y0=((now*30)|0)%(b.h+6)-3;g.globalAlpha=0.7;g.fillStyle='#4a3a7a';for(const y of [y0,y0+1])if(y>=0&&y<b.h)for(let x=0;x<b.w;x++)if(b.type[y*b.w+x]&&((x+y)&1))g.fillRect(x-b.cx,y-b.cy,1,1);g.globalAlpha=1;}
   if(main&&b.hasG&&b.hcv){g.globalCompositeOperation='lighter';g.drawImage(b.hcv,-b.cx-2,-b.cy-2);g.globalCompositeOperation='source-over';}
   g.restore();
   return true;
@@ -12231,12 +12448,41 @@ function drawBody(b,g){
 // canons rotatifs dessinés au-dessus de la coque
 const TALIAS={p:'C',g:'K',v:'L'};
 const TURRET_CODES=new Set(['C','K','Q','L','X','P','k','p','g','v','c']),WING_CODES=new Set(['a','u','d']);
+for(const S of SMIS)WING_CODES.add(S.c);
 // silhouettes des munitions, nez vers +x, x de −L/2 à L/2 : couleur du pixel ou rien
 //  a : missile guidé blanc, nez en ogive, ailettes au milieu et à l'arrière, bagues jaune et brune
 //  u : roquette grise, cône sombre, bague rouge, petits empennages
 //  d : roquette lourde gris acier, bague d'alerte jaune et noire, pointe orange, grands empennages
 //  x : torpille à segments blancs et gris anthracite cerclés de bleu, nez arrondi sombre, carénage d'hélice à l'arrière
-function ordShape(k,L){const h=L/2;return(x,y)=>{const u=(x+h)/L,ay=Math.abs(y);
+// silhouette d'un missile spécialisé, nez vers +x : rayon du corps s.r ; nez cone, ogive, facet (facetté), reinf (renforcé),
+// lens (lentille), blunt (pointe épaisse) ; ailettes arrière (hauteur fh, longueur fl, triangulaires si tri), canards,
+// bandes, hachures jaune et noir, rayures noir et blanc, anneaux, antennes affleurantes, facettes, renflement central
+function smisShape(s,L){const h=L/2,R=s.r,dk=c=>(((c>>16&255)*0.74)|0)<<16|(((c>>8&255)*0.74)|0)<<8|(((c&255)*0.74)|0),bd=dk(s.body);
+  // nez court, compté en pixels (un nez long ne serait plus qu'une aiguille d'un pixel, en pointillé une fois tourné)
+  const nl=({blunt:1.6,reinf:2.2,cone:3,ogive:2.6,facet:3,lens:2.2}[s.nk]||2.6)*(L>14?1.35:1)/L;
+  return(x,y)=>{const u=(x+h)/L,ay=Math.abs(y);if(u<0||u>1)return 0;let r=R;
+    if(s.bulge&&u>s.bulge[0]&&u<s.bulge[1])r=R+s.bulge[2]*Math.sin(Math.PI*(u-s.bulge[0])/(s.bulge[1]-s.bulge[0]));
+    if(u>1-nl){const f=Math.max(0,(1-u)/nl);r=s.nk==='cone'||s.nk==='facet'?R*f+0.2:s.nk==='blunt'?R*0.9:s.nk==='reinf'?R*(0.55+0.45*Math.sqrt(f)):s.nk==='lens'?R*(0.6+0.4*Math.sqrt(f)):R*Math.sqrt(f)+0.15;}
+    if(ay<=r){
+      if(u>1-nl){
+        if(s.nk==='lens')return y<-R*0.2?0xc8f2ff:s.nose;
+        if(s.nk==='blunt')return u>1-nl*0.4?0x5a5e66:s.nose;
+        if(s.nk==='facet')return (((x*1.4)|0)+(y>0?1:0))&1?s.nose:s.nose2;
+        if(s.nk==='reinf')return u>1-nl*0.35?0xa8acb2:s.nose;
+        if(s.nose2&&u>1-nl*0.45)return s.nose2;
+        return s.nose;}
+      if(u<1.1/L)return 0x2a2d34;
+      for(const [a,b,c] of s.bands||[])if(u>a&&u<b)return c;
+      if(s.rings)for(const a of s.rings)if(Math.abs(u-a)<0.024)return 0xb82020;
+      if(s.hazard&&u>s.hazard[0]&&u<s.hazard[1])return ((((x+ay)*0.8)|0)&1)?0xf0c020:0x1a1c20;
+      if(s.stripe&&u>0.14&&u<0.82&&(((u*11)|0)&1))return s.stripe;
+      if(s.ant&&u>0.74&&u<0.86&&ay>r-0.7)return s.ant;
+      if(s.facet&&y>0&&(((x*0.7)|0)&1))return 0x0d0e11;
+      return y>R*0.3?bd:y<-R*0.25?s.hi:s.body;}
+    if(u>0.01&&u<s.fl+0.01){const t=(u-0.01)/s.fl,fh=s.tri?s.fh*(1-t)+0.3:s.fh*(t<0.45?1:1-(t-0.45)/0.55*0.55);if(ay<=R+fh)return s.fe&&ay>R+fh-0.8?s.fe:s.fin;}
+    if(s.canard&&u>s.canard[0]&&u<s.canard[1]&&ay<=R+s.canard[2])return s.fin;
+    return 0;};}
+function ordShape(k,L){if(SMIS_BY[k])return smisShape(SMIS_BY[k].s,L);const h=L/2;return(x,y)=>{const u=(x+h)/L,ay=Math.abs(y);
   if(k==='a'){const r=u>0.9?0.95*(1-u)/0.1+0.15:0.95;
     if(ay<=r){if(u>0.97)return 0xffffff;if(u>0.9)return 0xdfe5ea;if(u>0.6&&u<0.64)return 0xe0b820;if(u>0.42&&u<0.45)return 0x9a5a1e;if(u<0.04)return 0x3a3f48;return y>0.25?0xc9d0d8:0xf2f5f8;}
     if(u>0.5&&u<0.62&&ay<=0.95+(0.62-u)*16)return 0x8a929c;if(u>0.02&&u<0.16&&ay<=0.95+(u-0.02)*20&&ay<3.2)return 0x7a828c;return 0;}
@@ -12251,6 +12497,7 @@ function ordShape(k,L){const h=L/2;return(x,y)=>{const u=(x+h)/L,ay=Math.abs(y);
   const band=(u>0.36&&u<0.4)||(u>0.6&&u<0.64)||(u>0.8&&u<0.84);if(band)return 0x2f6fa8;
   if((u>0.4&&u<0.6)||(u>0.12&&u<0.2))return y>0.6?0x4e535a:0x60656d;return y>0.6?0xc2c6ca:0xe6e8ea;};}
 const ORDS={},ORD_L={a:14,u:10,d:16,x:52};
+for(const S of SMIS)ORD_L[S.c]=Math.round(6+S.len*1.5);
 // image d'une munition à l'angle a (64 pas) ; pr : chargement de 0 à 8 (8 = prête, sinon fantôme qui se remplit de l'arrière)
 function ordSprite(k,L,a,pr){L=Math.max(5,Math.round(L));const N=64,ai=((Math.round(a/TAU*N)%N)+N)%N,key=k+L+'|'+ai+'|'+pr;let cv=ORDS[key];if(cv)return cv;
   const f=ordShape(k,L),D=L+8,C=D/2,ang=ai/N*TAU,ca=Math.cos(ang),sa=Math.sin(ang);cv=mkCanvas(D,D);const g=cv.getContext('2d'),img=g.createImageData(D,D),d=img.data;
@@ -12259,7 +12506,7 @@ function ordSprite(k,L,a,pr){L=Math.max(5,Math.round(L));const N=64,ai=((Math.ro
   g.putImageData(img,0,0);ORDS[key]=cv;return cv;}
 // missile ou roquette sous l'aile : prête, ou en cours de rechargement (le fantôme se remplit, un voyant clignote)
 function drawOrd(g,m,mx,my,a,sh,pr){
-  if(sh)return;const cv=ordSprite(m.code,m.len||ORD_L[m.code],a,pr);g.drawImage(cv,Math.round(mx-cv.width/2),Math.round(my-cv.height/2));
+  if(sh)return;const S=SMIS_BY[m.code],cv=ordSprite(m.code,(m.len||ORD_L[m.code])*(S?clamp(S.len/3.4,0.6,1.3):1),a,pr);g.drawImage(cv,Math.round(mx-cv.width/2),Math.round(my-cv.height/2));
   if(pr<8&&((now*4)|0)%2){g.fillStyle='#ffb347';g.fillRect(Math.round(mx),Math.round(my),1,1);}
 }
 function drawOrdOld(g,m,mx,my,a,sh){
@@ -13277,6 +13524,7 @@ function render(){
     if(q.W&&q.W.bomb){const r=s>=3?2:1,X=Math.round(sx),Y=Math.round(sy);ctx.fillStyle='#3a4250';ctx.fillRect(X-r+1,Y-r+1,r*2-1+(r>1?1:0),r*2-1+(r>1?1:0));
       ctx.fillStyle='#9aa4b4';ctx.fillRect(Math.round(sx-ca*(r+1)),Math.round(sy-sa*(r+1)),1,1);
       if(((t*6+q.age*3)|0)%2){ctx.fillStyle='#8cc0ff';ctx.fillRect(X,Y,1,1);}continue;}
+    if(q.W&&q.W.sm){const S=q.W.sm,L=ORD_L[q.code],cv=ordSprite(q.code,L,q.a,8),cx=sx-ca*L/2,cy=sy-sa*L/2;ctx.drawImage(cv,Math.round(cx-cv.width/2),Math.round(cy-cv.height/2));smisFx(q,S,sx,sy,ca,sa,L,t);continue;}
     if(ORD_L[q.code]){const L=q.code==='x'?ORD_L.x+(q.torp||0):ORD_L[q.code],cv=ordSprite(q.code,L,q.a,8),cx=sx-ca*L/2,cy=sy-sa*L/2;ctx.drawImage(cv,Math.round(cx-cv.width/2),Math.round(cy-cv.height/2));
       ctx.fillStyle='#ffe9a8';ctx.fillRect(Math.round(sx-ca*(L+1)),Math.round(sy-sa*(L+1)),q.code==='x'?2:1,q.code==='x'?2:1);continue;}
     const len=q.kind==='nuke'?7:q.kind==='rocket'?2+s:3+s;
@@ -13344,7 +13592,7 @@ function drawReticle(){
       for(let q=0;q<7;q++){const b2=q*1.4;pline(ex-Math.cos(a)*b2-Math.sin(a)*(7-q),ey-Math.sin(a)*b2+Math.cos(a)*(7-q),ex-Math.cos(a)*b2+Math.sin(a)*(7-q),ey-Math.sin(a)*b2-Math.cos(a)*(7-q),col);}
       drawText(txt,ex-Math.cos(a)*22,ey-Math.sin(a)*22+(Math.sin(a)>0?-12:8),col,'c');}}
   if(lockW.lvl&&player&&!player.dead){const px=(player.x-ox)*z,py=(player.y-oy)*z,pr=Math.max(14,Math.min(70,player.rad*0.6)*z),bl=((game.time*(lockW.lvl===2?8:3))|0)%2;
-    if(lockW.lvl===2){if(bl)drawText('MISSILE EN APPROCHE',px,py-pr-16,'#ff4f6a','c');
+    if(lockW.lvl===2){if(bl)drawText('MISSILE EN APPROCHE'+(lockW.sk?' - '+lockW.sk:''),px,py-pr-16,'#ff4f6a','c');
       for(const q of lockW.ms){const qx=(q.x-ox)*z,qy=(q.y-oy)*z;if(qx<-20||qy<-20||qx>W+20||qy>H+20){const a=Math.atan2(q.y-player.y,q.x-player.x);for(let i=0;i<3;i++)ctx.fillStyle='#ff4f6a',ctx.fillRect(Math.round(px+Math.cos(a)*(pr+8+i*3)),Math.round(py+Math.sin(a)*(pr+8+i*3)),2,2);}
         else if(bl||lockW.d<600)brackets(qx,qy,5,'#ff4f6a');}}
     else if(bl)drawText('VERROUILLE PAR RADAR',px,py-pr-16,'#ffc66d','c');}
@@ -13807,12 +14055,14 @@ function updateHUD(dt){
   hset('crew',(p.crew?p.crew.length:0)+'/'+(p.crewMax||0),v=>$('crewVal').textContent=v);
   hset('hint',hintTimer>20?0:1,v=>{$('keyHint').style.opacity=v?'1':'0';});
   hset('tnuke',p.mods.some(m=>m.code==='N'),v=>{$('tNuke').hidden=!v;});
+  hset('tcm',!!p.cm,v=>{$('tCM').hidden=!v;});
   wTimer-=dt;if(wTimer<=0){wTimer=0.12;renderWeapons();renderContractPlate();}
   updateCompUI(dt);
 }
 const WNAMES={a:'Missiles d’aile',u:'Roquettes d’aile',d:'Roquettes lourdes',l:'Bombes légères',x:'Torpilles',k:'Batteries capitales',q:'Canon spinal',m:'Silos de croisière',C:'Canons',K:'Obusiers',Q:'Rail',L:'Lasers',X:'Lances solaires',U:'Nuée',M:'Roquettes',Z:'Bélier',b:'Bombes',h:'Bombes lourdes',J:'Dard',G:'Faucon',Y:'Marteau',N:'Nucléaire',P:'Défense',w:'Mitrailleuses'};
 const WORDER=['k','m','w','a','u','d','C','K','p','g','L','X','v','z','U','M','Z','b','h','l','x','J','G','Y','n','T','i','N','P'];
 Object.assign(WNAMES,{p:'Canons à plasma',g:'Canons gravitationnels',v:'Drainage',i:'Leurres psychiques',n:'Mines magnétiques',z:'Coupe-jus',T:'Grappins'});
+for(const S of SMIS)WNAMES[S.c]=S.id+' '+S.n;WORDER.splice(WORDER.indexOf('a')+1,0,...SMIS.map(S=>S.c));
 function renderWeapons(){
   const p=player,rows=[];
   for(const code of WORDER){
@@ -13829,6 +14079,7 @@ function renderWeapons(){
   if(p.mods.some(m=>m.code==='t')){const ok=p.mods.some(m=>m.code==='t'&&m.active);rows.push(`<div class="wrow${ok?'':' off'} cruise"><span>Rayon tracteur <b>R</b></span><i><em style="width:${tractor.on&&tractor.tgt?100:ok?35:0}%"></em></i><small>${!ok?'détruit':tractor.on?(tractor.tgt?'verrouillé':'cherche'):'coupé'}</small></div>`);}
   if(p.mods.some(m=>m.code==='o')){const D=p.dome,f=D?D.hp/Math.max(1,D.max):0;rows.push(`<div class="wrow${D&&D.down>0?' off':''}"><span>Bouclier orbital</span><i><em style="width:${Math.round(f*100)}%"></em></i><small>${D&&D.down>0?'rechargé dans '+Math.ceil(D.down)+' s':Math.round(f*100)+' %'}</small></div>`);}
   if(p.mods.some(m=>m.code==='y')){const n=RDRONES.filter(d=>d.mother===p).length,nb=p.mods.filter(m=>m.code==='y'&&m.active).length;rows.push(`<div class="wrow${nb?'':' off'}"><span>Drones de réparation <b>${n}</b></span><i><em style="width:${Math.round(Math.min(1,n/Math.max(1,nb*2))*100)}%"></em></i><small>${nb?(p.cells<p.orig?'réparent':'en veille'):'détruits'}</small></div>`);}
+  if(p.cm){const C=p.cm,D=C.d,f=C.act>0?C.act/(D.dur||1):C.n>=D.ch?1:(C.n+C.t/D.rech)/D.ch;rows.push(`<div class="wrow${C.n||C.act>0?'':' off'}"><span>${D.code} ${D.n} <b>H</b> <b>${C.n}/${D.ch}</b></span><i><em style="width:${Math.round(clamp(f,0,1)*100)}%"></em></i><small>${C.act>0?(D.kind==='stealth'?'furtif ':'actif ')+Math.ceil(C.act)+' s':C.n?'prêt':'recharge'}</small></div>`);}
   if(p.shOff)rows.push(`<div class="wrow off"><span>Boucliers coupés <b>O</b></span><i><em style="width:0%"></em></i><small>coupés</small></div>`);
   if(p.engOff)rows.push(`<div class="wrow off"><span>Moteurs coupés <b>I</b></span><i><em style="width:0%"></em></i><small>coupés</small></div>`);
   if(p.w>=300)rows.push(`<div class="wrow cruise"><span>Cap fixe <b>L</b></span><i><em style="width:${helm.lock?100:0}%"></em></i><small>${helm.lock?'verrouillé':'libre'}</small></div>`);
@@ -14593,8 +14844,33 @@ function loadoutPanel(M){
       bt.addEventListener('click',()=>{game.loadout[M.id]=o.id;sfx.click();save();renderHangar();});row.appendChild(bt);}
     box.append(row);}
   if(LO.note)box.append(hEl('p',LO.note));
+  smisPanel(M,box);
   return box;
 }
+// choix du missile d'aile et de la contre-mesure, avec la fiche de chacun
+function smisPanel(M,box){
+  const MO=misOptsOf(M),CO=cmOptsOf(M);if(!MO.length&&!CO.length)return;
+  const LO=loOf(M),lo=loadoutOf(M.id),opt=LO&&LO.key==='ail'?(LO.opts||[]).find(o=>o.id===lo):null,pyl=opt&&opt.pyl||{},hasMis=M.cat==='chbomb'||pyl.i==='a'||pyl.o==='a';
+  const fm=v=>String(v).replace('.',',')+' m';
+  const spec=rows=>{const g=hEl('div',undefined,'lo-spec');for(const [k,v] of rows)g.append(hEl('span',k),hEl('b',v));return g;};
+  const opts=(cur,list,set)=>{const row=hEl('div',undefined,'lo-opts');for(const [id,name] of list){const bt=hEl('button',name,'lo-opt'+(id===cur?' on':''));bt.type='button';bt.setAttribute('aria-pressed',String(id===cur));
+    bt.addEventListener('click',()=>{set(id);sfx.click();save();renderHangar();});row.appendChild(bt);}return row;};
+  if(MO.length){box.append(hEl('span','Missiles d’aile spécialisés','tag'));
+    if(!hasMis)box.append(hEl('p','Choisis un emport avec missiles pour monter un missile spécialisé.'));
+    else{const cur=smisSel(M);box.append(opts(cur,[['','Standard']].concat(MO.map(S=>[S.c,S.id+' '+S.n])),id=>{(game.smis||(game.smis={}))[M.id]=id;}));
+      const S=SMIS_BY[cur];
+      if(S){box.append(spec([['Rôle',S.role],['Gabarit',fm(S.len)+' · Ø '+S.dia+' cm · '+fmt(S.kg)+' kg'],['Vitesse',fmt(S.kmh)+' km/h'],['Portée',S.rng>=1000?fm(S.rng/1000).replace(' m',' km'):S.rng+' m'],['Manœuvre',S.g+' G'],
+          ['Guidage',S.guid],['Charge',S.whT],['Aspect',S.look],['Atout',S.plus],['Limite',S.moins]]));
+        if(S.kg>500&&pyl.o==='a')box.append(hEl('p','Trop lourd pour les pylônes extérieurs : ils gardent le missile standard.'));
+        if(S.wh==='disp')box.append(hEl('p','Chaque pylône tire une salve de trois fléchettes.'));}
+      else box.append(hEl('p','Missile d’aile standard : radar actif, polyvalent.'));
+      const mx=MO.length<SMIS.filter(S=>S.cats.includes(M.cat)).length;if(mx)box.append(hEl('p','Les missiles les plus lourds demandent des pylônes renforcés.'));}}
+  if(CO.length){box.append(hEl('span','Contre-mesures · touche H','tag'));
+    const cur=cmSel(M);box.append(opts(cur,[['','Aucune']].concat(CO.map(C=>[C.id,C.code+' '+C.n])),id=>{(game.scm||(game.scm={}))[M.id]=id;}));
+    const C=CM_BY[cur];if(C)box.append(spec([['Rôle',C.role],['Taille',fm(C.len)],['Emport',C.use],['Contre',C.vs],['Limite',C.lim],['Aspect',C.look]]));
+    else box.append(hEl('p','Sans contre-mesure : seules la manœuvre et la défense rapprochée sauvent du missile.'));}
+}
+
 // appareils de départ : les trois moins chers parmi les intercepteurs (puis les chasseurs) de la faction ; le budget de
 // départ permet d'acheter n'importe lequel des trois, la monnaie reste au pilote
 function starters(fac){const L=MODELS.filter(m=>(m.fac||'humain')===fac);let S=L.filter(m=>m.cat==='intercepteur').sort((a,b)=>a.price-b.price);
@@ -14649,7 +14925,7 @@ btnNew.addEventListener('click',()=>{
   if(!newArmed){newArmed=setTimeout(()=>{newArmed=0;btnNew.textContent='Nouvelle partie';btnNew.classList.remove('danger');},4000);btnNew.textContent='Effacer la sauvegarde ?';btnNew.classList.add('danger');return;}
   clearTimeout(newArmed);newArmed=0;
   try{localStorage.removeItem(KEY);localStorage.removeItem('sillage-stellaire-v2');localStorage.removeItem('sillage-stellaire-v1');}catch(e){}
-  MOBJ.length=0;misOffers=null;Object.assign(game,{mis:misNew(),faction:null,ship:'epervier',owned:[],loadout:{},torpLv:1,credits:5000,design:DEFAULT_DESIGN.slice(),hull:'std',capDesign:CAP_PRESETS[0].rows.slice(),rankFloor:0,tut:{dock:0,board:0},crewLost:0,cargo:[0,0,0],complete:false,kills:0,mined:0,earned:0,time:0,leviathan:false,stock:{},contract:null,lost:null,arenaBest:0,contracts:0});
+  MOBJ.length=0;misOffers=null;Object.assign(game,{mis:misNew(),faction:null,ship:'epervier',owned:[],loadout:{},smis:{},scm:{},torpLv:1,credits:5000,design:DEFAULT_DESIGN.slice(),hull:'std',capDesign:CAP_PRESETS[0].rows.slice(),rankFloor:0,tut:{dock:0,board:0},crewLost:0,cargo:[0,0,0],complete:false,kills:0,mined:0,earned:0,time:0,leviathan:false,stock:{},contract:null,lost:null,arenaBest:0,contracts:0});
   ALL_PLANETS.forEach(p=>{p.scanned=false;p.scan=0;});game.route=[];game.visited={halcyon:1};game.structDown={};game.stSeen={};if(SYS!==SYSTEMS[0])enterSystem(SYSTEMS[0]);setRelay(RELAYS[0]);rebuildPlayerTpl();offers=null;
   btnNew.hidden=true;btnNew.textContent='Nouvelle partie';btnNew.classList.remove('danger');
   if(MODULAIRE)openYard('title');else openHangar('title');
@@ -15086,7 +15362,7 @@ function xrSmall(P){
     if(!g)continue;it.guns.push(g);
     const a=aux('ammo',[1.0*k6,0.5*k6,0.35*k6],{x:m.lx-mp(0.6),y:m.ly+Math.sign(yM-m.ly)*mp(0.6)},{r:G.Lp*0.2,data:{feeds:g}});if(a){it.ammo.push(a);g.data.ammo=a;}}
   it.pyl=[];it.hpu=[];
-  for(const [m,mi] of gm('aud')){const L=m.len||mp(3),px=m.lx,py=m.ly,W={a:'Missile à tête chercheuse',u:'Roquette non guidée',d:'Roquette lourde non guidée'}[m.code];
+  for(const [m,mi] of gm('aud'+SMIS_CODES)){const L=m.len||mp(3),px=m.lx,py=m.ly,W={a:'Missile à tête chercheuse',u:'Roquette non guidée',d:'Roquette lourde non guidée'}[m.code]||('Missile '+SMIS_BY[m.code].n);
     const p=S.put({type:'pylon',name:'Point d’emport — '+W.toLowerCase(),kind:'k',z:'bot',lz:mp(0.25),gm:mi},{x0:px-L/2,x1:px+L/2,y0:py-mp(0.2),y1:py+mp(0.2)});if(p)it.pyl.push(p);
     const h=aux('hpu',[0.5*Math.sqrt(k),0.35*Math.sqrt(k),0.18*Math.sqrt(k)],{x:px,y:py},{r:mp(3),data:{pylon:p}});if(h)it.hpu.push(h);}
   it.bays=[];
@@ -17362,7 +17638,7 @@ function updateSpecials(dt){
   for(let i=DECOYS.length-1;i>=0;i--){const d=DECOYS[i];d.life-=dt;d.x+=d.vx*dt;d.y+=d.vy*dt;d.a+=d.va*dt;const k=Math.exp(-0.4*dt);d.vx*=k;d.vy*=k;if(d.life<=0||!d.src||d.src.dead){d.dead=true;DECOYS.splice(i,1);}}
   for(const o of shipsAll()){if(o.decoyT>0)o.decoyT-=dt;if(o.stunT>0){o.stunT-=dt;stunFx(o,dt);}}
 }
-function drawSpecials(t){misDraw(t);drawDomes(t);drawWells(t);drawTethers();drawDecoys(t);drawDrones(t);}
+function drawSpecials(t){misDraw(t);drawCMLures(t);drawDomes(t);drawWells(t);drawTethers();drawDecoys(t);drawDrones(t);}
 function clearSpecials(){DECOYS.length=0;WELLS.length=0;TETHERS.length=0;RDRONES.length=0;DOMES=[];}
 
 /* =========================================================
@@ -17401,6 +17677,7 @@ window.addEventListener('keydown',e=>{
   else if(key==='b'&&running&&!(player&&player.tpl.small)){setBLTab(compUI.tab==='comp'?'weap':'comp',true);sfx.click();}
   else if(key==='v'&&running)toggleAllDoors();
   else if(key==='x'&&running)ejectPods();
+  else if(key==='h'&&running)playerCM();
   else if(key==='l'&&running)toggleHelm();
   else if(key==='o'&&running)toggleShields();
   else if(key==='i'&&running)toggleEngines();
@@ -17484,6 +17761,7 @@ holdBtn($('tFire'),'fire');holdBtn($('tAlt'),'alt');holdBtn($('tBoost'),'boost')
 $('tCruise').addEventListener('click',()=>{if(running)toggleCruise();});
 $('tPower').addEventListener('click',()=>{if(running)cyclePower();});
 $('tNuke').addEventListener('click',()=>{if(running)requestNuke();});
+$('tCM').addEventListener('click',()=>{if(running)playerCM();});
 for(const b of $('pwSel').children)b.addEventListener('click',()=>{if(running)setPower(b.dataset.k);});
 
 /* =========================================================
