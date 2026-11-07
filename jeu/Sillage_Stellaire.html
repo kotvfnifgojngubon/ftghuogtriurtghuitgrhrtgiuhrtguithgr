@@ -1998,6 +1998,11 @@ function drawAlienTurret(g,fx,c,mx,my,a,r,sc,sh,ready){
 }
 function buildUnique(def){
   if(def.mods&&!String(def.id||'').startsWith('st_'))def=Object.assign({},def,{mods:def.mods.filter(m=>m[0]!=='P'&&!(m[0]==='i'&&def.fac==='xalthar'))});
+  // missiles qui verrouillent un vaisseau (Dard, Faucon, Marteau, missile d'aile, torpilles) : technologie humaine. Les
+  // Xal'thar et les Machines reçoivent à la place leurs équivalents non guidés (nuée, roquettes, bélier, roquette
+  // d'aile, bombes lourdes) ; les corsaires, humains sur des coques humaines volées, gardent les leurs
+  if(def.fac==='xalthar'||def.fac==='anciens'){const NG={J:'U',G:'M',Y:'Z',a:'u',x:'h'},sw=m=>NG[m[0]]?[NG[m[0]]].concat(m.slice(1)):m;
+    def=Object.assign({},def,{mods:(def.mods||[]).map(sw),pyl:def.pyl&&def.pyl.map(sw)});}
   const w=def.L,h=def.H,n=w*h,P=PALI[def.pal]||PALI.humain,pk2=PALI[def.pal]?def.pal:'humain',EP=def.engPal||(def.pirate?[0xffffff,0xfff0c0,0xffc060,0xff9a20,0xd86a10,0x6a2a06]:null)||[0xffffff,0xbfe0ff,0x6fa8ff,0x8cc0ff,0x3d6fd0,0x23408f],sd=def.seed||7,R=mulberry(sd*7919+w*31+h);
   const zh=new Float32Array(n),mt=new Uint8Array(n),ec=new Uint32Array(n),emi=new Uint8Array(n),tp=new Uint8Array(n),seam=new Uint8Array(n);
   const MI=k=>HMI[k]||HMI.hull,HULLISH=new Set([HMI.hull,HMI.plate]),EK=def.skin==='xal'?'x':def.pal==='anciens'?'a':def.pirate?'p':'h';
@@ -4253,7 +4258,7 @@ const XWEAP={},AWEAP={};{
   XWEAP.w=Object.assign({},WEAP.w,{pc:'#c890ff',plasma:true,fx:'xalw',fc:'#c890ff',dmg:WEAP.w.dmg*0.9,sdmg:WEAP.w.sdmg*1.8,fire:0.08});
   XWEAP.q=Object.assign({},WEAP.q,{fx:'xal',fc:'#c890ff'});
   XWEAP.P=Object.assign({},WEAP.P,{pc:'#c890ff'});
-  for(const k of ['b','h','l'])XWEAP[k]=Object.assign({},WEAP[k],{kind:'missile',turn:1.7,spMax:WEAP[k].spMax*1.25,life:WEAP[k].life*1.6,guided:true,fx:'xalbomb'});
+  for(const k of ['b','h','l'])XWEAP[k]=Object.assign({},WEAP[k],{kind:'missile',turn:1.7,spMax:WEAP[k].spMax*1.25,life:WEAP[k].life*1.6,aimPt:true,fx:'xalbomb'});
   // Machines : canons à arc (éclairs ambrés), obusiers et batteries à fusion (boulets incandescents), canon spinal ancien
   AWEAP.C=Object.assign({},WEAP.C,{pc:'#ffa040',fx:'arc',fc:'#ffa040',dmg:WEAP.C.dmg*1.1,sp:WEAP.C.sp*1.1});
   AWEAP.w=Object.assign({},WEAP.w,{pc:'#ffa040',fx:'arc',fc:'#ffa040'});
@@ -6329,6 +6334,14 @@ const RECIPES={
   alarm(r){const [L]=mkBuf(1.0,1);
     [[587,0],[440,0.22],[587,0.44],[440,0.66]].forEach(([f,t0])=>{let p=0,q=0;for(let i=Math.floor(t0*SR);i<L.length;i++){const t=i/SR-t0;p+=f/SR;q+=f*2/SR;L[i]+=(Math.sin(p*TAU)+0.15*Math.sin(q*TAU))*Math.min(1,t/0.012)*ev(t,0.012,0.12)*0.5;}});
     return finish([L],0.65,2800);},
+  // verrouillage : deux bips secs de cockpit (un vaisseau lance-missiles t'accroche au radar)
+  lockTone(r){const [L]=mkBuf(0.3,1);
+    [0,0.12].forEach(t0=>{let p=0;for(let i=Math.floor(t0*SR);i<Math.floor((t0+0.085)*SR);i++){const t=i/SR-t0;p+=1040/SR;L[i]+=(Math.sin(p*TAU)+0.28*Math.sin(3*p*TAU))*Math.min(1,t/0.004)*Math.max(0,Math.min(1,(0.085-t)/0.012))*0.45;}});
+    return finish([L],0.6,5200);},
+  // missile entrant : bip aigu et serré, que le jeu répète de plus en plus vite quand le missile approche
+  missTone(r){const [L]=mkBuf(0.075,1);let p=0;
+    for(let i=0;i<L.length;i++){const t=i/SR;p+=1560/SR;L[i]=(Math.sin(p*TAU)+0.3*Math.sin(3*p*TAU))*Math.min(1,t/0.003)*Math.max(0,Math.min(1,(0.065-t)/0.008))*0.5;}
+    return finish([L],0.6,6200);},
   pickup(r){const [L]=mkBuf(0.16,1),f=1+Math.abs(r())*0.12;let ph=0;
     for(let i=0;i<L.length;i++){const t=i/SR;ph+=swp(t,0.04,520*f,860*f)/SR;L[i]=(Math.sin(ph*TAU)+0.12*Math.sin(2*ph*TAU))*ev(t,0.003,0.05);}return finish([L],0.55,3500);},
   crate(r){const [L]=mkBuf(0.5,1);
@@ -6422,7 +6435,7 @@ const SND_JOBS=[
   ['pd',r=>RECIPES.pd(r),3],['fire',r=>RECIPES.fire(r),3],['decompress',r=>RECIPES.decompress(r),3],['weldSnap',r=>RECIPES.weldSnap(r),1],['foam',r=>RECIPES.foam(r),2],
   ['click',r=>RECIPES.click(r),1],['buy',r=>RECIPES.mallet(r,[523,784],0.08,0.5),1],['fail',r=>RECIPES.mallet(r,[330,247],0.14,0.7),1],
   ['contract',r=>RECIPES.bell(r,[523,659,784,1047],0.09),1],['scan',r=>RECIPES.bell(r,[659,784,988],0.1),1],['dock',r=>RECIPES.bell(r,[392,587],0.12),1],
-  ['alarm',r=>RECIPES.alarm(r),1],['pickup',r=>RECIPES.pickup(r),3],['crate',r=>RECIPES.crate(r),1],['power',r=>RECIPES.power(r),1],
+  ['alarm',r=>RECIPES.alarm(r),1],['lockTone',r=>RECIPES.lockTone(r),1],['missTone',r=>RECIPES.missTone(r),1],['pickup',r=>RECIPES.pickup(r),3],['crate',r=>RECIPES.crate(r),1],['power',r=>RECIPES.power(r),1],
   ['cruiseOn',r=>RECIPES.cruise(r,true),1],['cruiseOff',r=>RECIPES.cruise(r,false),1],['shock',r=>RECIPES.shock(r),2],['arc',r=>RECIPES.arc(r),1],
   ['nukeLaunch',r=>RECIPES.nukeLaunch(r),1],['nuke',r=>RECIPES.nuke(r),1],['horn',r=>RECIPES.horn(r),1],['warp',r=>RECIPES.warp(r),1],
   ['doorClose',r=>RECIPES.door(r,true),2],['doorOpen',r=>RECIPES.door(r,false),2],['seal',r=>RECIPES.seal(r),2],
@@ -6440,7 +6453,7 @@ const SNDV={cannon:[0.14,0.1,5,45],zap:[0.09,0.1,4,55],howitzer:[0.46,0.28,3,0],
   boomS:[0.36,0.3,5,30],boomM:[0.52,0.36,3,0],boomL:[0.7,0.42,3,0],crack:[0.28,0.22,3,70],metal:[0.06,0.12,3,90],rock:[0.15,0.08,3,70],
   shieldHit:[0.15,0.3,3,70],shieldDown:[0.42,0.4,2,0],shieldUp:[0.24,0.36,2,0],pd:[0.07,0.05,2,70],fire:[0.07,0.08,2,160],decompress:[0.14,0.26,2,160],
   weldSnap:[0.36,0.26,2,0],foam:[0.06,0.08,2,200],click:[0.16,0.04,3,0],buy:[0.12,0.22,2,0],fail:[0.14,0.22,2,0],contract:[0.13,0.36,1,0],scan:[0.13,0.36,1,0],dock:[0.12,0.32,1,0],
-  alarm:[0.12,0.2,1,900],pickup:[0.05,0.1,3,70],crate:[0.08,0.22,2,0],power:[0.2,0.14,2,0],cruiseOn:[0.24,0.28,1,0],cruiseOff:[0.2,0.28,1,0],shock:[0.42,0.42,2,0],
+  alarm:[0.12,0.2,1,900],lockTone:[0.12,0.03,1,0],missTone:[0.12,0.02,2,0],pickup:[0.05,0.1,3,70],crate:[0.08,0.22,2,0],power:[0.2,0.14,2,0],cruiseOn:[0.24,0.28,1,0],cruiseOff:[0.2,0.28,1,0],shock:[0.42,0.42,2,0],
   nukeLaunch:[0.5,0.36,1,0],nuke:[0.85,0.5,1,0],horn:[0.5,0.45,2,0],warp:[0.55,0.42,2,0],doorClose:[0.26,0.18,3,60],doorOpen:[0.22,0.18,3,60],seal:[0.07,0.2,2,150],
   dockServo:[0.2,0.15,2,200],dockClamp:[0.32,0.22,2,60],dockHiss:[0.3,0.32,2,100],dockOk:[0.14,0.3,1,0],cutter:[0.16,0.15,2,0],pod:[0.2,0.18,4,70]};
 // réverbération : une queue sombre et lisse
@@ -6646,6 +6659,7 @@ let player=null,playerTpl=null;
 let rocks=[],wrecks=[],enemies=[],allies=[],pickups=[],crates=[],spacers=[],bullets=[],missiles=[],beams=[],parts=[],floaters=[],shocks=[],flashes=[],blasts=[],trails=[];
 let state='loading',paused=false,docked=false,mapOpen=false,completeOpen=false,yardOpen=false,running=false;
 let cam={x:0,y:0},shake=0,now=0,heat=false,scanning=null,canDock=false,enemyTimer=6,fieldTimer=0,saveTimer=0,hintTimer=0,coreWarned=false,frameN=0;
+let lockBy=-9;const lockW={lvl:0,t:0,d:1e9,ms:[]};
 let hyperDest=null,waypoint=null,lockTarget=null,nukeFlash=0,lastHurt=-99,lastFire=-99;
 const cruise={on:false,spool:0,deep:1,clear:false};
 const keys={up:0,down:0,left:0,right:0,fire:0,alt:0,boost:0};
@@ -7532,6 +7546,7 @@ function launchMissile(b,m,W,own,target,tx,ty,mul){
   if(mp.on&&(b.copy||b.remote)&&!NET.evSpawn)return;
   if(W.kind==='nuke'&&b!==player)return; // garde-fou : jamais d'arme nucléaire pour une IA
   if(b.dmLock===false&&W.kind!=='nuke')target=null; // calculateur ou conduite de tir détruits : tir sans accrochage
+  if(W.aimPt)target=null; // bombe xal'thar : elle file vers le point visé, sans accrocher de vaisseau (l'accrochage est humain)
   // lanceur de la faction : le missile part du prochain tube, dans un nuage de gaz
   let lx=m.lx,ly=m.ly;const Hh=b.tpl.faction==='humain'&&hatchOf(m),hk=Hh&&Hh.cells?Math.sqrt(Math.min(1,W.salvo/Hh.t.length)):1;
   if(Hh){const k=(m.tube=((m.tube||0)+1)%Hh.t.length);lx+=Hh.t[k][0];ly+=Hh.t[k][1];m.hfired=(m.hfired||0)|1<<k;m.hold=0.5;m.hatch=Math.max(m.hatch||0,0.75);}
@@ -7539,7 +7554,7 @@ function launchMissile(b,m,W,own,target,tx,ty,mul){
   if(Hh){const big=W.size||2;for(let k=0;k<2+big;k++)addP(mx,my,b.vx+rnd(-25,25),b.vy+rnd(-25,25),rnd(0.5,1.1),10,null,1.4,big>2?2:1);flashAt(mx,my,6+big*3,'#ffd9a0',0.06);}
   let ang;
   if(W.mine)ang=b.a+PI+rnd(-0.5,0.5);
-  else if(W.hook||W.guided)ang=Math.atan2(ty-my,tx-mx)+rnd(-0.08,0.08);
+  else if(W.hook||W.guided||W.aimPt)ang=Math.atan2(ty-my,tx-mx)+rnd(-0.08,0.08);
   else if(W.wing||W.torp)ang=b.a+rnd(-(W.spread||0.02),W.spread||0.02);
   else if(W.kind==='rocket')ang=Math.atan2(ty-my,tx-mx)+rnd(-W.spread,W.spread);
   else if(W.kind==='nuke')ang=b.a+rnd(-0.1,0.1);
@@ -7591,6 +7606,7 @@ function shipWeapons(b,dt,tx,ty,primary,secondary,target,own){
       const rng=pl?W.range:W.erange;
       if(primary&&okS&&(!pl||b.energy>1)&&(pl||hyp(tx-mx,ty-my)<rng*1.5)){if(pl)b.energy-=W.drain*dt;firingLaser=Math.max(firingLaser,W.heavy?2:1);fireLaser(b,m,W,mx,my,dt,own,(pl?mul:mul*0.55)*eff,rng);}
     }else{
+      if(!pl&&target===player&&W.kind==='missile'&&!W.mine&&!W.aimPt&&b.dmLock!==false&&hyp(tx-mx,ty-my)<(W.range||900)*1.15)lockBy=game.time;
       m.reload-=dt*eff;
       const want=W.kind==='nuke'?(pl&&b.nukeReq):secondary,Hh=hf&&hatchOf(m),full=Hh&&W.kind!=='nuke';
       if(Hh){if(m.hold>0)m.hold-=dt;const op=m.salvo>0||m.hold>0;m.hatch=clamp((m.hatch||0)+(op?dt/0.16:-dt/0.35),0,1);if(!m.hatch)m.hfired=0;}
@@ -7629,6 +7645,19 @@ function pointDefense(b,m,W,mx,my,own){
   beams.push({x0:mx,y0:my,x1:tgt.x,y1:tgt.y,col:'#ffe9a8',pd:true,life:0});sfx.pd(mx,my);
   // une torpille est d'autant plus dure à abattre que son niveau est haut
   if(Math.random()<(tgt.torp?Math.max(0.04,0.3-0.026*tgt.torp):(tgt.W&&tgt.W.pdk)||0.7)*(b.tpl.pdK||1)){tgt.dead=true;explosion(tgt.x,tgt.y,tgt.kind==='nuke'?1.2:0.4,tgt.vx*0.3,tgt.vy*0.3);if(tgt.kind==='nuke')floater(tgt.x,tgt.y-10,'TETE NUCLEAIRE ABATTUE','#ffd23c');}
+}
+// alerte de verrouillage : 1 = un vaisseau lance-missiles t'accroche (double bip lent), 2 = un missile te poursuit (bip
+// aigu qui s'accélère à mesure qu'il approche). Un leurre qui détourne le missile coupe aussitôt l'alarme.
+function updateLockWarn(dt){
+  const p=player;let lvl=0,dm=1e9;lockW.ms.length=0;
+  if(p&&!p.dead&&!p.dying){
+    for(const q of missiles)if(q.target===p&&!q.dead&&q.kind!=='rocket'&&!q.W.mine&&q.own!==0){const d=hyp(q.x-p.x,q.y-p.y);if(d<dm)dm=d;if(lockW.ms.length<8)lockW.ms.push(q);}
+    lvl=lockW.ms.length?2:game.time-lockBy<0.45?1:0;}
+  if(lvl!==lockW.lvl){if(lvl>lockW.lvl)lockW.t=0;if(lvl===2&&lockW.lvl===0)lockW.blink=game.time;}
+  lockW.lvl=lvl;lockW.d=dm;lockW.t-=dt;
+  if(lvl&&lockW.t<=0){
+    if(lvl===2){sfx.play('missTone',undefined,undefined,{direct:true,var:0,rate:dm<500?1.06:1});lockW.t=clamp(0.07+dm/2400,0.1,0.45);}
+    else{sfx.play('lockTone',undefined,undefined,{direct:true,var:0});lockW.t=0.95;}}
 }
 function updateMissiles(dt){
   for(let i=missiles.length-1;i>=0;i--){
@@ -11494,6 +11523,7 @@ function update(dt){
   shieldRocks(dt);shieldShips(dt);
   updateBullets(dt);
   updateMissiles(dt);
+  updateLockWarn(dt);
   updateShocks(dt);
   updateWeld(dt);
   updateVents(dt);
@@ -13313,6 +13343,11 @@ function drawReticle(){
     else{const cx=Wz/2,cy=Hz/2,a=Math.atan2(sy-cy,sx-cx),m=Math.min((Wz/2-40)/Math.max(0.01,Math.abs(Math.cos(a))),(Hz/2-40)/Math.max(0.01,Math.abs(Math.sin(a)))),ex=cx+Math.cos(a)*m,ey=cy+Math.sin(a)*m;
       for(let q=0;q<7;q++){const b2=q*1.4;pline(ex-Math.cos(a)*b2-Math.sin(a)*(7-q),ey-Math.sin(a)*b2+Math.cos(a)*(7-q),ex-Math.cos(a)*b2+Math.sin(a)*(7-q),ey-Math.sin(a)*b2-Math.cos(a)*(7-q),col);}
       drawText(txt,ex-Math.cos(a)*22,ey-Math.sin(a)*22+(Math.sin(a)>0?-12:8),col,'c');}}
+  if(lockW.lvl&&player&&!player.dead){const px=(player.x-ox)*z,py=(player.y-oy)*z,pr=Math.max(14,Math.min(70,player.rad*0.6)*z),bl=((game.time*(lockW.lvl===2?8:3))|0)%2;
+    if(lockW.lvl===2){if(bl)drawText('MISSILE EN APPROCHE',px,py-pr-16,'#ff4f6a','c');
+      for(const q of lockW.ms){const qx=(q.x-ox)*z,qy=(q.y-oy)*z;if(qx<-20||qy<-20||qx>W+20||qy>H+20){const a=Math.atan2(q.y-player.y,q.x-player.x);for(let i=0;i<3;i++)ctx.fillStyle='#ff4f6a',ctx.fillRect(Math.round(px+Math.cos(a)*(pr+8+i*3)),Math.round(py+Math.sin(a)*(pr+8+i*3)),2,2);}
+        else if(bl||lockW.d<600)brackets(qx,qy,5,'#ff4f6a');}}
+    else if(bl)drawText('VERROUILLE PAR RADAR',px,py-pr-16,'#ffc66d','c');}
   if(aimMod){brackets(x,y,5*k,'#ffc66d');drawText(MODS[aimMod.code].short+(aimMod.active?'':' HS'),x,y+9*k,aimMod.active?'#ffc66d':'#9d93b8','c');}
   if(ss)screenSpace(false);
 }
