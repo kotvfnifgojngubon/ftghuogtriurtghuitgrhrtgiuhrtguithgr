@@ -6740,6 +6740,11 @@ const music={
    État du jeu
    ========================================================= */
 const game={faction:null,ship:'epervier',owned:[],loadout:{},smis:{},scm:{},torpLv:1,tut:{dock:0,board:0},rankFloor:0,autoDoors:false,sfxVol:0.8,crewLost:0,credits:5000,design:DEFAULT_DESIGN.slice(),livery:'acier',lv6:true,hull:'std',capDesign:CAP_PRESETS[0].rows.slice(),cargo:[0,0,0],muted:false,music:true,complete:false,kills:0,mined:0,earned:0,time:0,leviathan:false,stock:{},contract:null,lost:null,arenaBest:0,contracts:0,route:[],visited:{halcyon:1}};
+// mode libre : crédits illimités (jamais débités, affichés ∞) et tous les modèles des quatre factions dans ta flotte
+const FREE_MODE=true,CR_INF=999999999;
+if(FREE_MODE){Object.defineProperty(game,'credits',{get(){return CR_INF;},set(){},enumerable:true,configurable:true});
+  Object.defineProperty(game,'owned',{get(){return MODELS.map(m=>m.id);},set(){},enumerable:true,configurable:true});}
+const crTxt=()=>FREE_MODE?'∞':crTxt();
 let player=null,playerTpl=null;
 let rocks=[],wrecks=[],enemies=[],allies=[],pickups=[],crates=[],spacers=[],bullets=[],missiles=[],beams=[],parts=[],floaters=[],shocks=[],flashes=[],blasts=[],trails=[];
 let state='loading',paused=false,docked=false,mapOpen=false,completeOpen=false,yardOpen=false,running=false;
@@ -9901,7 +9906,7 @@ function shipComputerRender(){if(!scOpen)return;
   // en-tête : vaisseau, système, crédits, coque, énergie
   const p=player,M=MODEL_BY[game.ship]||{},hull=Math.round(p.cells/p.orig*100),en=p.st&&p.st.energyMax?Math.round(p.energy/p.st.energyMax*100):0;
   scEl.querySelector('#scShip').textContent=(M.n||'Vaisseau')+(game.faction?' · '+({humain:'Halcyon',pirate:'Clan',anciens:'Machines',xalthar:'Xal’thar'})[game.faction]:'');
-  scEl.querySelector('#scStats').innerHTML=`<span><i>Système</i>${misEsc(SYS.name)}</span><span><i>Crédits</i>${fmt(game.credits)} CR</span><span class="${hull<40?'bad':hull<75?'warn':''}"><i>Coque</i>${hull} %</span><span><i>Énergie</i>${en} %</span>${mp.on?`<span><i>Réseau</i>${NET.isAuth?'autorité':NET.synced?'synchro':'…'}</span>`:''}`;
+  scEl.querySelector('#scStats').innerHTML=`<span><i>Système</i>${misEsc(SYS.name)}</span><span><i>Crédits</i>${crTxt()} CR</span><span class="${hull<40?'bad':hull<75?'warn':''}"><i>Coque</i>${hull} %</span><span><i>Énergie</i>${en} %</span>${mp.on?`<span><i>Réseau</i>${NET.isAuth?'autorité':NET.synced?'synchro':'…'}</span>`:''}`;
   scTabsEl.innerHTML='';for(const T of SC_TABS){if(!scTabOk(T))continue;const b=hEl('button',T.l,'sc-tab'+(SC.tab===T.id?' on':''));b.type='button';b.dataset.tab=T.id;if(SC.notes[T.id]&&SC.tab!==T.id)b.append(hEl('em',String(Math.min(9,SC.notes[T.id]))));b.addEventListener('click',()=>shipComputerSetTab(T.id));scTabsEl.append(b);}
   const on=scTabsEl.querySelector('.on');if(on&&on.scrollIntoView)try{on.scrollIntoView({block:'nearest',inline:'nearest'});}catch(e){}
   const keep=[...scBody.querySelectorAll('[data-scroll]')].map(e=>[e.dataset.scroll,e.scrollTop]);
@@ -10251,7 +10256,7 @@ function scInventory(){const p=player,st=p.st||{},W=scH('div','sc-grid');scBody.
     if(p.mods.some(m=>m.code==='N')||(LO&&LO.key==='torp'))scKV(dl,'Torpilles','niveau '+(game.torpLv||1));if(!dl.children.length)scKV(dl,'Armement','aucun (appareil civil)');c.append(dl);});
   card('Stock de pièces',c=>{const ks=Object.keys(game.stock||{}).filter(k=>game.stock[k]>0);if(!ks.length)c.append(scH('p','sc-sub','Aucune pièce en réserve.'));const dl=scH('dl','sc-dl');for(const k of ks)scKV(dl,(MODS[k]||{name:k}).name,'× '+game.stock[k]);c.append(dl);});
   card('Flotte · '+game.owned.length+' vaisseau'+(game.owned.length>1?'x':''),c=>{for(const id of game.owned){const M=MODEL_BY[id];if(!M)continue;const r=scH('div','sc-modrow'+(id===game.ship?' on':''));r.append(scH('span','',M.n),scH('b','',id===game.ship?'en service':'au hangar'));c.append(r);}});
-  card('Finances',c=>{const dl=scH('dl','sc-dl');scKV(dl,'Crédits',fmt(game.credits)+' cr');scKV(dl,'Contrats remplis',String(game.contracts||0));scKV(dl,'Missions réussies',String(game.mis.done||0));scKV(dl,'Planètes relevées',scannedCount()+' / '+ALL_PLANETS.length);if(game.lost)scKV(dl,'Cargaison perdue',(game.lost.cargo[0]+game.lost.cargo[1]+game.lost.cargo[2])+' u · '+(sysById(game.lost.sys)||{name:'?'}).name);c.append(dl);});}
+  card('Finances',c=>{const dl=scH('dl','sc-dl');scKV(dl,'Crédits',crTxt()+' cr');scKV(dl,'Contrats remplis',String(game.contracts||0));scKV(dl,'Missions réussies',String(game.mis.done||0));scKV(dl,'Planètes relevées',scannedCount()+' / '+ALL_PLANETS.length);if(game.lost)scKV(dl,'Cargaison perdue',(game.lost.cargo[0]+game.lost.cargo[1]+game.lost.cargo[2])+' u · '+(sysById(game.lost.sys)||{name:'?'}).name);c.append(dl);});}
 /* ---------- Équipage ---------- */
 const SC_JOB={man:'tient son poste',evac:'évacue',fire:'lutte contre le feu',breach:'colmate une brèche',fix:'répare',repel:'repousse l’abordage',heal:'soigne',idle:'au repos',walk:'se déplace'};
 function scCrew(){const p=player,[L,R]=scSplit(),cr=p.crew||[],nominal=CREW_N&&CREW_N[game.ship];
@@ -14112,7 +14117,7 @@ function updateHUD(dt){
   setBar('ef','enFill',null,Math.ceil(p.energy/Math.max(1,st.energyMax)*20)/20,-1);
   hset('ev',Math.round(p.energy),v=>$('enVal').textContent=v);
   hset('pw',powerKey,v=>{for(const b of $('pwSel').children)b.classList.toggle('on',b.dataset.k===v);$('pwName').textContent=PWM[v].name;});
-  hset('cr',game.credits,v=>credVal.textContent=fmt(v));
+  hset('cr',game.credits,v=>credVal.textContent=crTxt());
   hset('cg',cargoTotal()+'/'+st.cargo,v=>cargoVal.textContent=v);
   for(let i=0;i<3;i++)hset('o'+i,game.cargo[i],v=>oreEls[i].textContent=v);
   hset('at',sitesTxt(),v=>atlasVal.textContent=v);
@@ -14491,7 +14496,7 @@ function refillCrew(p){const R=p.mods.find(m=>isR(m.code));let n=0;while(p.crew&
 function stockValue(){let v=0;for(const k in game.stock)v+=(game.stock[k]||0)*Math.round(MODS[k].cost*0.5);return v;}
 function renderShop(){
   const st=player.st;
-  $('shopCred').textContent=fmt(game.credits);
+  $('shopCred').textContent=crTxt();
   const cl=$('cargoList');cl.innerHTML='';
   ORES.forEach((o,i)=>{const li=document.createElement('li');li.innerHTML=`<i style="background:${o.col}"></i><span>${o.name}</span><span>× ${game.cargo[i]}</span><span class="v">${o.val} cr/u</span>`;cl.appendChild(li);});
   $('cargoCap').textContent=`${cargoTotal()} / ${st.cargo} unités en soute`;
@@ -14507,7 +14512,7 @@ function renderShop(){
   if(ALL_SHIPS)$('rankInfo').textContent='';else{const r=pilotRank(),nx=nextRank(),n=game.contracts|0;$('rankInfo').textContent=`Rang de pilote : ${SHIP_RANKS[r].name} · ${n} mission${n>1?'s':''} remplie${n>1?'s':''}`+(nx?` · prochain vaisseau : ${nx.name} à ${nx.need} mission${nx.need>1?'s':''}`:' · tous les vaisseaux débloqués');}
   const ri=repairInfo(),br=$('btnRepair');
   if(ri.cost<=0){br.textContent='Coque intacte';br.disabled=true;}
-  else{br.textContent=game.credits>=ri.cost?`Réparer la coque · ${fmt(ri.cost)} cr`:`Réparer en partie · ${fmt(game.credits)} cr`;br.disabled=game.credits<1;}
+  else{br.textContent=game.credits>=ri.cost?`Réparer la coque · ${fmt(ri.cost)} cr`:`Réparer en partie · ${crTxt()} cr`;br.disabled=game.credits<1;}
   renderRelay();
   renderAtlas($('atlasShop'));
 }
@@ -14859,8 +14864,11 @@ function renderHangar(){
   const F=FACTIONS.find(f=>f.id===hangar.fac)||FACTIONS[0];
   $('hangarEyebrow').textContent=hangar.origin==='shop'?'Hangar de la flotte · '+STATION.relay.name:hangar.firstRun?'Nouvelle partie · étape 2 sur 2':'Hangar · avant le départ';
   $('hangarName').textContent=F.name;$('hangarMotto').textContent='« '+F.motto+' »';
-  const FM=hangar.firstRun?starters(F.id):MODELS.filter(m=>(m.fac||'humain')===F.id);if(!FM.includes(MODEL_BY[hangar.sel]))hangar.sel=(FM.find(m=>m.id===game.ship)||FM.find(m=>m.cat==='chasseur')||FM[0]).id;if(hangar.firstRun&&!FM.includes(MODEL_BY[hangar.sel]))hangar.sel=FM[0].id;
+  const FM=hangar.firstRun&&!FREE_MODE?starters(F.id):MODELS.filter(m=>(m.fac||'humain')===F.id);if(!FM.includes(MODEL_BY[hangar.sel]))hangar.sel=(FM.find(m=>m.id===game.ship)||FM.find(m=>m.cat==='chasseur')||FM[0]).id;if(hangar.firstRun&&!FM.includes(MODEL_BY[hangar.sel]))hangar.sel=FM[0].id;
   const M0=MODEL_BY[hangar.sel]||FM[0];hangar.cat=M0.cat;
+  // mode libre : un onglet par faction, pour piloter n'importe quel vaisseau du jeu
+  if(FREE_MODE){const ft=hEl('div',undefined,'cat-tabs');for(const f of FACTIONS){if(!f.playable)continue;const b=hEl('button',undefined,'cat-tab'+(hangar.fac===f.id?' on':''));b.type='button';b.setAttribute('aria-pressed',String(hangar.fac===f.id));
+    b.append(hEl('b',f.short),hEl('span',MODELS.filter(m=>(m.fac||'humain')===f.id).length+' modèles'));b.addEventListener('click',()=>{if(hangar.fac===f.id)return;hangar.fac=f.id;hangar.sel=null;sfx.click();renderHangar();});ft.appendChild(b);}body.appendChild(ft);}
   // onglets : une catégorie à la fois ; un point signale celles où tu possèdes déjà un vaisseau
   const tabs=hEl('div',undefined,'cat-tabs');
   for(const C of CATS){const L=FM.filter(m=>m.cat===C.id),own=!hangar.firstRun&&L.some(m=>game.owned.includes(m.id));if(!L.length)continue;
@@ -14880,17 +14888,17 @@ function renderHangar(){
     const nums=hEl('div',undefined,'nums');
     for(const [k,v] of [['Vitesse',Math.round(S.spd)],['Accél.',Math.round(S.acc)],['Rotation',Math.round(S.turn*57.3)+'°'],['Bouclier',S.shield?fmt(S.shield):'—'],['Soute',S.cargo+' u'],['Radar',fmt(RADAR_R[M.cat]*(M.trait==='capteurs'?1.3:1))]])nums.append(hEl('span',k),hEl('b',String(v)));
     const sz=hEl('div',undefined,'size-row'),bar=hEl('i');bar.style.width=Math.round(Math.pow(I.m/2500,0.35)*100)+'%';sz.append(bar,hEl('span',I.len+' · équipage '+I.crew));
-    const pz=hEl('div',undefined,'price'+(own||hangar.firstRun?' own':''));pz.append(hEl('b',own?'Déjà acheté':fmt(M.price)+' cr'),hEl('span',M.tier+(hangar.firstRun?' · reste '+fmt(startBudget(F.id)-M.price)+' cr':'')));
+    const pz=hEl('div',undefined,'price'+(own||hangar.firstRun?' own':''));pz.append(hEl('b',own?(FREE_MODE?'Disponible':'Déjà acheté'):fmt(M.price)+' cr'),hEl('span',M.tier+(hangar.firstRun?' · reste '+fmt(startBudget(F.id)-M.price)+' cr':'')));
     b.append(dl,nums,sz,pz);
     b.addEventListener('click',()=>{hangar.sel=M.id;sfx.click();renderHangar();});
     grid.appendChild(b);}
   body.appendChild(grid);
-  const M=MODEL_BY[hangar.sel],own=game.owned.includes(M.id),cr='Crédits : '+fmt(game.credits)+' cr. ';
+  const M=MODEL_BY[hangar.sel],own=game.owned.includes(M.id),cr='Crédits : '+crTxt()+' cr. ';
   body.appendChild(loadoutPanel(M));
-  $('hangarNote').textContent=hangar.firstRun?'Budget de départ : '+fmt(startBudget(F.id))+' cr. Choisis l’un de ces trois appareils ; la monnaie te reste. Les vaisseaux plus grands s’achètent ensuite au hangar d’un relais, avec l’argent des missions. L’essai en arène ne coûte rien.'
+  $('hangarNote').textContent=FREE_MODE?'Mode libre : les vaisseaux des quatre factions sont tous à toi et les crédits sont illimités. Les onglets du haut changent de faction ; piloter un vaisseau d’une autre faction ne change pas ton camp.':hangar.firstRun?'Budget de départ : '+fmt(startBudget(F.id))+' cr. Choisis l’un de ces trois appareils ; la monnaie te reste. Les vaisseaux plus grands s’achètent ensuite au hangar d’un relais, avec l’argent des missions. L’essai en arène ne coûte rien.'
     :cr+(own?'Les vaisseaux de ta flotte s’échangent gratuitement.':game.credits>=M.price?'Ce modèle coûte '+fmt(M.price)+' cr ; il rejoint ta flotte pour de bon.':'Il te manque '+fmt(M.price-game.credits)+' cr pour ce modèle. L’essai en arène reste gratuit.');
   $('btnHangarTrial').hidden=false;$('btnHangarTrial').textContent='Essai en arène : '+M.n;$('btnHangarXray').hidden=false;
-  if(hangar.firstRun){ok.textContent='Acheter et décoller · '+M.n+' · '+fmt(M.price)+' cr';ok.disabled=false;}
+  if(hangar.firstRun){ok.textContent=FREE_MODE?'Décoller · '+M.n:'Acheter et décoller · '+M.n+' · '+fmt(M.price)+' cr';ok.disabled=false;}
   else if(game.ship===M.id){const same=!player||!player.tpl||player.tpl.key===shipKey(M.id);ok.textContent=same?'Vaisseau actuel':'Appliquer l’emport';ok.disabled=same;}
   else if(own){ok.textContent='Piloter · '+M.n;ok.disabled=false;}
   else{ok.textContent='Acheter · '+fmt(M.price)+' cr';ok.disabled=game.credits<M.price;}
@@ -14954,7 +14962,7 @@ function launchHangar(){
   if(hangar.firstRun){game.owned=[M.id];game.credits=Math.max(0,startBudget(hangar.fac||'humain')-M.price);bought=true;}
   else if(!game.owned.includes(M.id)){if(game.credits<M.price)return;game.credits-=M.price;game.owned.push(M.id);bought=true;}
   const changed=game.ship!==hangar.sel||keyChanged;
-  game.faction=hangar.fac||'humain';game.ship=hangar.sel;playerTpl=uniqueTpl(shipKey(game.ship));
+  game.faction=FREE_MODE?(hangar.firstRun?(hangar.fac0||hangar.fac):(game.faction||hangar.fac))||'humain':hangar.fac||'humain';game.ship=hangar.sel;playerTpl=uniqueTpl(shipKey(game.ship));
   hangarEl.hidden=true;yardOpen=false;sfx.buy();
   const I=shipInfo(game.ship);
   if(hangar.origin==='title'){save();startGame();return;}
@@ -14962,7 +14970,7 @@ function launchHangar(){
     toast(I.name+(bought?' acheté · ':' en service · ')+I.brandShort,(bought?'−'+fmt(M.price)+' cr. ':'')+I.role+' · '+I.arm+'.'+(player.giant?' Il tourne lentement : anticipe. Ses hangars lancent des chasseurs, le rayon tracteur se commande avec R.':''),'good');}
   save();shopEl.hidden=false;renderShop();
 }
-$('btnHangarOk').addEventListener('click',()=>{if(hangar.step==='faction'){if(!hangar.fac)return;hangar.step='ship';sfx.click();renderHangar();hangarEl.scrollTop=0;return;}launchHangar();});
+$('btnHangarOk').addEventListener('click',()=>{if(hangar.step==='faction'){if(!hangar.fac)return;hangar.fac0=hangar.fac;hangar.step='ship';sfx.click();renderHangar();hangarEl.scrollTop=0;return;}launchHangar();});
 $('btnHangarTrial').addEventListener('click',()=>{if(hangar.step!=='ship'||arena.on)return;sfx.init();sfx.click();openTrialPick();});
 $('btnHangarBack').addEventListener('click',()=>{if(hangar.step==='ship'&&hangar.firstRun){hangar.step='faction';sfx.click();renderHangar();return;}closeHangar();});
 if(!MODULAIRE){
@@ -14981,7 +14989,7 @@ function startGame(){
   if(foundCount()===0&&game.kills===0&&!game.earned){
     setTimeout(()=>toast(`Objectif : trouver ${hostSites().length} installations ennemies`,'Les planètes sont toutes relevées. Cherche les repaires corsaires, les installations des Machines et les sites xal’thar : ils apparaissent sur la carte quand tes capteurs les touchent, et un SIGNAL ? en bord d’écran annonce le plus proche. Ouvre la carte (M) et recule à la molette : la galaxie, puis l’univers. Deux galaxies, seize systèmes, reliés par le saut de sillage (J) ; le grand saut part d’une porte.','rose'),700);
     setTimeout(()=>toast(isTouch?'Les tourelles visent seules':'Ton vaisseau suit la souris','Vise le réacteur des corsaires. Leur bouclier tombe d’abord, puis la coque se découpe. Touches 1, 2, 3 : priorité d’énergie.'),5600);
-  }else toast('Bon retour, pilote',`Système ${SYS.name} · installations ${sitesTxt()} · ${fmt(game.credits)} crédits`+(game.lost?' · ton épave t’attend':''),'good');
+  }else toast('Bon retour, pilote',`Système ${SYS.name} · installations ${sitesTxt()} · ${crTxt()} crédits`+(game.lost?' · ton épave t’attend':''),'good');
 }
 btnPlay.addEventListener('click',()=>{if(state!=='title')return;sfx.init();if(MODULAIRE)openYard('title');else openHangar('title');});
 let newArmed=0;
