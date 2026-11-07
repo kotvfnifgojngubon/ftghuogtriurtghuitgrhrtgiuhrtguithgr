@@ -1,3 +1,4 @@
 # rendus des outils du skill sillage-pixel (planches, GIF) : régénérables
 records/
 node_modules/
+*.zip
