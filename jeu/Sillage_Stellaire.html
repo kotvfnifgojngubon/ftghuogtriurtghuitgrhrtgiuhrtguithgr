@@ -10005,9 +10005,12 @@ function scToSys(){const R=WORLD_R||1e5;scMap.view='sys';scMap.cx=0;scMap.cy=0;s
 function scZoom(f,px,py){const cv=scMap.cv;if(!cv)return;px=px===undefined?cv.width/2:px;py=py===undefined?cv.height/2:py;const k0=scK(),wx=(px-cv.width/2)*k0,wy=(py-cv.height/2)*k0;
   if(scMap.view==='sys'){const zmax=(WORLD_R||1e5)/60;if(f>1&&scMap.z>=zmax*0.999){scToGal();return;}
     scMap.z=clamp(scMap.z*f,5,zmax);const k1=scMap.z;scMap.cx+=wx-(px-cv.width/2)*k1;scMap.cy+=wy-(py-cv.height/2)*k1;}
-  else{const gmin=scGzMin();
-    // tout près du système où l'on est : la carte y entre ; ailleurs, le zoom s'arrête
-    if(f<1&&scMap.gz<=gmin*1.001){const p=scAtlas().pos(SYS),sx=scSX(p[0]),sy=scSY(p[1]);if(hyp(sx-px,sy-py)<70||hyp(sx-cv.width/2,sy-cv.height/2)<70){scToSys();return;}}
+  else{const gmin=scGzMin(),A=scAtlas(),cw=[scMap.gcx+wx,scMap.gcy+wy],inG=GA=>hyp(cw[0]-A.org[GA.id][0],cw[1]-A.org[GA.id][1])<A.ext[GA.id]*0.8;
+    // on avance dans le vide entre les galaxies : le zoom file vers la plus proche (la sienne, à distance égale)
+    if(f<1&&!GALAXIES.some(inG)){let best=null,bd=1e18;for(const GA of GALAXIES){const o=A.org[GA.id],d=hyp(cw[0]-o[0],cw[1]-o[1])/(GA.id===SYS.gal?1.4:1);if(d<bd){bd=d;best=o;}}
+      px=scSX(best[0]);py=scSY(best[1]);return scZoom(f,px,py);}
+    // au plus près : la carte entre dans le système où l'on est, si l'on avance dans sa galaxie ou s'il est à l'écran
+    if(f<1&&scMap.gz<=gmin*1.001){const p=A.pos(SYS),sx=scSX(p[0]),sy=scSY(p[1]);if(inG(galById(SYS.gal))||(sx>-10&&sy>-10&&sx<cv.width+10&&sy<cv.height+10)){scToSys();return;}}
     scMap.gz=clamp(scMap.gz*f,gmin,scGzMax());const k1=scMap.gz;scMap.gcx+=wx-(px-cv.width/2)*k1;scMap.gcy+=wy-(py-cv.height/2)*k1;
     // tout au bout du recul, les deux galaxies se recentrent
     if(f>1&&scMap.gz>=scGzMax()*0.999){const m=scAtlas().mid;scMap.gcx=m[0];scMap.gcy=m[1];}}}
