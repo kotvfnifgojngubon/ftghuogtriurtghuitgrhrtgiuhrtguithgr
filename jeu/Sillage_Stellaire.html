@@ -710,7 +710,7 @@ body.touch .hud-bottom{padding-bottom:276px}
         <div class="row"><span class="g-label">Soute</span><b id="cargoVal">0/20</b></div>
         <div class="ores" id="oreVals"></div>
         <div class="row"><span class="g-label">Équipage</span><b id="crewVal">0/0</b></div>
-        <div class="row"><span class="g-label">Atlas</span><b id="atlasVal">0/66</b></div>
+        <div class="row"><span class="g-label">Sites</span><b id="atlasVal">0/22</b></div>
       </div>
       <div class="plate mpp" id="mpPlate" hidden><span class="g-label">Multijoueur</span><span class="mp-hint" id="mpCodeHud"></span><b id="mpRoute"></b><ul id="mpList"></ul><span class="mp-hint" id="mpHint"></span><span class="mp-hint mp-net" id="mpNetHud"></span></div>
       <div id="radarSlotTop"></div>
@@ -759,7 +759,7 @@ body.touch .hud-bottom{padding-bottom:276px}
     <p class="eyebrow" id="titleSys">Chantier naval · Système Halcyon</p>
     <h1 id="titleName">Sillage <span>Stellaire</span></h1>
     <p class="lede">Assemble ton vaisseau module par module, puis pilote-le à la souris. Les boucliers se déforment sous les tirs, les coques se découpent pixel par pixel, le feu se propage et ton équipage court boucher les brèches.</p>
-    <p class="objective"><b>Objectif</b><span>Cartographier les <span id="objCount">198</span> planètes de deux galaxies : seize systèmes reliés par le saut de sillage, et le grand saut entre les galaxies. Ouvre la carte et recule pour choisir un système, puis lance le saut de sillage. Mine, remplis des contrats dans les relais, récupère les modules des corsaires et agrandis ton vaisseau. Un gardien dort au Récif Rosé.</span></p>
+    <p class="objective"><b>Objectif</b><span>Toutes les planètes des deux galaxies sont cartographiées. Il reste à trouver les <span id="objCount">22</span> installations ennemies — repaires corsaires, forges des Machines, ruches xal’thar — cachées dans les seize systèmes : elles n’apparaissent sur la carte qu’une fois passées à portée de tes capteurs. Ouvre la carte et recule à la molette pour choisir une destination.</span></p>
     <div class="actions">
       <button id="btnPlay" class="btn primary" type="button" disabled>Génération du système…</button>
       <button id="btnNew" class="btn" type="button" hidden disabled>Nouvelle partie</button>
@@ -917,9 +917,9 @@ body.touch .hud-bottom{padding-bottom:276px}
 
 <section id="complete" class="overlay" hidden aria-labelledby="doneName">
   <div class="panel narrow">
-    <header class="panel-head"><div><p class="eyebrow">Mission accomplie</p><h2 id="doneName">Atlas complet</h2></div></header>
+    <header class="panel-head"><div><p class="eyebrow">Mission accomplie</p><h2 id="doneName">Installations ennemies : toutes trouvées</h2></div></header>
     <div class="panel-body">
-      <p class="lede">Les soixante-six mondes de la galaxie sont cartographiés. Le relais transmet ta carte à la flotte. Tu peux continuer à miner, à chasser les corsaires et à agrandir ton vaisseau.</p>
+      <p class="lede">Repaires corsaires, installations des Machines, sites xal’thar : tout est sur ta carte. Le relais transmet les positions à la flotte. Tu peux continuer à miner, à chasser et à agrandir ton vaisseau.</p>
       <div class="stats" id="doneStats"></div>
     </div>
     <footer class="panel-foot"><button id="btnDone" class="btn primary" type="button">Continuer l’exploration</button></footer>
@@ -5009,7 +5009,7 @@ function trSteer(b,tx,ty,dt,sp){const want=Math.atan2(ty-b.y,tx-b.x),st=b.st,tur
   const vmax=(st.maxSpd||200)*sp,acc=(st.acc||80)*0.6,ca=Math.cos(b.a),sa=Math.sin(b.a);b.vx+=ca*acc*dt;b.vy+=sa*acc*dt;const v=hyp(b.vx,b.vy);if(v>vmax){b.vx*=vmax/v;b.vy*=vmax/v;}b.x+=b.vx*dt;b.y+=b.vy*dt;b.thrust=1;}
 
 function drawStructMap(g,F,labels){
-  genStructs(F);for(const c of F._cx||[]){const [x,y]=mapPt(c.x,c.y),X=Math.round(x),Y=Math.round(y),dead=c.secs.length&&stIsDown(c.secs[0]),r=c.th>=4?3:2,col=dead?'#4a4458':ST_COL[c.fac];
+  genStructs(F);for(const c of F._cx||[]){if(!siteKnown(c))continue;const [x,y]=mapPt(c.x,c.y),X=Math.round(x),Y=Math.round(y),dead=c.secs.length&&stIsDown(c.secs[0]),r=c.th>=4?3:2,col=dead?'#4a4458':ST_COL[c.fac];
     g.fillStyle='#07050c';g.fillRect(X-r-1,Y-r-1,2*r+3,2*r+3);g.fillStyle=col;g.fillRect(X-r,Y-r,2*r+1,2*r+1);g.fillStyle='#07050c';g.fillRect(X,Y,1,1);
     if(labels)mapUI.hov.push({x:X,y:Y,r:r+2,st:c,dead});}
 }
@@ -5798,7 +5798,9 @@ function stratCard(g,s){
 function stratLanes(g,F){if(!mapUI.strat)return;for(const l of sysLanes(F)){const [x0,y0]=mapPt(l.a.x,l.a.y),[x1,y1]=mapPt(l.b.x,l.b.y),n=Math.max(1,Math.round(hyp(x1-x0,y1-y0)/3)),col=l.kind==='h'?'#5ab4ff':l.kind==='x'?'#b070ff':'#ffa040';
   g.fillStyle=col;for(let k=1;k<n;k+=2)g.fillRect(Math.round(x0+(x1-x0)*k/n),Math.round(y0+(y1-y0)*k/n),1,1);if(l.b.n&&l.b.sys)drawText(stx(l.b.n).toUpperCase(),x1,y1-7,col,'c',g);}}
 
-{const oc=document.getElementById('objCount');if(oc)oc.textContent=ALL_PLANETS.length;}
+allPlanetsKnown();
+// (le compte des installations attend la fin du script : leurs plans s'appuient sur des tables définies plus bas)
+setTimeout(()=>{const oc=document.getElementById('objCount');if(oc)oc.textContent=hostSites().length;},0);
 const sysById=id=>SYSTEMS.find(s=>s.id===id);
 const alDist=(a,b)=>Math.hypot(a.gx-b.gx,a.gy-b.gy);
 /* =========================================================
@@ -6754,6 +6756,29 @@ const cargoTotal=()=>game.cargo[0]+game.cargo[1]+game.cargo[2];
 const cargoValue=()=>Math.round(game.cargo.reduce((s,c,i)=>s+c*ORES[i].val,0)*(playerTpl&&playerTpl.oreK||1));
 // l'atlas couvre toute la galaxie
 const scannedCount=()=>ALL_PLANETS.filter(p=>p.scanned).length;
+/* ---------- objectif : les installations ennemies ----------
+   Toutes les planètes des deux galaxies sont cartographiées d'avance. Ce qui reste caché, ce sont les installations des
+   corsaires, des Machines et des Xal'thar : elles n'apparaissent sur aucune carte tant qu'elles ne sont pas passées à
+   portée des capteurs. Les trouver toutes achève la partie. */
+const HOSTILE_FAC=new Set(['pirate','anciens','xalthar']);
+const FAC_SITE={pirate:['Repaire corsaire','découvert'],anciens:['Installation des Machines','découverte'],xalthar:['Site xal’thar','découvert']};
+let HOST_SITES=null;
+function hostSites(){if(HOST_SITES)return HOST_SITES;HOST_SITES=[];for(const s of SYSTEMS){genStructs(s);for(const c of s._cx||[])if(HOSTILE_FAC.has(c.fac))HOST_SITES.push({c,s});}return HOST_SITES;}
+const siteFound=c=>!!(game.found&&game.found[c.id]);
+const siteKnown=c=>!HOSTILE_FAC.has(c.fac)||siteFound(c);
+const foundCount=()=>hostSites().filter(q=>siteFound(q.c)).length;
+const sysSites=s=>{const L=hostSites().filter(q=>q.s===s);return[L.filter(q=>siteFound(q.c)).length,L.length];};
+const sitesTxt=()=>foundCount()+'/'+hostSites().length;
+function allPlanetsKnown(){for(const p of ALL_PLANETS){p.scanned=true;p.scan=1;}}
+function updateDiscovery(dt){if(!player||player.dead||arena.on||!SYS)return;updateDiscovery.t=(updateDiscovery.t||0)-dt;if(updateDiscovery.t>0)return;updateDiscovery.t=0.5;
+  const F=game.found||(game.found={}),R=radarRange(player);genStructs(SYS);
+  for(const c of SYS._cx||[]){if(!HOSTILE_FAC.has(c.fac)||F[c.id]||hyp(player.x-c.x,player.y-c.y)>R+c.r)continue;
+    F[c.id]=1;const rw=c.fac==='xalthar'?900:c.fac==='anciens'?800:500,[nm,ver]=FAC_SITE[c.fac];game.credits+=rw;game.earned+=rw;
+    toast(nm+' '+ver,c.n.split(' · ')[0]+' · installations '+sitesTxt()+' · +'+rw+' crédits','good');sfx.scan();
+    floater(player.x,player.y-player.h*0.5-30*TXS,'INSTALLATION DECOUVERTE','#ffc66d');misJournal('decouverte',nm+' '+ver+' : '+c.n+' ('+SYS.name+').');save();
+    if(foundCount()===hostSites().length&&!game.complete){game.complete=true;save();setTimeout(showComplete,1400);}}}
+// installation encore inconnue la plus proche du système : un signal flou sur le bord de l'écran, à portée double des capteurs
+function nearSignal(){if(!player||!SYS)return null;const R=radarRange(player)*2.5;let best=null,bd=R;for(const c of SYS._cx||[]){if(siteKnown(c))continue;const d=hyp(player.x-c.x,player.y-c.y)-c.r;if(d<bd){bd=d;best=c;}}return best;}
 const sysScanned=s=>s.planets.filter(p=>p.scanned).length;
 // répartition de l'énergie entre boucliers, armes et moteurs
 const PWM={
@@ -6764,7 +6789,7 @@ const PWM={
 };
 let powerKey='bal';
 
-function serialize(){return{faction:game.faction,ship:game.ship,owned:game.owned.slice(),loadout:Object.assign({},game.loadout),smis:Object.assign({},game.smis||{}),scm:Object.assign({},game.scm||{}),torpLv:game.torpLv,credits:game.credits,design:game.design,livery:game.livery,lv6:true,hull:game.hull,capDesign:game.capDesign,cargo:game.cargo,muted:game.muted,music:game.music,complete:game.complete,kills:game.kills,mined:game.mined,earned:game.earned,time:game.time,leviathan:game.leviathan,structDown:game.structDown||{},scanned:ALL_PLANETS.filter(p=>p.scanned).map(p=>p.id),stock:game.stock,contract:null,missionSystemVersion:MISSION_SYSTEM_VERSION,shipComputerVersion:SHIP_COMPUTER_VERSION,navDest:game.navDest||null,lost:game.lost?{x:Math.round(game.lost.x),y:Math.round(game.lost.y),cargo:game.lost.cargo.slice(),sys:game.lost.sys||'halcyon'}:null,arenaBest:game.arenaBest,contracts:game.contracts,tut:game.tut,rankFloor:game.rankFloor,prog:1,autoDoors:game.autoDoors,sfxVol:game.sfxVol,world:WS*GS*PS,relay:STATION.relay.id,sys:SYS.id,route:game.route.slice(),visited:game.visited,mis:misSave()};}
+function serialize(){return{faction:game.faction,ship:game.ship,owned:game.owned.slice(),loadout:Object.assign({},game.loadout),smis:Object.assign({},game.smis||{}),scm:Object.assign({},game.scm||{}),torpLv:game.torpLv,credits:game.credits,design:game.design,livery:game.livery,lv6:true,hull:game.hull,capDesign:game.capDesign,cargo:game.cargo,muted:game.muted,music:game.music,complete:game.complete,kills:game.kills,mined:game.mined,earned:game.earned,time:game.time,leviathan:game.leviathan,structDown:game.structDown||{},scanned:ALL_PLANETS.filter(p=>p.scanned).map(p=>p.id),found:Object.assign({},game.found||{}),stock:game.stock,contract:null,missionSystemVersion:MISSION_SYSTEM_VERSION,shipComputerVersion:SHIP_COMPUTER_VERSION,navDest:game.navDest||null,lost:game.lost?{x:Math.round(game.lost.x),y:Math.round(game.lost.y),cargo:game.lost.cargo.slice(),sys:game.lost.sys||'halcyon'}:null,arenaBest:game.arenaBest,contracts:game.contracts,tut:game.tut,rankFloor:game.rankFloor,prog:1,autoDoors:game.autoDoors,sfxVol:game.sfxVol,world:WS*GS*PS,relay:STATION.relay.id,sys:SYS.id,route:game.route.slice(),visited:game.visited,mis:misSave()};}
 // rang de pilote : missions remplies, ou au moins le vaisseau qu'on pilotait déjà (anciennes sauvegardes)
 function rankAt(n){let r=0;for(let i=0;i<SHIP_RANKS.length;i++)if(n>=SHIP_RANKS[i].need)r=i;return r;}
 // tous les vaisseaux sont disponibles au chantier (la progression par missions est mise de côté)
@@ -6780,7 +6805,7 @@ function tutDock(){return!(game.tut&&game.tut.dock>0);}
 function tutBoard(){return!(game.tut&&game.tut.board>0);}
 function save(){if(arena.on)return;try{localStorage.setItem(KEY,JSON.stringify(serialize()));}catch(e){}}
 function cargoTotalOf(d){return(d.cargo||[]).reduce((s,c)=>s+(c|0),0);}
-function hasSave(d){return !!(d&&((d.scanned&&d.scanned.length)||cargoTotalOf(d)>0||d.kills>0||d.design||Object.values(d.upg||{}).some(v=>v>0)||d.credits>0));}
+function hasSave(d){return !!(d&&((d.found&&Object.keys(d.found).length)||d.earned>0||cargoTotalOf(d)>0||d.kills>0||d.design||Object.values(d.upg||{}).some(v=>v>0)||d.credits>0));}
 function applySave(d){
   if(!d)return;
   const OLD={moteur:[120,260,480,800],canon:[150,300,550,900],coque:[100,240,450,750],soute:[80,200,380,650]};
@@ -6820,9 +6845,9 @@ function applySave(d){
   // avant la progression par missions, le vaisseau déjà construit reste autorisé
   game.rankFloor=d.prog?clamp(d.rankFloor|0,0,SHIP_RANKS.length-1):(hasSave(d)?(game.hull==='cap'?floorFor(game.capDesign,true):floorFor(game.design,false)):0);
   game.autoDoors=!!d.autoDoors;game.sfxVol=Number.isFinite(+d.sfxVol)?clamp(+d.sfxVol,0,1):0.8;
-  const set=new Set(d.scanned||[]);ALL_PLANETS.forEach(p=>{p.scanned=set.has(p.id);p.scan=p.scanned?1:0;});
-  // un atlas complété avant l'arrivée des nouveaux mondes peut l'être à nouveau
-  if(game.complete&&scannedCount()<ALL_PLANETS.length)game.complete=false;
+  allPlanetsKnown();game.found={};if(d.found&&typeof d.found==='object')for(const q of hostSites())if(d.found[q.c.id])game.found[q.c.id]=1;
+  // l'objectif est désormais de trouver les installations ennemies : une ancienne partie « atlas complet » reprend la chasse
+  game.complete=!!d.complete&&foundCount()===hostSites().length;
 }
 function readSave(){try{const s=localStorage.getItem(KEY)||localStorage.getItem('sillage-stellaire-v2')||localStorage.getItem('sillage-stellaire-v1');return s?JSON.parse(s):null;}catch(e){return null;}}
 
@@ -10030,7 +10055,7 @@ function scMapDraw(){const cv=scMap.cv;if(!cv||!cv.isConnected)return;const r=cv
       if(f.kind==='blob'){pt(scSX(f.x),scSY(f.y),'field',f,'Champ '+(f.name||''),Math.max(10,f.rad/scMap.z));if(f.rad/scMap.z>14)scText(g,'CHAMP '+(f.name||'').toUpperCase(),scSX(f.x),scSY(f.y)+3,'#c8a070');}}
     for(const p of PLANETS){const x=scSX(p.x),y=scSY(p.y),rr=Math.max(3,p.R/scMap.z);g.fillStyle=p.scanned?TYPES[p.type].mapCol:'#5b5170';g.beginPath();g.arc(x,y,rr,0,TAU);g.fill();pt(x,y,'planet',p,p.scanned?p.name:'Planète inconnue',rr+4);
       if(rr>2&&scMap.z<WORLD_R/120)scText(g,(p.scanned?p.name:'???').toUpperCase(),x,y-rr-4,p.scanned?'#efe9fa':'#ffc66d');}
-    genStructs(SYS);for(const c of SYS._cx||[]){const x=scSX(c.x),y=scSY(c.y),hos=stHostile(c.fac),dn=c.secs.length&&stIsDown(c.secs[0]);g.fillStyle=dn?'#4a4060':hos?'#ff6a5a':TERR_COL[c.fac]||'#6fb4ff';g.fillRect(Math.round(x)-3,Math.round(y)-3,7,7);g.fillStyle='#07050c';g.fillRect(Math.round(x)-1,Math.round(y)-1,3,3);
+    genStructs(SYS);for(const c of SYS._cx||[]){if(!siteKnown(c))continue;const x=scSX(c.x),y=scSY(c.y),hos=stHostile(c.fac),dn=c.secs.length&&stIsDown(c.secs[0]);g.fillStyle=dn?'#4a4060':hos?'#ff6a5a':TERR_COL[c.fac]||'#6fb4ff';g.fillRect(Math.round(x)-3,Math.round(y)-3,7,7);g.fillStyle='#07050c';g.fillRect(Math.round(x)-1,Math.round(y)-1,3,3);
       pt(x,y,'cx',c,c.n,9);if(scMap.z<WORLD_R/400)scText(g,c.n.split(' · ')[0].toUpperCase().slice(0,26),x,y+14,hos?'#ff9a8a':'#9fc6ff');}
     for(const rl of SYS.relays){const x=scSX(rl.x),y=scSY(rl.y);g.strokeStyle='#35d6b4';g.lineWidth=2;g.strokeRect(Math.round(x)-5,Math.round(y)-5,11,11);g.lineWidth=1;pt(x,y,'relay',rl,rl.name,10);scText(g,rl.name.toUpperCase(),x,y-9,'#7fffd4');}
     // missions : lieux connus, zones de recherche (approximatives), objectifs suivis
@@ -10093,7 +10118,7 @@ function scMapSide(side){const S=scMap.sel,D=game.navDest;
   const card=scH('div','sc-card'),dl=scH('dl','sc-dl'),r=S.ref;card.append(scH('h3','',S.label||''));
   const dist=(x,y)=>uTxt(hyp(x-player.x,y-player.y));
   if(S.kind==='sys'){const s=r,path=s===SYS?[]:routeTo(SYS,s);scKV(dl,'Étoile',STARS[s.star].label);scKV(dl,'Territoire',terrTxt(s));scKV(dl,'Danger',dangerTxt(s));scKV(dl,'Distance',s===SYS?'ici':(s.gal!==SYS.gal?'autre galaxie (grand saut)':dec1(alDist(SYS,s))+' AL')+' · '+(path?path.length+' saut'+(path.length>1?'s':''):'hors de portée'));
-    scKV(dl,'Relais',(s.relays||[]).map(q=>q.name).join(', ')||'—');scKV(dl,'Planètes',s.planets.length+' · '+sysScanned(s)+' relevée(s)');scKV(dl,'Visité',game.visited[s.id]?'oui':'non');
+    scKV(dl,'Relais',(s.relays||[]).map(q=>q.name).join(', ')||'—');scKV(dl,'Planètes',String(s.planets.length));{const [f,n]=sysSites(s);scKV(dl,'Installations ennemies',n?f+' / '+n+' découverte(s)':'aucune');}scKV(dl,'Visité',game.visited[s.id]?'oui':'non');
     const pres=terrOf(s)==='humain'?'Flotte, Guilde, Cartographes, Phare, Compagnie Cuprique':terrOf(s)==='pirate'?'Clan de la Rouille, Cercle Muet':terrOf(s)==='anciens'?'Les Machines':'Les Xal’thar';scKV(dl,'Présence',pres);
     const ms=game.mis.active.filter(m=>{const q=misStepOf(m);return q&&(q.sys||m.sys)===s.id;});scKV(dl,'Missions actives',ms.length?ms.map(m=>m.title.replace(/^★\s*/,'')).join(' · '):'aucune');
     if(mp.on){const F=[...mp.peers.values()].filter(P=>P.s&&P.s.sys===s.id).map(P=>P.name);if(F.length)scKV(dl,'Joueurs',F.join(', '));}}
@@ -10245,7 +10270,7 @@ function scCodex(){const W=scH('div','sc-grid'),M=game.mis;W.dataset.scroll='X';
   card('Factions',c=>{for(const [k,n] of [['humain','Halcyon (humains)'],['pirate','Clan de la Rouille (corsaires)'],['anciens','Les Machines'],['xalthar','Les Xal’thar']]){const r=scH('div','sc-modrow'+(stHostile(k)?' bad':''));r.append(scH('span','',n),scH('b','',k===(game.faction||'humain')?'ta faction':stHostile(k)?'hostile':'neutre'));c.append(r);}});
   card('Organisations',c=>{for(const o in ORGS){const r=scH('div','sc-modrow');r.append(scH('span','',ORGS[o].n),scH('b','',repLv(M.rep[o]||0)[1]));c.append(r);}});
   card('Personnages rencontrés · '+Object.keys(M.met).length,c=>{const L=Object.entries(M.met);if(!L.length)c.append(scH('p','sc-sub','Personne pour l’instant.'));for(const [n,q] of L.slice(-40)){const r=scH('div','sc-modrow');r.append(scH('span','',n),scH('b','',(ORGS[q.org]?ORGS[q.org].n:'indépendant')+' · '+((sysById(q.sys)||{name:''}).name)));c.append(r);}});
-  card('Découvertes',c=>{const L=M.journal.filter(e=>e.k==='decouverte').slice(-20).reverse();const pl=ALL_PLANETS.filter(p=>p.scanned).length;c.append(scH('p','sc-sub',pl+' planète(s) relevée(s) au total.'));for(const e of L)c.append(scH('p','sc-sub','◆ '+e.txt));});
+  card('Découvertes',c=>{const L=M.journal.filter(e=>e.k==='decouverte').slice(-20).reverse();c.append(scH('p','sc-sub','Installations ennemies découvertes : '+sitesTxt()+'. Toutes les planètes sont déjà cartographiées.'));for(const e of L)c.append(scH('p','sc-sub','◆ '+e.txt));});
   card('Historique des missions · '+M.hist.length,c=>{for(const h of M.hist.slice(-25).reverse()){const r=scH('div','sc-modrow'+(h.status==='done'?'':h.status==='fail'?' bad':' warn'));r.append(scH('span','',h.title.replace(/^★\s*/,'')),scH('b','',({done:'réussie',fail:'échouée',abandon:'abandonnée',cancel:'annulée'})[h.status]||h.status));c.append(r);}if(!M.hist.length)c.append(scH('p','sc-sub','Aucune mission terminée.'));});}
 /* ---------- Multijoueur ---------- */
 function scMulti(){const W=scH('div','sc-grid');scBody.append(W);const card=(t,fill)=>{const c=scH('div','sc-card');c.append(scH('h3','',t));fill(c);W.append(c);};
@@ -11778,6 +11803,7 @@ function update(dt){
   updateMissiles(dt);
   updateLockWarn(dt);
   updateCMs(dt);
+  updateDiscovery(dt);
   updateShocks(dt);
   updateWeld(dt);
   updateVents(dt);
@@ -13645,7 +13671,7 @@ function drawIndicators(){misTrack();
   if(arena.on){for(const e of enemies){if(e.dead||e.dying)continue;tg.push({x:e.x,y:e.y,col:e.giant?'#ff9a3c':'#ff4f6a',label:e.label?e.label.toUpperCase():e.cls.uid?shipInfo(e.cls.uid).name.toUpperCase():e.giant?(e.cls.key==='carrier'?'PORTE-NEFS':'CUIRASSE'):'ENNEMI',main:true,r:e.rad});}}
   else{
     tg.push({x:STATION.x,y:STATION.y,col:raidOn()?'#ff4f6a':'#35d6b4',label:'RELAIS',main:true,r:100});
-    nearUnknown(4).forEach((p,i)=>tg.push({x:p.x,y:p.y,col:i===0?'#ffc66d':'#8a6a3a',label:'?',main:i===0,r:p.R}));
+    {const c=nearSignal();if(c)tg.push({x:c.x,y:c.y,col:'#ffc66d',label:'SIGNAL ?',main:true,r:c.r});}
     for(const e of enemies){if(e.dead||e.dying||e.cls.key==='raider'||e.bounty)continue;if(e.stc){if(stNear3(e))tg.push({x:e.stc.cx.x,y:e.stc.cx.y,col:'#ff9a3c',label:e.stc.cx.n.split(' ')[0].toUpperCase(),main:true,r:e.stc.cx.r*0.5});continue;}tg.push({x:e.x,y:e.y,col:e.cls.key==='leviathan'||e.giant?'#ff9a3c':'#ff4f6a',label:e.cls.key==='leviathan'?'LEVIATHAN':e.cls.key==='dread'?'CUIRASSE':e.cls.key==='carrier'?'PORTE-NEFS':e.cls.key==='cruiser'?'CROISEUR':'FREGATE',main:true,r:e.rad});}
     for(const a of allies)if((a.giant||a.prize)&&!a.stc&&!a.dead&&!a.dying)tg.push({x:a.x,y:a.y,col:'#35d6b4',label:a.prize?'PRISE':'BASTION',main:true,r:a.rad});
     for(const t of misTargets())tg.push(t);
@@ -13783,7 +13809,7 @@ function drawGalView(g,alpha,z,C,T){
     if(isGate(s)){const ph=((now*3)|0)%2;g.fillStyle=ph?GA.col:'#ffffff';for(const [dx,dy] of [[0,-9],[9,0],[0,9],[-9,0]])g.fillRect(x+dx,y+dy,1,1);mDot(g,x,y,9,ph?'#ffffff':GA.col,3);}
     sysGlyph(g,s,x,y,here||s===mapUI.sel);
     drawText(s.name,x,y+7,here?'#ffffff':vis?'#efe9fa':'#9d93b8','c',g);
-    drawText(sysScanned(s)+'/'+s.planets.length,x,y+14,'#6e5f84','c',g);
+    {const [f,n]=sysSites(s);if(n)drawText(f+'/'+n+' SITES',x,y+14,f===n?'#6e5f84':'#ffc66d','c',g);}
     if(isGate(s)&&full)drawText('PORTE',x+12,y-4,GA.col,'',g);
     if(here&&((now*2)|0)%2)drawText('ICI',x,y-14,'#35d6b4','c',g);
     if(mp.on){const F=[...mp.peers.values()].filter(P=>P.s&&P.s.sys===s.id&&now-P.s.rt<12).map(P=>P.name);if(F.length)drawText(F.join(', ').toUpperCase(),x,y-(here?22:14),'#7fffd4','c',g);}
@@ -13810,7 +13836,7 @@ function sysCard(g,s){
   else{const sec=path.reduce((a,q,i)=>a+hopSec(i?path[i-1]:SYS,q),0),far=s.gal!==SYS.gal;
     line2=(far?'AUTRE GALAXIE  ':dec1(alDist(SYS,s))+' AL  ')+(path.length>1?`${path.length} SAUTS  ${Math.round(sec)} S`:`SAUT ${Math.round(sec)} S`);}
   drawText(line2,x+6,y+15,'#efe9fa','',g);
-  drawText(`PLANETES ${sysScanned(s)}/${s.planets.length}  RELAIS ${s.relays.length}`,x+6,y+25,'#9d93b8','',g);
+  {const [f,n]=sysSites(s);drawText(`PLANETES ${s.planets.length}  RELAIS ${s.relays.length}`+(n?`  SITES ${f}/${n}`:''),x+6,y+25,'#9d93b8','',g);}
   drawText('DANGER',x+6,y+35,'#9d93b8','',g);const pips=s.danger<0.9?1:s.danger<1.25?2:s.danger<1.6?3:s.danger<2.1?4:5;
   for(let i=0;i<5;i++){g.fillStyle=i<pips?(pips>2?'#ff4f6a':'#ffc66d'):'#2a2148';g.fillRect(x+36+i*6,y+35,4,5);}
   if(!game.visited[s.id])drawText('INEXPLORE',x+w-6,y+35,'#ffc66d','r',g);
@@ -13846,9 +13872,9 @@ function drawUniView(g,alpha){
   if(full)drawText(`GRAND SAUT  ${dec1(galDist(A,B))} M AL  ${INTER_SEC} S`,(ax+bx)/2,(ay+by)/2-9,'#9d93b8','c',g);
   for(const GA of GALAXIES){const [x,y]=U.pos(GA),spr=galSprite(GA,U.sz),here=GA.id===SYS.gal,L=galSystems(GA.id);
     g.drawImage(spr,Math.round(x-spr.width/2),Math.round(y-spr.height/2));
-    const nP=L.reduce((a,s)=>a+s.planets.length,0),nS=L.reduce((a,s)=>a+sysScanned(s),0),yb=Math.round(y+spr.height/2)+2;
+    const nP=L.reduce((a,s)=>a+sysSites(s)[1],0),nS=L.reduce((a,s)=>a+sysSites(s)[0],0),yb=Math.round(y+spr.height/2)+2;
     drawText('GALAXIE '+GA.name,x,yb,here?'#ffffff':GA.col,'c',g);
-    drawText(`${L.length} SYSTEMES  ATLAS ${nS}/${nP}`,x,yb+8,'#9d93b8','c',g);
+    drawText(`${L.length} SYSTEMES  INSTALLATIONS ${nS}/${nP}`,x,yb+8,'#9d93b8','c',g);
     if(here&&((now*2)|0)%2)drawText('ICI',x,Math.round(y-spr.height/2)-8,'#35d6b4','c',g);
     if(full){if(mapUI.gsel===GA.id)brk(g,x,y,Math.round(spr.width*0.42),'#ffc66d');mBtn(Math.round(x-spr.width/2),Math.round(y-spr.height/2),spr.width,spr.height+18,'galaxy',GA);}
   }
@@ -13881,7 +13907,7 @@ function drawMapCanvas(dt){
   if(mapUI.view==='uni'||u>0.5)drawText(`UNIVERS  ${GALAXIES.length} GALAXIES`,w/2,7,'#35d6b4','c',g);
   else if(mapUI.view==='gal'||t>0.5)drawText(`GALAXIE ${GA.name}  ${galSystems(gid).length} SYSTEMES`,w/2,7,GA.col,'c',g);
   else drawText((F===SYS?'SYSTEME ':'APERCU  ')+F.name+'  '+STARS[F.star].label,w/2,7,F===SYS?'#35d6b4':'#ffc66d','c',g);
-  drawText('ATLAS '+scannedCount()+'/'+ALL_PLANETS.length,w-6,7,'#efe9fa','r',g);
+  drawText('INSTALLATIONS '+sitesTxt(),w-6,7,'#efe9fa','r',g);
   const hint=mapUI.view==='uni'?(isTouch?'TOUCHE UNE GALAXIE  BOUTON : LA VOIR':'CLIC : CHOISIR  DOUBLE CLIC OU MOLETTE AVANT : ENTRER  M : FERMER')
     :mapUI.view==='gal'?(isTouch?'TOUCHE UN SYSTEME  ONGLETS : SYSTEME, UNIVERS':'CLIC : CHOISIR  DOUBLE CLIC OU MOLETTE AVANT : ZOOMER  MOLETTE ARRIERE : UNIVERS')
     :F===SYS?(isTouch?'TOUCHE : DESTINATION HYPERESPACE  ONGLET GALAXIE':'CLIC : DESTINATION HYPERESPACE PUIS J  MOLETTE ARRIERE : GALAXIE  M : FERMER'):'APERCU D\'UN AUTRE SYSTEME  MOLETTE ARRIERE : GALAXIE';
@@ -14089,7 +14115,7 @@ function updateHUD(dt){
   hset('cr',game.credits,v=>credVal.textContent=fmt(v));
   hset('cg',cargoTotal()+'/'+st.cargo,v=>cargoVal.textContent=v);
   for(let i=0;i<3;i++)hset('o'+i,game.cargo[i],v=>oreEls[i].textContent=v);
-  hset('at',scannedCount()+'/'+ALL_PLANETS.length,v=>atlasVal.textContent=v);
+  hset('at',sitesTxt(),v=>atlasVal.textContent=v);
   hset('crew',(p.crew?p.crew.length:0)+'/'+(p.crewMax||0),v=>$('crewVal').textContent=v);
   hset('hint',hintTimer>20?0:1,v=>{$('keyHint').style.opacity=v?'1':'0';});
   hset('tnuke',p.mods.some(m=>m.code==='N'),v=>{$('tNuke').hidden=!v;});
@@ -14402,7 +14428,7 @@ function toast(title,sub,tone){
 function renderAtlas(el){
   el.innerHTML='';
   // système courant, planète par planète ; puis les autres systèmes de la galaxie, en une ligne chacun
-  const head=document.createElement('li');head.className='sys';head.textContent=`Système ${SYS.name} · ${STARS[SYS.star].label} · ${terrTxt(SYS)} · ${sysScanned(SYS)}/${PLANETS.length}`;el.appendChild(head);
+  const head=document.createElement('li');head.className='sys';head.textContent=`Système ${SYS.name} · ${STARS[SYS.star].label} · ${terrTxt(SYS)} · ${PLANETS.length} planètes`+(sysSites(SYS)[1]?` · sites ${sysSites(SYS).join('/')}`:'');el.appendChild(head);
   PLANETS.forEach((p,i)=>{
     const li=document.createElement('li');
     const n=document.createElement('span');n.className='n';n.textContent=String(i+1).padStart(2,'0');
@@ -14413,13 +14439,13 @@ function renderAtlas(el){
     const o=document.createElement('span');o.className='orb';o.textContent=uaTxt(p.orbit);
     li.append(n,nm,o);el.appendChild(li);
   });
-  const h2=document.createElement('li');h2.className='sys';h2.textContent=`Galaxie ${sysGal(SYS).name} · atlas ${scannedCount()}/${ALL_PLANETS.length}`;el.appendChild(h2);
+  const h2=document.createElement('li');h2.className='sys';h2.textContent=`Galaxie ${sysGal(SYS).name} · installations ennemies ${sitesTxt()}`;el.appendChild(h2);
   const far=(x,y)=>x.gal===y.gal?alDist(x,y):99+galDist(sysGal(x),sysGal(y));let lastGal=SYS.gal;
   SYSTEMS.filter(q=>q!==SYS).sort((x,y)=>far(SYS,x)-far(SYS,y)).forEach(q=>{
     if(q.gal!==lastGal){lastGal=q.gal;const hg=document.createElement('li');hg.className='sys';hg.textContent=`Galaxie ${sysGal(q).name} · grand saut depuis ${sysById(sysGal(SYS).gate).name}`;el.appendChild(hg);}
     const li=document.createElement('li'),n=document.createElement('span');n.className='n';n.textContent='✦';n.style.color=STARS[q.star].map;
     const nm=document.createElement('span');nm.className='nm';const b=document.createElement('b');b.textContent=q.name;
-    const sm=document.createElement('small');sm.textContent=`${STARS[q.star].label} · ${terrTxt(q)} · ${sysScanned(q)}/${q.planets.length} planètes`+(game.visited[q.id]?'':' · inexploré');if(!game.visited[q.id])sm.className='todo';
+    const sm=document.createElement('small');sm.textContent=`${STARS[q.star].label} · ${terrTxt(q)} · ${q.planets.length} planètes`+(sysSites(q)[1]?` · sites ${sysSites(q).join('/')}`:'')+(game.visited[q.id]?'':' · inexploré');if(!game.visited[q.id])sm.className='todo';
     nm.append(b,sm);const o=document.createElement('span');o.className='orb';o.textContent=q.gal===SYS.gal?dec(alDist(SYS,q),1)+' AL':dec(galDist(sysGal(SYS),sysGal(q)),1)+' M AL';
     li.append(n,nm,o);el.appendChild(li);
   });
@@ -14952,10 +14978,10 @@ function startGame(){
   parts.length=0;player=newPlayer();
   cam.x=player.x;cam.y=player.y-200;navOnSystem();
   blurAll();hintTimer=0;
-  if(scannedCount()===0&&game.kills===0){
-    setTimeout(()=>toast(`Objectif : cartographier ${ALL_PLANETS.length} planètes`,'Approche-toi d’une planète et reste près d’elle quelques secondes. Ouvre la carte (M) et recule à la molette : la galaxie, puis l’univers. Deux galaxies, seize systèmes, reliés par le saut de sillage (J) ; le grand saut part d’une porte.','rose'),700);
+  if(foundCount()===0&&game.kills===0&&!game.earned){
+    setTimeout(()=>toast(`Objectif : trouver ${hostSites().length} installations ennemies`,'Les planètes sont toutes relevées. Cherche les repaires corsaires, les installations des Machines et les sites xal’thar : ils apparaissent sur la carte quand tes capteurs les touchent, et un SIGNAL ? en bord d’écran annonce le plus proche. Ouvre la carte (M) et recule à la molette : la galaxie, puis l’univers. Deux galaxies, seize systèmes, reliés par le saut de sillage (J) ; le grand saut part d’une porte.','rose'),700);
     setTimeout(()=>toast(isTouch?'Les tourelles visent seules':'Ton vaisseau suit la souris','Vise le réacteur des corsaires. Leur bouclier tombe d’abord, puis la coque se découpe. Touches 1, 2, 3 : priorité d’énergie.'),5600);
-  }else toast('Bon retour, pilote',`Système ${SYS.name} · atlas ${scannedCount()}/${ALL_PLANETS.length} · ${fmt(game.credits)} crédits`+(game.lost?' · ton épave t’attend':''),'good');
+  }else toast('Bon retour, pilote',`Système ${SYS.name} · installations ${sitesTxt()} · ${fmt(game.credits)} crédits`+(game.lost?' · ton épave t’attend':''),'good');
 }
 btnPlay.addEventListener('click',()=>{if(state!=='title')return;sfx.init();if(MODULAIRE)openYard('title');else openHangar('title');});
 let newArmed=0;
@@ -14964,7 +14990,7 @@ btnNew.addEventListener('click',()=>{
   clearTimeout(newArmed);newArmed=0;
   try{localStorage.removeItem(KEY);localStorage.removeItem('sillage-stellaire-v2');localStorage.removeItem('sillage-stellaire-v1');}catch(e){}
   MOBJ.length=0;misOffers=null;Object.assign(game,{mis:misNew(),faction:null,ship:'epervier',owned:[],loadout:{},smis:{},scm:{},torpLv:1,credits:5000,design:DEFAULT_DESIGN.slice(),hull:'std',capDesign:CAP_PRESETS[0].rows.slice(),rankFloor:0,tut:{dock:0,board:0},crewLost:0,cargo:[0,0,0],complete:false,kills:0,mined:0,earned:0,time:0,leviathan:false,stock:{},contract:null,lost:null,arenaBest:0,contracts:0});
-  ALL_PLANETS.forEach(p=>{p.scanned=false;p.scan=0;});game.route=[];game.visited={halcyon:1};game.structDown={};game.stSeen={};if(SYS!==SYSTEMS[0])enterSystem(SYSTEMS[0]);setRelay(RELAYS[0]);rebuildPlayerTpl();offers=null;
+  allPlanetsKnown();game.found={};game.route=[];game.visited={halcyon:1};game.structDown={};game.stSeen={};if(SYS!==SYSTEMS[0])enterSystem(SYSTEMS[0]);setRelay(RELAYS[0]);rebuildPlayerTpl();offers=null;
   btnNew.hidden=true;btnNew.textContent='Nouvelle partie';btnNew.classList.remove('danger');
   if(MODULAIRE)openYard('title');else openHangar('title');
 });
