@@ -9966,7 +9966,8 @@ const TERR_COL={humain:'#6fb4ff',pirate:'#ff9a20',anciens:'#c8c0d8',xalthar:'#c8
 function shipComputerMap(){const wrap=scH('div','sc-map'),side=scH('div','sc-mapside');side.dataset.scroll='M';
   const cvw=scH('div','sc-mapcv'),cv=scH('canvas');cvw.append(cv);wrap.append(cvw,side);scBody.append(wrap);scMap.cv=cv;scMap.g=cv.getContext('2d');
   const bar=scH('div','sc-mapbar');
-  bar.append(scBtn('Système',()=>{scMap.view='sys';scMap.fit=0;scMapReset();shipComputerRender();},scMap.view==='sys'?'primary':''),scBtn('Galaxie',()=>{scMap.view='gal';scMap.fit=0;scMapReset();shipComputerRender();},scMap.view==='gal'?'primary':''),
+  scMap.bS=scBtn('Système',()=>{scMap.view='sys';scMap.fit=0;scMapReset();shipComputerRender();},scMap.view==='sys'?'primary':'');scMap.bG=scBtn('Galaxies',()=>{scMap.view='gal';scMap.fit=0;scMapReset();shipComputerRender();},scMap.view==='gal'?'primary':'');
+  bar.append(scMap.bS,scMap.bG,
     scBtn('＋',()=>scZoom(1/1.4)),scBtn('－',()=>scZoom(1.4)),scBtn('Centrer sur moi',()=>{scMapReset(true);}));cvw.append(bar);
   if(!scMap.z)scMapReset();
   // panneau latéral : sélection, destination, légende
@@ -9983,11 +9984,33 @@ function shipComputerMap(){const wrap=scH('div','sc-map'),side=scH('div','sc-map
   cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',e=>{ptr.delete(e.pointerId);scMap.drag=null;scMap.pinch=null;});
   scMapDraw();}
 const scK=()=>scMap.view==='sys'?scMap.z:scMap.gz;
+// atlas : les deux galaxies à leur place dans l'univers, chacune autour de son centre, séparées d'environ deux fois et
+// demie la taille de la plus grande (l'écart réel, en millions d'années-lumière, ne tiendrait pas sur une carte)
+let SC_ATLAS=null;
+function scAtlas(){if(SC_ATLAS)return SC_ATLAS;const cen={},ext={};let mx=1;
+  for(const GA of GALAXIES){let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(const q of galSystems(GA.id)){x0=Math.min(x0,q.gx);x1=Math.max(x1,q.gx);y0=Math.min(y0,q.gy);y1=Math.max(y1,q.gy);}
+    cen[GA.id]=[(x0+x1)/2,(y0+y1)/2];ext[GA.id]=Math.max(x1-x0,y1-y0,1);mx=Math.max(mx,ext[GA.id]);}
+  const A=GALAXIES[0],B=GALAXIES[GALAXIES.length-1],k=mx*2.6/Math.max(1e-6,galDist(A,B)),org={};for(const GA of GALAXIES)org[GA.id]=[(GA.ux-A.ux)*k,(GA.uy-A.uy)*k];
+  let X0=1e9,X1=-1e9,Y0=1e9,Y1=-1e9;for(const GA of GALAXIES){const o=org[GA.id],h=ext[GA.id]/2;X0=Math.min(X0,o[0]-h);X1=Math.max(X1,o[0]+h);Y0=Math.min(Y0,o[1]-h);Y1=Math.max(Y1,o[1]+h);}
+  return SC_ATLAS={cen,ext,org,mx,all:Math.max(X1-X0,Y1-Y0),mid:[(X0+X1)/2,(Y0+Y1)/2],pos:q=>{const g=q.gal,o=org[g],c=cen[g];return[o[0]+q.gx-c[0],o[1]+q.gy-c[1]];}};}
+// bornes du zoom galactique : de tout près d'un système (en deçà, la carte rentre dans le système) aux deux galaxies entières
+function scGzMin(){const cv=scMap.cv,d=cv&&cv.width>50?Math.min(cv.width,cv.height):520;return scAtlas().mx/(d*0.72)/9;}
+function scGzMax(){const cv=scMap.cv,d=cv&&cv.width>50?Math.min(cv.width,cv.height):520;return scAtlas().all/(d*0.62);}
 function scMapReset(me){if(scMap.view==='sys'){const R=WORLD_R||100000;if(me||!scMap.z){scMap.cx=player.x;scMap.cy=player.y;}scMap.z=me?Math.min(scMap.z||R/180,R/120):R/220;}
-  else{const L=SYSTEMS.filter(s=>s.gal===SYS.gal);let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(const s of L){x0=Math.min(x0,s.gx);x1=Math.max(x1,s.gx);y0=Math.min(y0,s.gy);y1=Math.max(y1,s.gy);}scMap.gcx=me?SYS.gx:(x0+x1)/2;scMap.gcy=me?SYS.gy:(y0+y1)/2;const cv=scMap.cv,px=cv&&cv.width>50?Math.min(cv.width,cv.height):520;scMap.gz=Math.max(x1-x0,y1-y0,1)/(px*0.72);}}
+  else{const A=scAtlas(),cv=scMap.cv,px=cv&&cv.width>50?Math.min(cv.width,cv.height):520,p=A.pos(SYS),o=A.org[SYS.gal];scMap.gcx=me?p[0]:o[0];scMap.gcy=me?p[1]:o[1];scMap.gz=A.ext[SYS.gal]/(px*0.72);}}
+function scMapBarSync(){if(scMap.bS&&scMap.bS.isConnected){scMap.bS.classList.toggle('primary',scMap.view==='sys');scMap.bG.classList.toggle('primary',scMap.view==='gal');}}
+// passage d'une vue à l'autre à la molette : le système se referme sur son étoile, ou s'ouvre depuis elle
+function scToGal(){const A=scAtlas(),p=A.pos(SYS);scMap.view='gal';scMap.gcx=p[0];scMap.gcy=p[1];scMap.gz=scGzMin()*1.5;scMap.tr={dir:'out',t0:performance.now()};scMapBarSync();}
+function scToSys(){const R=WORLD_R||1e5;scMap.view='sys';scMap.cx=0;scMap.cy=0;scMap.z=R/60*0.92;scMap.tr={dir:'in',t0:performance.now()};scMapBarSync();}
 function scZoom(f,px,py){const cv=scMap.cv;if(!cv)return;px=px===undefined?cv.width/2:px;py=py===undefined?cv.height/2:py;const k0=scK(),wx=(px-cv.width/2)*k0,wy=(py-cv.height/2)*k0;
-  if(scMap.view==='sys'){scMap.z=clamp(scMap.z*f,5,(WORLD_R||1e5)/60);const k1=scMap.z;scMap.cx+=wx-(px-cv.width/2)*k1;scMap.cy+=wy-(py-cv.height/2)*k1;}
-  else{scMap.gz=clamp(scMap.gz*f,0.01,50);const k1=scMap.gz;scMap.gcx+=wx-(px-cv.width/2)*k1;scMap.gcy+=wy-(py-cv.height/2)*k1;}}
+  if(scMap.view==='sys'){const zmax=(WORLD_R||1e5)/60;if(f>1&&scMap.z>=zmax*0.999){scToGal();return;}
+    scMap.z=clamp(scMap.z*f,5,zmax);const k1=scMap.z;scMap.cx+=wx-(px-cv.width/2)*k1;scMap.cy+=wy-(py-cv.height/2)*k1;}
+  else{const gmin=scGzMin();
+    // tout près du système où l'on est : la carte y entre ; ailleurs, le zoom s'arrête
+    if(f<1&&scMap.gz<=gmin*1.001){const p=scAtlas().pos(SYS),sx=scSX(p[0]),sy=scSY(p[1]);if(hyp(sx-px,sy-py)<70||hyp(sx-cv.width/2,sy-cv.height/2)<70){scToSys();return;}}
+    scMap.gz=clamp(scMap.gz*f,gmin,scGzMax());const k1=scMap.gz;scMap.gcx+=wx-(px-cv.width/2)*k1;scMap.gcy+=wy-(py-cv.height/2)*k1;
+    // tout au bout du recul, les deux galaxies se recentrent
+    if(f>1&&scMap.gz>=scGzMax()*0.999){const m=scAtlas().mid;scMap.gcx=m[0];scMap.gcy=m[1];}}}
 // écran ← monde
 const scSX=x=>scMap.cv.width/2+(x-(scMap.view==='sys'?scMap.cx:scMap.gcx))/scK(),scSY=y=>scMap.cv.height/2+(y-(scMap.view==='sys'?scMap.cy:scMap.gcy))/scK();
 function scText(g,t,x,y,col,al){g.font='10px Silkscreen, monospace';g.textAlign=al||'center';g.fillStyle='#07050c';g.fillText(t,x+1,y+1);g.fillStyle=col;g.fillText(t,x,y);}
@@ -10020,19 +10043,31 @@ function scMapDraw(){const cv=scMap.cv;if(!cv||!cv.isConnected)return;const r=cv
     const px2=scSX(player.x),py2=scSY(player.y),a=player.a;g.fillStyle='#ffffff';g.beginPath();g.moveTo(px2+Math.cos(a)*8,py2+Math.sin(a)*8);g.lineTo(px2+Math.cos(a+2.5)*6,py2+Math.sin(a+2.5)*6);g.lineTo(px2+Math.cos(a-2.5)*6,py2+Math.sin(a-2.5)*6);g.closePath();g.fill();
     g.strokeStyle='rgba(53,214,180,.25)';g.beginPath();g.arc(px2,py2,rr/scMap.z,0,TAU);g.stroke();
   }else{
-    // galaxie : systèmes, voies de saut, route, amis, missions
-    const L=SYSTEMS.filter(s=>s.gal===SYS.gal);g.strokeStyle='rgba(93,75,143,.45)';for(let i=0;i<L.length;i++)for(let j=i+1;j<L.length;j++)if(alDist(L[i],L[j])<=JUMP_RANGE){g.beginPath();g.moveTo(scSX(L[i].gx),scSY(L[i].gy));g.lineTo(scSX(L[j].gx),scSY(L[j].gy));g.stroke();}
-    const R0=[SYS.id].concat(game.route||[]);g.strokeStyle='#35d6b4';g.lineWidth=2;g.setLineDash([6,4]);g.beginPath();R0.forEach((id,i)=>{const s=sysById(id);if(!s||s.gal!==SYS.gal)return;i?g.lineTo(scSX(s.gx),scSY(s.gy)):g.moveTo(scSX(s.gx),scSY(s.gy));});g.stroke();g.setLineDash([]);g.lineWidth=1;
-    for(const s of L){const x=scSX(s.gx),y=scSY(s.gy),here=s===SYS,vis=game.visited[s.id],terr=terrOf(s);g.fillStyle=TERR_COL[terr]||'#9d93b8';g.globalAlpha=vis?1:0.5;g.beginPath();g.arc(x,y,here?7:5,0,TAU);g.fill();g.globalAlpha=1;
-      if(here&&((t*2)|0)%2){g.strokeStyle='#ffffff';g.beginPath();g.arc(x,y,11,0,TAU);g.stroke();}
-      scText(g,s.name.toUpperCase(),x,y+16,here?'#ffffff':vis?'#efe9fa':'#9d93b8');pt(x,y,'sys',s,s.name,12);
-      const nm=game.mis.active.filter(m=>{const q=misStepOf(m);return q&&((q.sys||m.sys)===s.id);}).length;if(nm)scText(g,'◆'+nm,x+12,y-6,'#ffc66d','left');
-      if(mp.on){const F=[...mp.peers.values()].filter(P=>P.s&&P.s.sys===s.id).map(P=>P.name);if(F.length)scText(g,F.join(', ').toUpperCase(),x,y-12,'#7fffd4');}}
+    // galaxies : spirale en fond (plus visible quand on recule), voies de saut, grand saut entre les portes, route, systèmes
+    const A=scAtlas(),P=q=>{const p=A.pos(q);return[scSX(p[0]),scSY(p[1])];},dim=Math.min(W2,H2);
+    for(const GA of GALAXIES){const o=A.org[GA.id],ex=A.ext[GA.id]/scMap.gz,sp=galSprite(GA,192),w=ex*1.7,h=w*sp.height/sp.width,x=scSX(o[0]),y=scSY(o[1]);
+      if(x+w/2<0||x-w/2>W2||y+h/2<0||y-h/2>H2)continue;g.globalAlpha=clamp(0.75-ex/dim*0.45,0.18,0.6);g.drawImage(sp,Math.round(x-w/2),Math.round(y-h/2),Math.round(w),Math.round(h));g.globalAlpha=1;}
+    g.strokeStyle='rgba(93,75,143,.45)';for(const GA of GALAXIES){const L=galSystems(GA.id);for(let i=0;i<L.length;i++)for(let j=i+1;j<L.length;j++)if(alDist(L[i],L[j])<=JUMP_RANGE){const [x0,y0]=P(L[i]),[x1,y1]=P(L[j]);g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.stroke();}}
+    {const [A0,B0]=[GALAXIES[0],GALAXIES[GALAXIES.length-1]],[ax,ay]=P(sysById(A0.gate)),[bx,by]=P(sysById(B0.gate)),n=Math.max(1,Math.round(hyp(bx-ax,by-ay)/5)),ph=((t*6)|0);
+      for(let k=1;k<n;k++){g.fillStyle=(k+ph)%4<2?'#6a5a9a':'#2e2448';g.fillRect(Math.round(ax+(bx-ax)*k/n),Math.round(ay+(by-ay)*k/n),2,2);}
+      scText(g,'GRAND SAUT · '+dec1(galDist(A0,B0))+' M AL · '+INTER_SEC+' S',(ax+bx)/2,(ay+by)/2-8,'#9d93b8');}
+    const R0=[SYS.id].concat(game.route||[]);g.strokeStyle='#35d6b4';g.lineWidth=2;g.setLineDash([6,4]);g.beginPath();R0.forEach((id,i)=>{const q=sysById(id);if(!q)return;const [x,y]=P(q);i?g.lineTo(x,y):g.moveTo(x,y);});g.stroke();g.setLineDash([]);g.lineWidth=1;
+    // noms des systèmes tant que la galaxie occupe assez de place à l'écran ; sinon, le nom de chaque galaxie
+    for(const GA of GALAXIES){const exs=A.ext[GA.id]/scMap.gz,names=exs>dim*0.42,L=galSystems(GA.id);
+      for(const q of L){const [x,y]=P(q);if(x<-40||y<-40||x>W2+40||y>H2+40)continue;const here=q===SYS,vis=game.visited[q.id],terr=terrOf(q);g.fillStyle=TERR_COL[terr]||'#9d93b8';g.globalAlpha=vis?1:0.5;g.beginPath();g.arc(x,y,here?7:names?5:3,0,TAU);g.fill();g.globalAlpha=1;
+        if(isGate(q)&&names){g.strokeStyle=GA.col;g.beginPath();g.arc(x,y,9,0,TAU);g.stroke();}
+        if(here&&((t*2)|0)%2){g.strokeStyle='#ffffff';g.beginPath();g.arc(x,y,11,0,TAU);g.stroke();}
+        if(names||here)scText(g,(here&&!names?'ICI · ':'')+q.name.toUpperCase(),x,y+16,here?'#ffffff':vis?'#efe9fa':'#9d93b8');pt(x,y,'sys',q,q.name,names?12:8);
+        const nm=game.mis.active.filter(m=>{const z=misStepOf(m);return z&&((z.sys||m.sys)===q.id);}).length;if(nm&&names)scText(g,'◆'+nm,x+12,y-6,'#ffc66d','left');
+        if(mp.on){const Fr=[...mp.peers.values()].filter(Q=>Q.s&&Q.s.sys===q.id).map(Q=>Q.name);if(Fr.length)scText(g,Fr.join(', ').toUpperCase(),x,y-12,'#7fffd4');}}
+      if(!names){const o=A.org[GA.id],x=scSX(o[0]),y=scSY(o[1])+exs*0.5+16;scText(g,'GALAXIE '+GA.name.toUpperCase(),x,y,GA.id===SYS.gal?'#ffffff':GA.col);scText(g,L.length+' SYSTEMES · '+L.filter(q=>game.visited[q.id]).length+' VISITES',x,y+12,'#9d93b8');}}
   }
+  if(scMap.tr){const p=(performance.now()-scMap.tr.t0)/380;if(p>=1)scMap.tr=null;else{const e=1-(1-p)*(1-p),out=scMap.tr.dir==='out',big=Math.min(W2,H2)*0.46,c=out?scAtlas().pos(SYS):[0,0],x=scSX(c[0]),y=scSY(c[1]);
+    for(let i=1;i<=4;i++){const r0=big*i/4,r=out?r0*(1-e)+3*e:3*(1-e)+r0*e;g.globalAlpha=(1-p)*0.75;g.strokeStyle=i===4?'#9d93b8':'#5d4b8f';g.beginPath();g.arc(Math.round(x),Math.round(y),Math.max(1,r),0,TAU);g.stroke();}g.globalAlpha=1;}}
   // sélection
   const S=scMap.sel;if(S&&S.sx!==undefined){}
   if(S){const q=scMap.pts.find(p=>p.ref===S.ref&&p.kind===S.kind);const x=q?q.x:S.kind==='point'?scSX(S.x):null,y=q?q.y:S.kind==='point'?scSY(S.y):null;if(x!==null){g.strokeStyle='#ffc66d';const k=10+Math.sin(t*6)*2;g.strokeRect(Math.round(x-k),Math.round(y-k),Math.round(k*2),Math.round(k*2));}}
-  scText(g,(scMap.view==='sys'?'SYSTEME '+SYS.name:'GALAXIE '+(sysGal(SYS)||{name:''}).name).toUpperCase()+(scMap.view==='sys'?' · ECHELLE '+uTxt(scMap.z*100)+' / 100 px':' · '+SYSTEMS.filter(q=>q.gal===SYS.gal).length+' SYSTEMES'),10,H2-10,'#9d93b8','left');}
+  scText(g,(scMap.view==='sys'?'SYSTEME '+SYS.name+' · ECHELLE '+uTxt(scMap.z*100)+' / 100 px · RECULE POUR LA GALAXIE':'GALAXIES '+GALAXIES.map(q=>q.name).join(' ET ')+' · '+SYSTEMS.length+' SYSTEMES · AVANCE SUR '+SYS.name+' POUR Y ENTRER').toUpperCase(),10,H2-10,'#9d93b8','left');}
 function scMapPick(x,y,dbl){let best=null,bd=1e9;for(const q of scMap.pts){const d=hyp(q.x-x,q.y-y);if(d<Math.max(12,q.R)&&d<bd){bd=d;best=q;}}
   if(best)scMap.sel={kind:best.kind,ref:best.ref,label:best.label};else if(scMap.view==='sys'){const k=scK();scMap.sel={kind:'point',x:scMap.cx+(x-scMap.cv.width/2)*k,y:scMap.cy+(y-scMap.cv.height/2)*k,label:'Point de navigation'};}else scMap.sel=null;
   if(dbl&&scMap.sel)scSetDestFromSel();sfx.click&&sfx.click();const side=scBody.querySelector('.sc-mapside');if(side){side.innerHTML='';scMapSide(side);}}
@@ -10051,10 +10086,10 @@ function scMapSide(side){const S=scMap.sel,D=game.navDest;
   side.append(scH('p','eyebrow','Navigation'));
   if(D){const d=D.sys===SYS.id&&D.x!==undefined?uTxt(hyp(D.x-player.x,D.y-player.y)):(sysById(D.sys)||{name:'?'}).name+' · '+(game.route||[]).length+' saut(s)';const b=scH('div','sc-dest');b.append(scH('b','','Destination : '+D.label),scH('span','',d+(hyperDest?' · J : hyperespace':'')),scBtn('Effacer la destination',()=>{navClear();shipComputerRender();}));side.append(b);}
   else side.append(scH('p','sc-sub','Aucune destination. Sélectionne un lieu, puis « Définir comme destination » (double-clic : direct).'));
-  if(!S){side.append(scH('p','sc-sub','Molette ou pincement : zoom · glisser : déplacer · clic : sélectionner.'));scLegend(side);return;}
+  if(!S){side.append(scH('p','sc-sub','Molette ou pincement : zoom (recule au-delà du système pour voir la galaxie, puis les deux galaxies) · glisser : déplacer · clic : sélectionner.'));scLegend(side);return;}
   const card=scH('div','sc-card'),dl=scH('dl','sc-dl'),r=S.ref;card.append(scH('h3','',S.label||''));
   const dist=(x,y)=>uTxt(hyp(x-player.x,y-player.y));
-  if(S.kind==='sys'){const s=r,path=s===SYS?[]:routeTo(SYS,s);scKV(dl,'Étoile',STARS[s.star].label);scKV(dl,'Territoire',terrTxt(s));scKV(dl,'Danger',dangerTxt(s));scKV(dl,'Distance',s===SYS?'ici':dec1(alDist(SYS,s))+' AL · '+(path?path.length+' saut'+(path.length>1?'s':''):'hors de portée'));
+  if(S.kind==='sys'){const s=r,path=s===SYS?[]:routeTo(SYS,s);scKV(dl,'Étoile',STARS[s.star].label);scKV(dl,'Territoire',terrTxt(s));scKV(dl,'Danger',dangerTxt(s));scKV(dl,'Distance',s===SYS?'ici':(s.gal!==SYS.gal?'autre galaxie (grand saut)':dec1(alDist(SYS,s))+' AL')+' · '+(path?path.length+' saut'+(path.length>1?'s':''):'hors de portée'));
     scKV(dl,'Relais',(s.relays||[]).map(q=>q.name).join(', ')||'—');scKV(dl,'Planètes',s.planets.length+' · '+sysScanned(s)+' relevée(s)');scKV(dl,'Visité',game.visited[s.id]?'oui':'non');
     const pres=terrOf(s)==='humain'?'Flotte, Guilde, Cartographes, Phare, Compagnie Cuprique':terrOf(s)==='pirate'?'Clan de la Rouille, Cercle Muet':terrOf(s)==='anciens'?'Les Machines':'Les Xal’thar';scKV(dl,'Présence',pres);
     const ms=game.mis.active.filter(m=>{const q=misStepOf(m);return q&&(q.sys||m.sys)===s.id;});scKV(dl,'Missions actives',ms.length?ms.map(m=>m.title.replace(/^★\s*/,'')).join(' · '):'aucune');
