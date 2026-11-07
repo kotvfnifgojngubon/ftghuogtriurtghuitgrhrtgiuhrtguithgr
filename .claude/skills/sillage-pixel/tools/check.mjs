@@ -59,6 +59,7 @@ try {
     const cps = (r.colors || 0) / sq, spk = (r.speckles || 0) / Math.max(1, r.cells), emiN = (r.cells || 0) * (r.emiPct || 0) / 100;
     if (!r.errs.length) {
       const xy = L => L.map(([x, y]) => `(${x},${y})`).join(' ');
+      if (r.comps > 1) warn.push(`${r.comps - 1} morceau(x) de coque détaché(s) du corps (une pièce qui flotte : elle tombera comme une épave)`);
       if (r.orphans > 0) warn.push(`${r.orphans} pixel(s) isolé(s), détaché(s) de la coque : ${xy(r.orphanAt)}`);
       if (r.corners > 0) warn.push(`${r.corners} pixel(s) accroché(s) par un seul coin, point parasite sur le bord : ${xy(r.cornerAt)}`);
       if (C.spk && spk > C.spk * 3 && spk > 0.01) warn.push(`bruit : ${r.speckles} pixels seuls au milieu d’un aplat, ${f2(spk / C.spk)}× la médiane ${r.fac}`);

@@ -90,6 +90,14 @@ function(){
   S.snapRect=(label,x,y,w,h)=>{S.settle();render();const c=mkCanvas(w,h),g=c.getContext('2d');g.drawImage(cvs,Math.round(x),Math.round(y),w,h,0,0,w,h);shots.push({c,label:label||''});return shots.length-1;};
   S.clearShots=()=>{shots.length=0;rms.length=0;};
   S.frames=()=>shots.map(s=>s.c.toDataURL());
+  // galerie : chaque image ramenée à la même largeur (cw px), agrandie au plus proche voisin ou réduite, en colonnes
+  S.sheetFit=(cw,cols)=>{cols=cols||2;const pad=6,lab=14,cells=shots.map(s=>{const k=cw/s.c.width;return{s,k,h:Math.round(s.c.height*k)};});
+    const rows=Math.ceil(cells.length/cols),rh=[];for(let r=0;r<rows;r++)rh.push(Math.max(...cells.slice(r*cols,r*cols+cols).map(c=>c.h)));
+    const out=mkCanvas(pad+cols*(cw+pad),pad+rh.reduce((a,b)=>a+b+lab+pad,0)),g=out.getContext('2d');g.fillStyle='#14161c';g.fillRect(0,0,out.width,out.height);
+    g.font='11px monospace';g.textBaseline='top';let y=pad;
+    for(let r=0;r<rows;r++){for(let c=0;c<cols;c++){const e=cells[r*cols+c];if(!e)continue;const x=pad+c*(cw+pad);g.imageSmoothingEnabled=e.k<1;g.fillStyle='#03050c';g.fillRect(x,y,cw,rh[r]);
+      g.drawImage(e.s.c,x,y,cw,e.h);g.fillStyle='#9aa4b4';g.fillText(e.s.label,x,y+rh[r]+2);}y+=rh[r]+lab+pad;}
+    return out.toDataURL();};
   // planche contact : images agrandies au plus proche voisin, en grille, légendes en dessous
   S.sheet=(o)=>{o=o||{};const k=o.scale||3,cols=o.cols||Math.min(shots.length,6),pad=6,lab=o.labels===false?0:14;
     const cw=Math.max(...shots.map(s=>s.c.width))*k,ch=Math.max(...shots.map(s=>s.c.height))*k,rows=Math.ceil(shots.length/cols);
@@ -130,9 +138,14 @@ function(){
       const ym=h-1-y;if(ym!==y){symN++;if(!!at(x,ym)!==!!T[i])asym++;}
       // pixel de bord à angle droit isolé (marche d'escalier d'un seul pixel qui dépasse)
       const nn=(at(x-1,y)?1:0)+(at(x+1,y)?1:0)+(at(x,y-1)?1:0)+(at(x,y+1)?1:0);if(nn===1)widows++;}
+    // morceaux détachés : composantes connexes de la coque (4-connexité) ; plus d'une, c'est une pièce qui flotte
+    const lab=new Int32Array(w*h);let comps=0,small=0;const stack=[];
+    for(let i=0;i<w*h;i++){if(!T[i]||lab[i])continue;comps++;let n=0;stack.push(i);lab[i]=comps;
+      while(stack.length){const j=stack.pop();n++;const x=j%w,y=(j/w)|0;for(const k of [x>0?j-1:-1,x<w-1?j+1:-1,y>0?j-w:-1,y<h-1?j+w:-1])if(k>=0&&T[k]&&!lab[k]){lab[k]=comps;stack.push(k);}}
+      if(n<cells*0.5)small++;}
     const top=[...cols.entries()].sort((a,b)=>b[1]-a[1]);
     return {id,w,h,cells,colors:cols.size,top:top.slice(0,12).map(([c,k])=>[css(c),k]),emiPct:+(100*emi/Math.max(1,cells)).toFixed(1),
-      orphans:orphan,orphanAt,corners:corner,cornerAt,speckles:speck,spurs:widows,asymPct:+(100*asym/Math.max(1,symN)).toFixed(1),
+      comps,orphans:orphan,orphanAt,corners:corner,cornerAt,speckles:speck,spurs:widows,asymPct:+(100*asym/Math.max(1,symN)).toFixed(1),
       mods:t.mods.length,nozzles:(t.nozzles||[]).length,lights:(t.lights||[]).length,tplFac:t.faction||'',pal:t.pal};};
 
   // ---------- effets du jeu, déclenchables par nom ----------
