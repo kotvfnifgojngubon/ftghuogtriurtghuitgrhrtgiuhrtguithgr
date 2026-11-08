@@ -751,7 +751,7 @@ body.touch .hud-bottom{padding-bottom:276px}
           <div class="comp-btns"><button class="chip" id="cFilt" type="button">Vue : salles</button><button class="chip" id="cAuto" type="button">Auto : non</button><button class="chip" id="cClose" type="button">Tout fermer · V</button><button class="chip" id="cOpen" type="button">Tout ouvrir</button><button class="chip" id="cBig" type="button">Agrandir</button><button class="chip" id="cRecall" type="button" hidden>Rappeler l’équipe · E</button><button class="chip" id="cView" type="button" hidden>Voir mon vaisseau</button></div>
         </div>
       </div>
-      <p class="hint" id="keyHint"><kbd>Souris</kbd> viser et orienter · <kbd>Clic gauche</kbd> canons et laser · <kbd>Clic droit</kbd> missiles · <kbd>H</kbd> contre-mesures · <kbd>ZQSD</kbd> pousser et glisser · <kbd>L</kbd> cap fixe · <kbd>O</kbd> boucliers · <kbd>I</kbd> moteurs · <kbd>Maj</kbd> boost · <kbd>1 2 3</kbd> priorité d’énergie · <kbd>N</kbd> nucléaire · <kbd>C</kbd> croisière · <kbd>J</kbd> saut de sillage · <kbd>E</kbd> amarrer ou aborder · <kbd>K</kbd> assaut des marines · <kbd>X</kbd> capsules (siège éjectable sur un petit appareil) · <kbd>T</kbd> remorqueur · <kbd>F1</kbd> ordinateur de bord · <kbd>M</kbd> carte · <kbd>R</kbd> tracteur · <kbd>B</kbd> plan du vaisseau · <kbd>V</kbd> portes · <kbd>Molette</kbd> zoom · <kbd>F2</kbd> performances</p>
+      <p class="hint" id="keyHint"><kbd>Souris</kbd> viser et orienter · <kbd>Clic gauche</kbd> canons et laser · <kbd>Clic droit</kbd> missiles · <kbd>H</kbd> contre-mesures · <kbd>Y</kbd> intérieur du vaisseau · <kbd>ZQSD</kbd> pousser et glisser · <kbd>L</kbd> cap fixe · <kbd>O</kbd> boucliers · <kbd>I</kbd> moteurs · <kbd>Maj</kbd> boost · <kbd>1 2 3</kbd> priorité d’énergie · <kbd>N</kbd> nucléaire · <kbd>C</kbd> croisière · <kbd>J</kbd> saut de sillage · <kbd>E</kbd> amarrer ou aborder · <kbd>K</kbd> assaut des marines · <kbd>X</kbd> capsules (siège éjectable sur un petit appareil) · <kbd>T</kbd> remorqueur · <kbd>F1</kbd> ordinateur de bord · <kbd>M</kbd> carte · <kbd>R</kbd> tracteur · <kbd>B</kbd> plan du vaisseau · <kbd>V</kbd> portes · <kbd>Molette</kbd> zoom · <kbd>F2</kbd> performances</p>
     </div>
     <div class="prompt-wrap"><button id="prompt" class="prompt" type="button" hidden disabled></button></div>
     <div class="radar-wrap" id="radarWrap">
@@ -18563,16 +18563,20 @@ function inBuild(sid){
   const w=t.w,h=t.h,R=P.role,cat=R.cat,N=w*h,k=XR.mpp;
   const M={sid,src,P,t,w,h,N,cat,R,name:src.n,cls:XR_CLS[cat]||cat,small:R.small,seat:cat==='chasseur'||cat==='intercepteur',
     walk:new Uint8Array(N),area:new Int16Array(N).fill(-1),doorAt:new Int16Array(N).fill(-1),wall:new Uint8Array(N),block:new Uint8Array(N),
-    areas:[],doors:[],eq:[],nets:P.links||[],hyp:[],hangars:[],slots:[],posts:[],beds:[],seats:[],hullT:t.type};
-  const hull=i=>t.type[i]?1:0;
-  M.inHull=(x,y)=>x>=0&&y>=0&&x<w&&y<h&&t.type[y*w+x]>0;
+    areas:[],doors:[],eq:[],nets:P.links||[],hyp:[],hangars:[],slots:[],posts:[],beds:[],seats:[],hullT:new Uint8Array(N)};
+  // coque : les pixels du gabarit, plus les joints de structure que le plan rayons X réunit (blocs séparés d'un ou deux pixels)
+  for(let i=0;i<N;i++)if(t.type[i])M.hullT[i]=1;
+  {const G=P.G;if(G&&G.join&&G.nj){let nj=0;for(let gy=0;gy<G.gh;gy++)for(let gx=0;gx<G.gw;gx++){if(!G.join[gy*G.gw+gx])continue;for(let y=gy*G.s;y<Math.min(h,(gy+1)*G.s);y++)for(let x=gx*G.s;x<Math.min(w,(gx+1)*G.s);x++){const i=y*w+x;if(!M.hullT[i]){M.hullT[i]=2;nj++;}}}
+    if(nj)M.hyp.push('Joints de structure : les blocs de coque séparés d’un ou deux pixels, que le plan rayons X réunit pour ses réseaux, sont franchissables.');}}
+  M.inHull=(x,y)=>x>=0&&y>=0&&x<w&&y<h&&M.hullT[y*w+x]>0;
   // équipements du plan (sauf la peau et les volumes, qui deviennent des zones)
   for(const o of P.comps){if(o.data&&o.data.whole)continue;M.eq.push(o);}
   if(M.seat)inBuildSeat(M);
   else if(M.small)inBuildSmall(M);
   else inBuildLarge(M);
+  if(!M.seat)inConnect(M);
   // murs : pixel de coque non praticable voisin d'un pixel praticable ; peau : bord extérieur de la coque
-  if(!M.seat)for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(!t.type[i]||M.walk[i]||M.block[i])continue;let nb=0;
+  if(!M.seat)for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(!M.hullT[i]||M.walk[i]||M.block[i])continue;let nb=0;
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const X=x+dx,Y=y+dy;if(X>=0&&Y>=0&&X<w&&Y<h&&M.walk[Y*w+X])nb=1;}
     if(nb)M.wall[i]=1;}
   inCrewPlan(M);
@@ -18585,7 +18589,7 @@ function inBox(o){return{x0:o.x0,y0:o.y0,x1:o.x1,y1:o.y1};}
 function inBuildLarge(M){
   const t=M.t,w=M.w,h=M.h,P=M.P,ip=t.ip||(t.ip=buildInterior(t,M.R.giant)),GW=ip.GW,GH=ip.GH;M.ip=ip;
   const hb=2;                                                        // demi-largeur de la coursive praticable (4 px ≈ 2,7 m)
-  const set=(x,y,ar,v)=>{if(x<0||y<0||x>=w||y>=h)return;const i=y*w+x;if(!t.type[i])return;M.walk[i]=v||1;M.area[i]=ar;};
+  const set=(x,y,ar,v)=>{if(x<0||y<0||x>=w||y>=h)return;const i=y*w+x;if(!M.hullT[i])return;M.walk[i]=v||1;M.area[i]=ar;};
   // zones : une par compartiment du plan intérieur (salle ou tronçon de coursive)
   ip.comps.forEach((c,ci)=>{const room=c.type==='room';const nm=room?(ROOMN[c.code]||'Salle'):'Coursive';
     inArea(M,{kind:room?'room':'corr',code:c.code,name:nm,press:true,ci,cx:c.cx,cy:c.cy,mods:c.mods});});
@@ -18598,7 +18602,7 @@ function inBuildLarge(M){
         else for(let y=(dy>0?5:0);y<(dy>0?10:5);y++)for(let x=5-hb;x<5+hb;x++)set(X0+x,Y0+y,ci);}}}
   // cloisons entre compartiments différents : on retire le pixel de bord de chaque côté (cloison de 1,3 m)
   const cut=[];for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(!M.walk[i])continue;const a=M.area[i];
-    for(const [dx,dy] of DIR4){const X=x+dx,Y=y+dy;if(X<0||Y<0||X>=w||Y>=h){cut.push(i);break;}const j=Y*w+X;if(!t.type[j]){cut.push(i);break;}if(M.walk[j]&&M.area[j]!==a){cut.push(i);break;}}}
+    for(const [dx,dy] of DIR4){const X=x+dx,Y=y+dy;if(X<0||Y<0||X>=w||Y>=h){cut.push(i);break;}const j=Y*w+X;if(!M.hullT[j]){cut.push(i);break;}if(M.walk[j]&&M.area[j]!==a){cut.push(i);break;}}}
   for(const i of cut){M.walk[i]=0;}
   // portes du plan intérieur : ouverture dans la cloison, de la largeur de la coursive (ou 2 px entre deux salles)
   ip.doors.forEach((d,j)=>{const A=M.areas[d.a],B=M.areas[d.b],corr=A.kind==='corr'||B.kind==='corr',half=corr?hb:1;
@@ -18649,8 +18653,8 @@ function inBuildLarge(M){
 }
 // un équipement solide bloque le passage dans sa salle, en gardant une allée (marge) le long des cloisons
 function inBlockEq(M,o,margin){const w=M.w,x0=Math.floor(o.x0+0.2),x1=Math.ceil(o.x1-0.2),y0=Math.floor(o.y0+0.2),y1=Math.ceil(o.y1-0.2);
-  if((o.x1-o.x0)*(o.y1-o.y0)<0.6)return;
-  for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){if(!M.inHull(x,y))continue;const i=y*w+x;if(!M.walk[i]||M.doorAt[i]>=0)continue;
+  if((o.x1-o.x0)*(o.y1-o.y0)<0.6)return;const RK=new Set(['room','airlock','hangar','store','rest','bay']);
+  for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){if(!M.inHull(x,y))continue;const i=y*w+x;if(!M.walk[i]||M.doorAt[i]>=0)continue;const Ar=M.areas[M.area[i]];if(!Ar||!RK.has(Ar.kind))continue;
     // allée : on ne bloque pas un pixel à moins de « margin » d'un bord de la zone
     let edge=false;const m=Math.ceil(margin);for(let d=1;d<=m&&!edge;d++)for(const [dx,dy] of DIR4){const X=x+dx*d,Y=y+dy*d;if(!M.inHull(X,Y)||!M.walk[Y*w+X]&&!M.block[Y*w+X]||M.area[Y*w+X]!==M.area[i]){edge=true;break;}}
     if(edge)continue;M.walk[i]=0;M.block[i]=1;}}
@@ -18720,6 +18724,29 @@ function inNearPath(M,A,tgt,R){const w=M.w,b=A.box,x0=Math.max(0,Math.floor(b.x0
       // un passage de 2 px : le voisin latéral doit être libre aussi
       const sx=dy?1:0,sy=dx?1:0,j=i+sy*w+sx;if(!M.hullT[j]||M.walk[j]&&!tgt[j]||M.sol[j])continue;prev[kk]=k;q.push(kk);}}
   if(end<0)return null;const pts=[];let k=end;while(prev[k]!==k){pts.push([k%W+x0+0.5,((k/W)|0)+y0+0.5]);k=prev[k];}pts.push([k%W+x0+0.5,((k/W)|0)+y0+0.5]);return pts.reverse();}
+// toute poche praticable isolée (salle enclavée, tronçon de coursive coupé par un équipement…) est reliée au réseau
+// principal par le plus court passage dans la structure (hypothèse minimale, notée)
+function inConnect(M){const w=M.w,N=M.N,lab=new Int32Array(N).fill(-1),size=[];let n=0;
+  for(let s=0;s<N;s++){if(!M.walk[s]||lab[s]>=0)continue;lab[s]=n;let c=1;const q=[s];for(let qi=0;qi<q.length;qi++){const i=q[qi],x=i%w,y=(i/w)|0;for(const [dx,dy] of DIR4){const X=x+dx,Y=y+dy;if(!M.inHull(X,Y))continue;const j=Y*w+X;if(M.walk[j]&&lab[j]<0){lab[j]=n;c++;q.push(j);}}}size.push(c);n++;}
+  if(n<=1)return;
+  // réseau principal : le plus grand ; chaque poche s'y raccorde, de la plus proche à la plus lointaine
+  const main=size.indexOf(Math.max(...size)),tgt=new Uint8Array(N),pix=[];for(let k=0;k<n;k++)pix.push([]);
+  for(let i=0;i<N;i++){if(lab[i]<0)continue;if(lab[i]===main)tgt[i]=1;else pix[lab[i]].push(i);}
+  const order=[];for(let k=0;k<n;k++)if(k!==main)order.push(k);order.sort((a,b)=>size[b]-size[a]);
+  for(const k of order){const src=pix[k];let x0=1e9,y0=1e9,x1=-1,y1=-1;for(const i of src){const x=i%w,y=(i/w)|0;x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}
+    const any=M.area[src[0]],nm=M.areas[any]?M.areas[any].name:'Poche',bb={x0,x1,y0,y1};
+    let path=null;for(const R of [60,160,400]){path=inPocketPath(M,src,bb,tgt,R,false);if(path)break;}
+    let thru=false;if(!path){path=inPocketPath(M,src,bb,tgt,400,true);thru=!!path;}
+    if(!path){for(const i of src)M.walk[i]=0;M.hyp.push(nm+' : aucun passage possible, zone fermée.');continue;}
+    inCarve(M,path,any,1);for(const i of src)tgt[i]=1;for(const [x,y] of path)for(let dy=-1;dy<=0;dy++)for(let dx=-1;dx<=0;dx++){const X=Math.floor(x)+dx,Y=Math.floor(y)+dy;if(M.inHull(X,Y))tgt[Y*w+X]=1;}
+    M.hyp.push(nm+' : enclavée'+(thru?' derrière des équipements':' par les équipements du plan')+' ; un passage (hypothèse) la relie au reste du vaisseau.');}}
+function inPocketPath(M,src,b,tgt,R,thru){const w=M.w,x0=Math.max(0,Math.floor(b.x0-R)),x1=Math.min(w-1,Math.ceil(b.x1+R)),y0=Math.max(0,Math.floor(b.y0-R)),y1=Math.min(M.h-1,Math.ceil(b.y1+R)),W=x1-x0+1,H=y1-y0+1;
+  if(!M.sol){M.sol=new Uint8Array(M.N);for(const o of M.eq){if(o.kind!=='s')continue;for(let y=Math.floor(o.y0);y<Math.ceil(o.y1);y++)for(let x=Math.floor(o.x0);x<Math.ceil(o.x1);x++)if(M.inHull(x,y))M.sol[y*w+x]=1;}}
+  const prev=new Int32Array(W*H).fill(-1),q=[];for(const i of src){const x=i%w,y=(i/w)|0;if(x<x0||x>x1||y<y0||y>y1)continue;const k=(y-y0)*W+x-x0;prev[k]=k;q.push(k);}
+  let end=-1;for(let qi=0;qi<q.length&&end<0;qi++){const k=q[qi],x=k%W,y=(k/W)|0;
+    for(const [dx,dy] of DIR4){const X=x+dx,Y=y+dy;if(X<0||Y<0||X>=W||Y>=H)continue;const kk=Y*W+X;if(prev[kk]>=0)continue;const i=(Y+y0)*w+X+x0;if(!M.hullT[i])continue;
+      if(tgt[i]){prev[kk]=k;end=kk;break;}if(M.walk[i])continue;if(!thru&&(M.sol[i]||M.block[i]))continue;prev[kk]=k;q.push(kk);}}
+  if(end<0)return null;const pts=[];let k=end;while(prev[k]!==k){pts.push([k%W+x0+0.5,((k/W)|0)+y0+0.5]);k=prev[k];}pts.push([k%W+x0+0.5,((k/W)|0)+y0+0.5]);return pts.reverse();}
 // creuse un passage de 2 px le long d'un chemin
 function inCarve(M,path,ar,post){for(const [x,y] of path){for(let dy=-1;dy<=0;dy++)for(let dx=-1;dx<=0;dx++){const X=Math.floor(x)+dx,Y=Math.floor(y)+dy;if(!M.inHull(X,Y))continue;const i=Y*M.w+X;if(M.walk[i]&&M.area[i]!==ar)continue;M.walk[i]=post||1;M.area[i]=ar;}}}
 // composantes connexes des zones (par la grille de déplacement)
@@ -18762,8 +18789,8 @@ function inHangars(M){
   Hs.forEach((m,i)=>{const ai=M.area[Math.floor(m.ly)*w+Math.floor(m.lx)];if(ai<0)return;const A=M.areas[ai];A.kind='hangar';hn++;A.name='Hangar '+hn;A.hn=hn;
     let want=n[i];
     // pont : un rectangle de coque libre (ni salle, ni équipement du plan) au plus près du module, relié au hangar
-    let deck=null;const Rr=90;
-    for(;want>0&&!deck;want--){const W=want*fw+6,H=fh+4;let best=null,bs=1e9;
+    let deck=null;let Rr=90;
+    for(let tries=0;tries<2&&!deck;tries++,Rr=180)for(want=n[i];want>0&&!deck;want--){const W=want*fw+6,H=fh+4;let best=null,bs=1e9;
       for(let y0=Math.round(m.ly-Rr-H);y0<=Math.round(m.ly+Rr);y0+=2)for(let x0=Math.round(m.lx-Rr-W);x0<=Math.round(m.lx+Rr);x0+=2){
         const dx=Math.max(x0-m.lx,0,m.lx-(x0+W)),dy=Math.max(y0-m.ly,0,m.ly-(y0+H)),s=dx+dy;if(s>=bs)continue;if(rectBad(x0,y0,W,H))continue;const c={x0,y0,W,H};if(decks.some(q=>over(q,c)))continue;bs=s;best=c;}
       if(best){deck=best;deck.n=want;}}
@@ -19221,6 +19248,8 @@ function inDraw(M){const g=inG,SW=inCv.width,SH=inCv.height,Z=IN.Z,ox=Math.round
   for(const c of list){const look=c===P?P.look||P.base:c.suit?Object.assign({},c.look,{outfit:'espace'}):c.look;const pose=c.pose==='work'&&c.act!=='work'?'stand':c.pose,spr=inSprite(look,pose==='stand'?'stand':pose,c.dir|0,c.fr|0);
     const [x,y]=S(c.x,c.y),k=M.seat?Math.max(1,Math.round(Z/12)):sc;
     if(pose!=='sleep'&&pose!=='crawl'){g.fillStyle='rgba(0,0,0,0.3)';g.fillRect(x-4*k,y-1*k,8*k,2*k);}
+    // siège sous l'équipage assis (consoles, réfectoire) ; les sièges du plan sont déjà dessinés
+    if(pose==='sit'&&!(c.sit&&c.sit.o)&&!(c===P)&&c.post&&!c.post.seat){g.fillStyle='#2a303a';g.fillRect(x-4*k,y-12*k,8*k,10*k);g.fillStyle='#4a5262';g.fillRect(x-4*k,y-12*k,8*k,2*k);}
     g.drawImage(spr,Math.round(x-9*k),Math.round(y-28*k),18*k,30*k);
     if(c===P&&!M.seat){g.fillStyle='#ffd23c';g.fillRect(x-1,y-30*k-3,3,2);}}
   // verrière du chasseur : vitrage, montants, reflets ; les étoiles passent derrière
