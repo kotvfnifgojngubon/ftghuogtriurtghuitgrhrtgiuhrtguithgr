@@ -631,6 +631,7 @@ body.touch .hud-bottom{padding-bottom:276px}
 .sc-mapbar .btn.small{padding:5px 9px;font-size:10px;background:rgba(5,8,17,.85)}
 .sc-mapbar .btn.primary{background:var(--teal)}
 .sc-mapside{display:flex;flex-direction:column;gap:10px}
+.sc-pv{display:block;margin:4px auto 8px;width:180px;max-width:100%;height:auto;image-rendering:pixelated}
 .sc-dest{display:grid;gap:4px;padding:10px;border:1px solid var(--amber);background:rgba(255,198,109,.06);font-family:system-ui,sans-serif;font-size:12.5px}
 .sc-dest b{color:var(--amber);font-family:var(--f-label);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
 .sc-legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
@@ -6027,7 +6028,7 @@ const NEW_SYSTEMS=[
    Positions des galaxies en millions d'AL (M AL). */
 const GALAXIES=[
   {id:'sillage',name:'Sillage',ux:0,uy:0,gate:'aube',col:'#c08cff',arms:['#0d0a1e','#1a1236','#2c1c52','#4a2c6e','#7a4a8c'],twist:2.4},
-  {id:'ysoria',name:'Ysoria',ux:2.05,uy:-0.85,gate:'seuil',col:'#5affc8',arms:['#06120f','#0a2420','#123a34','#1e5a4c','#3a8a6e'],twist:3.1}
+  {id:'ysoria',name:'Ysoria',ux:2.05,uy:-0.85,gate:'seuil',col:'#5affc8',shape:'barre',arms:['#06120f','#0a2420','#123a34','#1e5a4c','#3a8a6e'],twist:3.1}
 ];
 const INTER_SEC=75;
 const galById=id=>GALAXIES.find(g=>g.id===id);
@@ -10502,13 +10503,56 @@ function shipComputerContracts(){const S=SC.sel.con||(SC.sel.con={sec:'active',i
     if(S.sec!==k)continue;if(!items.length){scEmpty(L,k==='avail'?'Aucune offre de ce type pour l’instant.':'Rien ici.');continue;}
     if(!S.id||!items.some(m=>m.id===S.id))S.id=items[0].id;for(const m of items)L.append(scMisItem(m,S));}
   const all=[...game.mis.active,...misOffersNow().con,...(game.mis.hist||[])],m=all.find(q=>q.id===S.id);if(m)scMisDetail(R,m);else scEmpty(R,'Sélectionne un contrat.');}
+/* ---------- cartes : petites planètes en pixels, fond d'espace ---------- */
+// petite planète : la même surface que dans le jeu (type, graine, inclinaison), éclairée par paliers depuis son soleil,
+// nuages, liseré et halo d'atmosphère, anneau en deux moitiés (derrière puis devant le disque) ; en cache par taille et
+// par direction de la lumière (16 pas)
+const PMINI=new Map();
+function planetMini(p,D){
+  D=Math.max(6,Math.min(200,Math.round(D/2)*2));const la=((Math.round(Math.atan2(-p.y,-p.x)/(TAU/16))%16)+16)%16,key=p.id+'|'+D+'|'+la;let cv=PMINI.get(key);if(cv)return cv;
+  if(PMINI.size>600)PMINI.clear();
+  const T=TYPES[p.type],R=D/2,ring=p.ring,ext=Math.ceil(ring?R*ring.outer*1.02:R*1.2)+2,W=ext*2;cv=mkCanvas(W,W);
+  const g=cv.getContext('2d'),im=g.createImageData(W,W),d=im.data,a=la*TAU/16,l0=Math.cos(a)*0.78,l1=Math.sin(a)*0.78,l2=0.62;
+  const ct=Math.cos(p.tilt||0),st=Math.sin(p.tilt||0),sd=p.seed||7,oc=D>60?5:D>24?4:3,cw=T.cloud,atm=hex(T.atm),c1=cw&&hex(cw.c1),c2=cw&&hex(cw.c2),LV=[0.2,0.42,0.66,0.86,1];
+  const put=(o,r,gg,b,al)=>{d[o]=r;d[o+1]=gg;d[o+2]=b;d[o+3]=al;};
+  const ringAt=(x,y)=>{if(!ring)return null;const t=ring.tilt||0.3,xr=x*Math.cos(t)+y*Math.sin(t),yr=-x*Math.sin(t)+y*Math.cos(t),rr=Math.hypot(xr,yr/0.3)/R;
+    if(rr<ring.inner||rr>ring.outer)return null;const f=(rr-ring.inner)/(ring.outer-ring.inner),k=f<0.12||f>0.9?2:((f*7)|0)%2;return{front:yr>0,col:hex(ring.cols[k]||ring.cols[0]),gap:f>0.55&&f<0.6};};
+  for(let j=0;j<W;j++)for(let i=0;i<W;i++){const x=i+0.5-ext,y=j+0.5-ext,o=(j*W+i)*4,dd=Math.hypot(x,y),Rg=ringAt(x,y);
+    if(dd<=R){const nx=x/R,ny=y/R,nz=Math.sqrt(Math.max(0,1-nx*nx-ny*ny)),tx=nx*ct-ny*st,ty=nx*st+ny*ct,lon=Math.atan2(tx,nz),lat=Math.asin(clamp(ty,-1,1));
+      const X=Math.cos(lat)*Math.sin(lon),Y=Math.sin(lat),Z=Math.cos(lat)*Math.cos(lon);let n=fbm3(X*T.freq+11,Y*T.freq+7,Z*T.freq+3,sd,oc);n=clamp((n-0.5)*T.contrast+0.5,0,1);
+      let C=T.surf(n,lat,X,Y,Z,sd),r=C[0],gg=C[1],b=C[2];const em=C[3];
+      if(cw){let k=fbm3(X*2.3+40,Y*3.6+40,Z*2.3+40,sd+101,Math.max(2,oc-1));k=clamp((k-0.5)*2.6+0.5,0,1);if(k>cw.cov+0.1){r=c2[0];gg=c2[1];b=c2[2];}else if(k>cw.cov){const m=cw.a1*0.7;r+=(c1[0]-r)*m;gg+=(c1[1]-gg)*m;b+=(c1[2]-b)*m;}}
+      const sh=nx*l0+ny*l1+nz*l2+(bay(i,j)-0.5)*0.22,lv=sh<-0.02?0:sh<0.16?1:sh<0.38?2:sh<0.64?3:4,L=em?1:LV[lv];r*=L;gg*=L;b*=L;
+      if(dd>R*0.9&&lv>=1){r+=(atm[0]-r)*0.38;gg+=(atm[1]-gg)*0.38;b+=(atm[2]-b)*0.38;}
+      if(Rg&&Rg.front&&!Rg.gap){const sh2=0.45+0.55*clamp(0.5+(x*l0+y*l1)/R*0.5,0,1);put(o,Rg.col[0]*sh2,Rg.col[1]*sh2,Rg.col[2]*sh2,235);continue;}
+      put(o,r,gg,b,255);continue;}
+    if(Rg&&!Rg.gap){const lit=(x*l0+y*l1)/Math.max(1,dd)>-0.3?1:0.55,behind=!Rg.front&&dd<R*1.0;if(!behind){put(o,Rg.col[0]*lit,Rg.col[1]*lit,Rg.col[2]*lit,215);continue;}}
+    // halo d'atmosphère, plus franc côté soleil
+    if(dd<R*1.14&&T.cloud!==null){const side=(x*l0+y*l1)/dd;if(side>-0.2&&bay(i,j)<0.65-(dd/R-1)*4)put(o,atm[0],atm[1],atm[2],120);}}
+  g.putImageData(im,0,0);PMINI.set(key,cv);return cv;}
+// fond de carte : nébuleuses tramées teintées, étoiles en deux profondeurs (parallaxe), galaxies lointaines
+const SCBG={};
+function scStarTile(seed,dens,big){const k='st'+seed;if(SCBG[k])return SCBG[k];const S=256,c=mkCanvas(S,S),g=c.getContext('2d'),r=mulberry(seed);
+  for(let i=0;i<S*S*dens;i++){const x=(r()*S)|0,y=(r()*S)|0;g.globalAlpha=0.25+r()*0.6;g.fillStyle=['#ffffff','#cfe6ff','#ffd2ea','#fff0c2','#a9fff0'][(r()*5)|0];g.fillRect(x,y,1,1);
+    if(big&&r()<0.07){g.globalAlpha*=0.45;g.fillRect(x-1,y,3,1);g.fillRect(x,y-1,1,3);}}g.globalAlpha=1;return SCBG[k]=c;}
+function scNebTile(col,seed){const k='nb'+col+seed;if(SCBG[k])return SCBG[k];const S=512,c=mkCanvas(S,S),g=c.getContext('2d'),im=g.createImageData(S,S),d=im.data,H=hex(col),C2=hex('#24194a'),C=[(H[0]+C2[0]*2)/3,(H[1]+C2[1]*2)/3,(H[2]+C2[2]*2)/3];
+  // voiles très doux : la teinte de l'étoile mêlée de violet sombre, en larges nappes tramées
+  for(let y=0;y<S;y++)for(let x=0;x<S;x++){const n=pfbm2(x/128,y/128,4,seed,4),m=pfbm2(x/48,y/48,8,seed+7,2),v=(n-0.52)*2.6+(m-0.5)*0.4;if(v<=0||bay(x,y)>Math.min(1,v*1.4))continue;
+    const lv=v>0.6?3:v>0.36?2:v>0.16?1:0,cc=lv>=2?C:C2,o=(y*S+x)*4;d[o]=cc[0];d[o+1]=cc[1];d[o+2]=cc[2];d[o+3]=[10,15,21,28][lv];}
+  g.putImageData(im,0,0);return SCBG[k]=c;}
+function scFarGal(){if(SCBG.fg)return SCBG.fg;const S=512,c=mkCanvas(S,S),g=c.getContext('2d'),r=mulberry(4242);
+  for(let i=0;i<7;i++){const x=r()*S,y=r()*S,rad=3+r()*7,an=r()*PI,col=['#4a3a6e','#2a4a5e','#5e3a4a','#3a5a4a'][(r()*4)|0];g.fillStyle=col;
+    for(let yy=-rad*2;yy<=rad*2;yy++)for(let xx=-rad*2;xx<=rad*2;xx++){const u=(xx*Math.cos(an)+yy*Math.sin(an))/rad,v=(-xx*Math.sin(an)+yy*Math.cos(an))/(rad*0.45),q=Math.hypot(u,v);if(q<1&&bay((xx+64)|0,(yy+64)|0)<(1-q)*0.9){g.globalAlpha=0.55;g.fillRect(Math.round(x+xx),Math.round(y+yy),1,1);}}}
+  g.globalAlpha=1;return SCBG.fg=c;}
+function scTile(g,c,ox,oy,W,H){const S=c.width;ox=((ox%S)+S)%S;oy=((oy%S)+S)%S;for(let y=-oy;y<H;y+=S)for(let x=-ox;x<W;x+=S)g.drawImage(c,Math.round(x),Math.round(y));}
+function scSpace(g,W,H,px,py,tint,gal){scTile(g,scNebTile(tint,gal?9:5),px*0.25,py*0.25,W,H);if(gal)scTile(g,scFarGal(),px*0.15,py*0.15,W,H);scTile(g,scStarTile(11,0.0018,false),px*0.5,py*0.5,W,H);scTile(g,scStarTile(23,0.0008,true),px,py,W,H);}
 /* ---------- Carte : système et galaxie, reliées à la navigation ---------- */
 const scMap={view:'sys',z:0,cx:0,cy:0,sel:null,drag:null,cv:null,g:null,w:0,h:0,pts:[],gz:0,gcx:0,gcy:0,pinch:null};
 const TERR_COL={humain:'#6fb4ff',pirate:'#ff9a20',anciens:'#c8c0d8',xalthar:'#c8a0ff'};
 function shipComputerMap(){const wrap=scH('div','sc-map'),side=scH('div','sc-mapside');side.dataset.scroll='M';
   const cvw=scH('div','sc-mapcv'),cv=scH('canvas');cvw.append(cv);wrap.append(cvw,side);scBody.append(wrap);scMap.cv=cv;scMap.g=cv.getContext('2d');
   const bar=scH('div','sc-mapbar');
-  scMap.bS=scBtn('Système',()=>{scMap.view='sys';scMap.fit=0;scMapReset();shipComputerRender();},scMap.view==='sys'?'primary':'');scMap.bG=scBtn('Galaxies',()=>{scMap.view='gal';scMap.fit=0;scMapReset();shipComputerRender();},scMap.view==='gal'?'primary':'');
+  scMap.bS=scBtn('Système',()=>{scMap.view='sys';scMap.sysF=SYS;scMap.fit=0;scMapReset();shipComputerRender();},scMap.view==='sys'?'primary':'');scMap.bG=scBtn('Galaxies',()=>{scMap.view='gal';scMap.fit=0;scMapReset();shipComputerRender();},scMap.view==='gal'?'primary':'');
   bar.append(scMap.bS,scMap.bG,
     scBtn('＋',()=>scZoom(1/1.4)),scBtn('－',()=>scZoom(1.4)),scBtn('Centrer sur moi',()=>{scMapReset(true);}));cvw.append(bar);
   if(!scMap.z)scMapReset();
@@ -10526,6 +10570,8 @@ function shipComputerMap(){const wrap=scH('div','sc-map'),side=scH('div','sc-map
   cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',e=>{ptr.delete(e.pointerId);scMap.drag=null;scMap.pinch=null;});
   scMapDraw();}
 const scK=()=>scMap.view==='sys'?scMap.z:scMap.gz;
+// système affiché en vue système : celui où l'on est, ou un autre où la carte est entrée depuis la galaxie
+const scSysF=()=>scMap.sysF&&SYSTEMS.includes(scMap.sysF)?scMap.sysF:SYS;
 // atlas : les deux galaxies à leur place dans l'univers, chacune autour de son centre, séparées d'environ deux fois et
 // demie la taille de la plus grande (l'écart réel, en millions d'années-lumière, ne tiendrait pas sur une carte)
 let SC_ATLAS=null;
@@ -10538,21 +10584,21 @@ function scAtlas(){if(SC_ATLAS)return SC_ATLAS;const cen={},ext={};let mx=1;
 // bornes du zoom galactique : de tout près d'un système (en deçà, la carte rentre dans le système) aux deux galaxies entières
 function scGzMin(){const cv=scMap.cv,d=cv&&cv.width>50?Math.min(cv.width,cv.height):520;return scAtlas().mx/(d*0.72)/9;}
 function scGzMax(){const cv=scMap.cv,d=cv&&cv.width>50?Math.min(cv.width,cv.height):520;return scAtlas().all/(d*0.62);}
-function scMapReset(me){if(scMap.view==='sys'){const R=WORLD_R||100000;if(me||!scMap.z){scMap.cx=player.x;scMap.cy=player.y;}scMap.z=me?Math.min(scMap.z||R/180,R/120):R/220;}
+function scMapReset(me){if(me)scMap.sysF=SYS;if(scMap.view==='sys'){const F=scSysF(),R=F.worldR||WORLD_R||100000;if(me||!scMap.z){scMap.cx=F===SYS?player.x:0;scMap.cy=F===SYS?player.y:0;}scMap.z=me?Math.min(scMap.z||R/180,R/120):R/220;}
   else{const A=scAtlas(),cv=scMap.cv,px=cv&&cv.width>50?Math.min(cv.width,cv.height):520,p=A.pos(SYS),o=A.org[SYS.gal];scMap.gcx=me?p[0]:o[0];scMap.gcy=me?p[1]:o[1];scMap.gz=A.ext[SYS.gal]/(px*0.72);}}
 function scMapBarSync(){if(scMap.bS&&scMap.bS.isConnected){scMap.bS.classList.toggle('primary',scMap.view==='sys');scMap.bG.classList.toggle('primary',scMap.view==='gal');}}
 // passage d'une vue à l'autre à la molette : le système se referme sur son étoile, ou s'ouvre depuis elle
-function scToGal(){const A=scAtlas(),p=A.pos(SYS);scMap.view='gal';scMap.gcx=p[0];scMap.gcy=p[1];scMap.gz=scGzMin()*1.5;scMap.tr={dir:'out',t0:performance.now()};scMapBarSync();}
-function scToSys(){const R=WORLD_R||1e5;scMap.view='sys';scMap.cx=0;scMap.cy=0;scMap.z=R/60*0.92;scMap.tr={dir:'in',t0:performance.now()};scMapBarSync();}
+function scToGal(){const A=scAtlas(),F=scSysF(),p=A.pos(F);scMap.view='gal';scMap.gcx=p[0];scMap.gcy=p[1];scMap.gz=scGzMin()*1.5;scMap.tr={dir:'out',t0:performance.now(),F};scMapBarSync();}
+function scToSys(F){F=F||SYS;scMap.sysF=F;const R=F.worldR||1e5;scMap.view='sys';scMap.cx=0;scMap.cy=0;scMap.z=R/60*0.92;scMap.tr={dir:'in',t0:performance.now(),F};scMapBarSync();const side=scBody.querySelector('.sc-mapside');if(side){scMap.sel=null;side.innerHTML='';scMapSide(side);}}
 function scZoom(f,px,py){const cv=scMap.cv;if(!cv)return;px=px===undefined?cv.width/2:px;py=py===undefined?cv.height/2:py;const k0=scK(),wx=(px-cv.width/2)*k0,wy=(py-cv.height/2)*k0;
-  if(scMap.view==='sys'){const zmax=(WORLD_R||1e5)/60;if(f>1&&scMap.z>=zmax*0.999){scToGal();return;}
+  if(scMap.view==='sys'){const zmax=(scSysF().worldR||1e5)/60;if(f>1&&scMap.z>=zmax*0.999){scToGal();return;}
     scMap.z=clamp(scMap.z*f,5,zmax);const k1=scMap.z;scMap.cx+=wx-(px-cv.width/2)*k1;scMap.cy+=wy-(py-cv.height/2)*k1;}
   else{const gmin=scGzMin(),A=scAtlas(),cw=[scMap.gcx+wx,scMap.gcy+wy],inG=GA=>hyp(cw[0]-A.org[GA.id][0],cw[1]-A.org[GA.id][1])<A.ext[GA.id]*0.8;
     // on avance dans le vide entre les galaxies : le zoom file vers la plus proche (la sienne, à distance égale)
     if(f<1&&!GALAXIES.some(inG)){let best=null,bd=1e18;for(const GA of GALAXIES){const o=A.org[GA.id],d=hyp(cw[0]-o[0],cw[1]-o[1])/(GA.id===SYS.gal?1.4:1);if(d<bd){bd=d;best=o;}}
       px=scSX(best[0]);py=scSY(best[1]);return scZoom(f,px,py);}
-    // au plus près : la carte entre dans le système où l'on est, si l'on avance dans sa galaxie ou s'il est à l'écran
-    if(f<1&&scMap.gz<=gmin*1.001){const p=A.pos(SYS),sx=scSX(p[0]),sy=scSY(p[1]);if(inG(galById(SYS.gal))||(sx>-10&&sy>-10&&sx<cv.width+10&&sy<cv.height+10)){scToSys();return;}}
+    // au plus près : la carte entre dans le système le plus proche du curseur, quel qu'il soit (vue à distance)
+    if(f<1&&scMap.gz<=gmin*1.001){let best=null,bd=1e9;for(const q of SYSTEMS){const p=A.pos(q),d=hyp(scSX(p[0])-px,scSY(p[1])-py);if(d<bd){bd=d;best=q;}}if(best){scToSys(best);return;}}
     scMap.gz=clamp(scMap.gz*f,gmin,scGzMax());const k1=scMap.gz;scMap.gcx+=wx-(px-cv.width/2)*k1;scMap.gcy+=wy-(py-cv.height/2)*k1;
     // tout au bout du recul, les deux galaxies se recentrent
     if(f>1&&scMap.gz>=scGzMax()*0.999){const m=scAtlas().mid;scMap.gcx=m[0];scMap.gcy=m[1];}}}
@@ -10561,32 +10607,40 @@ const scSX=x=>scMap.cv.width/2+(x-(scMap.view==='sys'?scMap.cx:scMap.gcx))/scK()
 function scText(g,t,x,y,col,al){g.font='10px Silkscreen, monospace';g.textAlign=al||'center';g.fillStyle='#07050c';g.fillText(t,x+1,y+1);g.fillStyle=col;g.fillText(t,x,y);}
 function scMapDraw(){const cv=scMap.cv;if(!cv||!cv.isConnected)return;const r=cv.parentElement.getBoundingClientRect(),W2=Math.max(200,Math.round(r.width)),H2=Math.max(200,Math.round(r.height));
   if(cv.width!==W2||cv.height!==H2){cv.width=W2;cv.height=H2;}const g=scMap.g,t=now;g.imageSmoothingEnabled=false;g.fillStyle='#05040a';g.fillRect(0,0,W2,H2);
+  // espace : nébuleuses teintées par l'étoile du système, étoiles en parallaxe, galaxies lointaines en vue galactique
+  {const sv=scMap.view==='sys';scSpace(g,W2,H2,(sv?scMap.cx/scMap.z:scMap.gcx/scMap.gz)*0.12,(sv?scMap.cy/scMap.z:scMap.gcy/scMap.gz)*0.12,sv?STARS[scSysF().star].map:'#5d4b8f',!sv);}
   // trame
-  g.fillStyle='rgba(93,75,143,.18)';for(let x=(W2/2)%40;x<W2;x+=40)g.fillRect(Math.round(x),0,1,H2);for(let y=(H2/2)%40;y<H2;y+=40)g.fillRect(0,Math.round(y),W2,1);
+  g.fillStyle='rgba(93,75,143,.08)';for(let x=(W2/2)%40;x<W2;x+=40)g.fillRect(Math.round(x),0,1,H2);for(let y=(H2/2)%40;y<H2;y+=40)g.fillRect(0,Math.round(y),W2,1);
   scMap.pts=[];const pt=(x,y,kind,ref,label,R)=>scMap.pts.push({x,y,kind,ref,label,R:R||8});
   if(scMap.view==='sys'){
-    // étoile, orbites, planètes
-    const sx=scSX(0),sy=scSY(0);g.fillStyle='#ffd27a';g.beginPath();g.arc(sx,sy,Math.max(3,SUN_GLOW/scMap.z*0.4),0,TAU);g.fill();
-    g.strokeStyle='rgba(93,75,143,.35)';for(const p of PLANETS){g.beginPath();g.arc(sx,sy,p.orbit/scMap.z,0,TAU);g.stroke();}
-    for(const f of FIELDS){g.strokeStyle='rgba(200,160,110,.35)';g.setLineDash([3,4]);g.beginPath();if(f.kind==='blob')g.arc(scSX(f.x),scSY(f.y),f.rad/scMap.z,0,TAU);else{g.arc(scSX(f.cx||0),scSY(f.cy||0),(f.r0+f.r1)/2/scMap.z,0,TAU);}g.stroke();g.setLineDash([]);
+    const F=scSysF(),here=F===SYS,WR=F.worldR||WORLD_R;genStructs(F);
+    // étoile : couronne qui respire, disque à la couleur de son type, cœur blanc ; orbites des planètes
+    const sx=scSX(0),sy=scSY(0),SR=Math.max(4,SUN_GLOW_OF(F)/scMap.z*0.4),Sc=STARS[F.star].map;
+    for(let k=3;k>=1;k--){g.globalAlpha=0.07*k;g.fillStyle=Sc;g.beginPath();g.arc(sx,sy,SR*(1+k*0.6+0.06*Math.sin(t*2+k)),0,TAU);g.fill();}g.globalAlpha=1;
+    g.fillStyle=Sc;g.beginPath();g.arc(sx,sy,SR,0,TAU);g.fill();g.fillStyle='#ffffff';g.beginPath();g.arc(sx,sy,SR*0.45,0,TAU);g.fill();
+    g.strokeStyle='rgba(93,75,143,.35)';for(const p of F.planets){if(p.moonOf)continue;g.beginPath();g.arc(sx,sy,p.orbit/scMap.z,0,TAU);g.stroke();}
+    for(const f of F.fields){g.strokeStyle='rgba(200,160,110,.35)';g.setLineDash([3,4]);g.beginPath();if(f.kind==='blob')g.arc(scSX(f.x),scSY(f.y),f.rad/scMap.z,0,TAU);else{g.arc(scSX(f.cx||0),scSY(f.cy||0),(f.r0+f.r1)/2/scMap.z,0,TAU);}g.stroke();g.setLineDash([]);
       if(f.kind==='blob'){pt(scSX(f.x),scSY(f.y),'field',f,'Champ '+(f.name||''),Math.max(10,f.rad/scMap.z));if(f.rad/scMap.z>14)scText(g,'CHAMP '+(f.name||'').toUpperCase(),scSX(f.x),scSY(f.y)+3,'#c8a070');}}
-    for(const p of PLANETS){const x=scSX(p.x),y=scSY(p.y),rr=Math.max(3,p.R/scMap.z);g.fillStyle=p.scanned?TYPES[p.type].mapCol:'#5b5170';g.beginPath();g.arc(x,y,rr,0,TAU);g.fill();pt(x,y,'planet',p,p.scanned?p.name:'Planète inconnue',rr+4);
-      if(rr>2&&scMap.z<WORLD_R/120)scText(g,(p.scanned?p.name:'???').toUpperCase(),x,y-rr-4,p.scanned?'#efe9fa':'#ffc66d');}
-    genStructs(SYS);for(const c of SYS._cx||[]){if(!siteKnown(c))continue;const x=scSX(c.x),y=scSY(c.y),hos=stHostile(c.fac),dn=c.secs.length&&stIsDown(c.secs[0]);g.fillStyle=dn?'#4a4060':hos?'#ff6a5a':TERR_COL[c.fac]||'#6fb4ff';g.fillRect(Math.round(x)-3,Math.round(y)-3,7,7);g.fillStyle='#07050c';g.fillRect(Math.round(x)-1,Math.round(y)-1,3,3);
-      pt(x,y,'cx',c,c.n,9);if(scMap.z<WORLD_R/400)scText(g,c.n.split(' · ')[0].toUpperCase().slice(0,26),x,y+14,hos?'#ff9a8a':'#9fc6ff');}
-    for(const rl of SYS.relays){const x=scSX(rl.x),y=scSY(rl.y);g.strokeStyle='#35d6b4';g.lineWidth=2;g.strokeRect(Math.round(x)-5,Math.round(y)-5,11,11);g.lineWidth=1;pt(x,y,'relay',rl,rl.name,10);scText(g,rl.name.toUpperCase(),x,y-9,'#7fffd4');}
+    // planètes : de vraies petites planètes dès qu'elles font quelques pixels (surface, nuages, atmosphère, anneau)
+    for(const p of F.planets){const x=scSX(p.x),y=scSY(p.y),rr=p.R/scMap.z,R2=Math.max(3,rr);if(x<-120||y<-120||x>W2+120||y>H2+120)continue;
+      if(rr<2.6){g.fillStyle=TYPES[p.type].mapCol;g.beginPath();g.arc(x,y,R2,0,TAU);g.fill();}else{const pv=planetMini(p,rr*2);g.drawImage(pv,Math.round(x-pv.width/2),Math.round(y-pv.height/2));}
+      pt(x,y,'planet',p,p.name,R2+4);const ry=R2*(p.ring&&rr>2.6?p.ring.outer*0.45+0.6:1);
+      if((scMap.z<WR/120&&!p.moonOf)||rr>5){scText(g,p.name.toUpperCase(),x,y-ry-5,p.moonOf?'#b8b0c8':'#efe9fa');if(rr>12)scText(g,TYPES[p.type].label.toUpperCase(),x,y+ry+13,'#9d93b8');}}
+    for(const c of F._cx||[]){if(!siteKnown(c))continue;const x=scSX(c.x),y=scSY(c.y),hos=stHostile(c.fac),dn=c.secs.length&&stIsDown(c.secs[0]);g.fillStyle=dn?'#4a4060':hos?'#ff6a5a':TERR_COL[c.fac]||'#6fb4ff';g.fillRect(Math.round(x)-3,Math.round(y)-3,7,7);g.fillStyle='#07050c';g.fillRect(Math.round(x)-1,Math.round(y)-1,3,3);
+      pt(x,y,'cx',c,c.n,9);if(scMap.z<WR/400)scText(g,c.n.split(' · ')[0].toUpperCase().slice(0,26),x,y+14,hos?'#ff9a8a':'#9fc6ff');}
+    for(const rl of F.relays){const x=scSX(rl.x),y=scSY(rl.y);g.strokeStyle='#35d6b4';g.lineWidth=2;g.strokeRect(Math.round(x)-5,Math.round(y)-5,11,11);g.lineWidth=1;pt(x,y,'relay',rl,rl.name,10);scText(g,rl.name.toUpperCase(),x,y-9,'#7fffd4');}
     // missions : lieux connus, zones de recherche (approximatives), objectifs suivis
-    for(const m of game.mis.active){const s=misStepOf(m);if(!s||(s.sys||m.sys)!==SYS.id)continue;const col=ORGS[m.org].col;
+    for(const m of game.mis.active){const s=misStepOf(m);if(!s||(s.sys||m.sys)!==F.id)continue;const col=ORGS[m.org].col;
       if(s.k==='search'){const x=scSX(s.zx),y=scSY(s.zy),R=s.R/scMap.z;g.strokeStyle=col;g.globalAlpha=0.7;g.setLineDash([4,4]);g.beginPath();g.arc(x,y,Math.max(6,R),0,TAU);g.stroke();g.setLineDash([]);g.globalAlpha=0.08;g.fillStyle=col;g.beginPath();g.arc(x,y,Math.max(6,R),0,TAU);g.fill();g.globalAlpha=1;
         pt(x,y,'zone',{m,s},'Zone de recherche : '+m.title,Math.max(10,R));scText(g,'ZONE · '+m.title.replace(/^★\s*/,'').toUpperCase().slice(0,28),x,y-Math.max(6,R)-4,col);}
       else{const T=missionNavTarget(m);if(T&&T.x!==undefined&&s.k!=='dock'&&s.k!=='ore'){const x=scSX(T.x),y=scSY(T.y);g.fillStyle=col;g.beginPath();g.moveTo(x,y-7);g.lineTo(x+6,y);g.lineTo(x,y+7);g.lineTo(x-6,y);g.closePath();g.fill();pt(x,y,'obj',{m,s,T},m.title,10);if(m.tracked)scText(g,'★ '+s.label.toUpperCase().slice(0,30),x,y+16,col);}}}
     // contacts radar (réels, à portée des capteurs), amis, épave perdue, destination, moi
-    const rr=radarRange(player);for(const e of enemies){if(e.dead||e.stc||hyp(e.x-player.x,e.y-player.y)>rr)continue;g.fillStyle=e.neutral?'#c8c0d8':'#ff4f6a';g.fillRect(Math.round(scSX(e.x))-1,Math.round(scSY(e.y))-1,3,3);}
-    if(mp.on)for(const P of mp.peers.values()){const s=P.s;if(!s||s.sys!==SYS.id)continue;const x=scSX(s.x),y=scSY(s.y);g.fillStyle='#7fffd4';g.fillRect(Math.round(x)-2,Math.round(y)-2,5,5);pt(x,y,'friend',P,P.name,8);scText(g,P.name.toUpperCase(),x,y-8,'#7fffd4');}
-    if(typeof lostHere==='function'&&lostHere()){const x=scSX(game.lost.x),y=scSY(game.lost.y);scText(g,'TON EPAVE',x,y-6,'#ffc66d');g.fillStyle='#ffc66d';g.fillRect(Math.round(x)-2,Math.round(y)-2,4,4);}
-    const D=game.navDest;if(D&&D.sys===SYS.id&&D.x!==undefined){const x=scSX(D.x),y=scSY(D.y),ph=((t*2)|0)%2;g.strokeStyle=ph?'#ffffff':'#ffc66d';g.beginPath();g.arc(x,y,9,0,TAU);g.stroke();g.beginPath();g.moveTo(scSX(player.x),scSY(player.y));g.lineTo(x,y);g.setLineDash([2,4]);g.stroke();g.setLineDash([]);scText(g,'DESTINATION',x,y+20,'#ffc66d');}
-    const px2=scSX(player.x),py2=scSY(player.y),a=player.a;g.fillStyle='#ffffff';g.beginPath();g.moveTo(px2+Math.cos(a)*8,py2+Math.sin(a)*8);g.lineTo(px2+Math.cos(a+2.5)*6,py2+Math.sin(a+2.5)*6);g.lineTo(px2+Math.cos(a-2.5)*6,py2+Math.sin(a-2.5)*6);g.closePath();g.fill();
-    g.strokeStyle='rgba(53,214,180,.25)';g.beginPath();g.arc(px2,py2,rr/scMap.z,0,TAU);g.stroke();
+    const rr=radarRange(player);if(here)for(const e of enemies){if(e.dead||e.stc||hyp(e.x-player.x,e.y-player.y)>rr)continue;g.fillStyle=e.neutral?'#c8c0d8':'#ff4f6a';g.fillRect(Math.round(scSX(e.x))-1,Math.round(scSY(e.y))-1,3,3);}
+    if(mp.on)for(const P of mp.peers.values()){const s=P.s;if(!s||s.sys!==F.id)continue;const x=scSX(s.x),y=scSY(s.y);g.fillStyle='#7fffd4';g.fillRect(Math.round(x)-2,Math.round(y)-2,5,5);pt(x,y,'friend',P,P.name,8);scText(g,P.name.toUpperCase(),x,y-8,'#7fffd4');}
+    if(here&&typeof lostHere==='function'&&lostHere()){const x=scSX(game.lost.x),y=scSY(game.lost.y);scText(g,'TON EPAVE',x,y-6,'#ffc66d');g.fillStyle='#ffc66d';g.fillRect(Math.round(x)-2,Math.round(y)-2,4,4);}
+    const D=game.navDest;if(D&&D.sys===F.id&&D.x!==undefined){const x=scSX(D.x),y=scSY(D.y),ph=((t*2)|0)%2;g.strokeStyle=ph?'#ffffff':'#ffc66d';g.beginPath();g.arc(x,y,9,0,TAU);g.stroke();if(here){g.beginPath();g.moveTo(scSX(player.x),scSY(player.y));g.lineTo(x,y);g.setLineDash([2,4]);g.stroke();g.setLineDash([]);}scText(g,'DESTINATION',x,y+20,'#ffc66d');}
+    if(here){const px2=scSX(player.x),py2=scSY(player.y),a=player.a;g.fillStyle='#ffffff';g.beginPath();g.moveTo(px2+Math.cos(a)*8,py2+Math.sin(a)*8);g.lineTo(px2+Math.cos(a+2.5)*6,py2+Math.sin(a+2.5)*6);g.lineTo(px2+Math.cos(a-2.5)*6,py2+Math.sin(a-2.5)*6);g.closePath();g.fill();
+    g.strokeStyle='rgba(53,214,180,.25)';g.beginPath();g.arc(px2,py2,rr/scMap.z,0,TAU);g.stroke();}
   }else{
     // galaxies : spirale en fond (plus visible quand on recule), voies de saut, grand saut entre les portes, route, systèmes
     const A=scAtlas(),P=q=>{const p=A.pos(q);return[scSX(p[0]),scSY(p[1])];},dim=Math.min(W2,H2);
@@ -10607,12 +10661,12 @@ function scMapDraw(){const cv=scMap.cv;if(!cv||!cv.isConnected)return;const r=cv
         if(mp.on){const Fr=[...mp.peers.values()].filter(Q=>Q.s&&Q.s.sys===q.id).map(Q=>Q.name);if(Fr.length)scText(g,Fr.join(', ').toUpperCase(),x,y-12,'#7fffd4');}}
       if(!names){const o=A.org[GA.id],x=scSX(o[0]),y=scSY(o[1])+exs*0.5+16;scText(g,'GALAXIE '+GA.name.toUpperCase(),x,y,GA.id===SYS.gal?'#ffffff':GA.col);scText(g,L.length+' SYSTEMES · '+L.filter(q=>game.visited[q.id]).length+' VISITES',x,y+12,'#9d93b8');}}
   }
-  if(scMap.tr){const p=(performance.now()-scMap.tr.t0)/380;if(p>=1)scMap.tr=null;else{const e=1-(1-p)*(1-p),out=scMap.tr.dir==='out',big=Math.min(W2,H2)*0.46,c=out?scAtlas().pos(SYS):[0,0],x=scSX(c[0]),y=scSY(c[1]);
+  if(scMap.tr){const p=(performance.now()-scMap.tr.t0)/380;if(p>=1)scMap.tr=null;else{const e=1-(1-p)*(1-p),out=scMap.tr.dir==='out',big=Math.min(W2,H2)*0.46,c=out?scAtlas().pos(scMap.tr.F||SYS):[0,0],x=scSX(c[0]),y=scSY(c[1]);
     for(let i=1;i<=4;i++){const r0=big*i/4,r=out?r0*(1-e)+3*e:3*(1-e)+r0*e;g.globalAlpha=(1-p)*0.75;g.strokeStyle=i===4?'#9d93b8':'#5d4b8f';g.beginPath();g.arc(Math.round(x),Math.round(y),Math.max(1,r),0,TAU);g.stroke();}g.globalAlpha=1;}}
   // sélection
   const S=scMap.sel;if(S&&S.sx!==undefined){}
   if(S){const q=scMap.pts.find(p=>p.ref===S.ref&&p.kind===S.kind);const x=q?q.x:S.kind==='point'?scSX(S.x):null,y=q?q.y:S.kind==='point'?scSY(S.y):null;if(x!==null){g.strokeStyle='#ffc66d';const k=10+Math.sin(t*6)*2;g.strokeRect(Math.round(x-k),Math.round(y-k),Math.round(k*2),Math.round(k*2));}}
-  scText(g,(scMap.view==='sys'?'SYSTEME '+SYS.name+' · ECHELLE '+uTxt(scMap.z*100)+' / 100 px · RECULE POUR LA GALAXIE':'GALAXIES '+GALAXIES.map(q=>q.name).join(' ET ')+' · '+SYSTEMS.length+' SYSTEMES · AVANCE SUR '+SYS.name+' POUR Y ENTRER').toUpperCase(),10,H2-10,'#9d93b8','left');}
+  scText(g,(scMap.view==='sys'?'SYSTEME '+scSysF().name+(scSysF()===SYS?'':' · VUE A DISTANCE')+' · ECHELLE '+uTxt(scMap.z*100)+' / 100 px · RECULE POUR LA GALAXIE':'GALAXIES '+GALAXIES.map(q=>q.name).join(' ET ')+' · '+SYSTEMS.length+' SYSTEMES · AVANCE SUR UN SYSTEME POUR LE VOIR').toUpperCase(),10,H2-10,'#9d93b8','left');}
 function scMapPick(x,y,dbl){let best=null,bd=1e9;for(const q of scMap.pts){const d=hyp(q.x-x,q.y-y);if(d<Math.max(12,q.R)&&d<bd){bd=d;best=q;}}
   if(best)scMap.sel={kind:best.kind,ref:best.ref,label:best.label};else if(scMap.view==='sys'){const k=scK();scMap.sel={kind:'point',x:scMap.cx+(x-scMap.cv.width/2)*k,y:scMap.cy+(y-scMap.cv.height/2)*k,label:'Point de navigation'};}else scMap.sel=null;
   if(dbl&&scMap.sel)scSetDestFromSel();sfx.click&&sfx.click();const side=scBody.querySelector('.sc-mapside');if(side){side.innerHTML='';scMapSide(side);}}
@@ -10626,7 +10680,7 @@ function scSelTarget(S){if(!S)return null;const r=S.ref;
     case 'friend':return{kind:'pt',x:r.s.x,y:r.s.y,label:r.name.toUpperCase()};
     case 'sys':return{kind:'sys',sys:r.id,label:r.name.toUpperCase()};
     case 'point':return{kind:'pt',x:S.x,y:S.y,label:'POINT DE NAVIGATION'};}return null;}
-function scSetDestFromSel(){const T=scSelTarget(scMap.sel);if(T){navSetDest(T);shipComputerRender();}}
+function scSetDestFromSel(){const T=scSelTarget(scMap.sel);if(T&&scMap.view==='sys'&&scSysF()!==SYS&&!T.sys)T.sys=scSysF().id;if(T){navSetDest(T);shipComputerRender();}}
 function scMapSide(side){const S=scMap.sel,D=game.navDest;
   side.append(scH('p','eyebrow','Navigation'));
   if(D){const d=D.sys===SYS.id&&D.x!==undefined?uTxt(hyp(D.x-player.x,D.y-player.y)):(sysById(D.sys)||{name:'?'}).name+' · '+(game.route||[]).length+' saut(s)';const b=scH('div','sc-dest');b.append(scH('b','','Destination : '+D.label),scH('span','',d+(hyperDest?' · J : hyperespace':'')),scBtn('Effacer la destination',()=>{navClear();shipComputerRender();}));side.append(b);}
@@ -10639,7 +10693,9 @@ function scMapSide(side){const S=scMap.sel,D=game.navDest;
     const pres=terrOf(s)==='humain'?'Flotte, Guilde, Cartographes, Phare, Compagnie Cuprique':terrOf(s)==='pirate'?'Clan de la Rouille, Cercle Muet':terrOf(s)==='anciens'?'Les Machines':'Les Xal’thar';scKV(dl,'Présence',pres);
     const ms=game.mis.active.filter(m=>{const q=misStepOf(m);return q&&(q.sys||m.sys)===s.id;});scKV(dl,'Missions actives',ms.length?ms.map(m=>m.title.replace(/^★\s*/,'')).join(' · '):'aucune');
     if(mp.on){const F=[...mp.peers.values()].filter(P=>P.s&&P.s.sys===s.id).map(P=>P.name);if(F.length)scKV(dl,'Joueurs',F.join(', '));}}
-  else if(S.kind==='planet'){scKV(dl,'Type',r.scanned?TYPES[r.type].label:'inconnu (à relever)');scKV(dl,'Orbite',uaTxt(r.orbit));scKV(dl,'Rayon',fmt(Math.round(r.R))+' u');scKV(dl,'Distance',dist(r.x,r.y));scKV(dl,'Relevé',r.scanned?'complet':'pas encore (approche-la pour la scanner)');}
+  else if(S.kind==='planet'){const pv=planetMini(r,120),im=scH('canvas','sc-pv');im.width=pv.width;im.height=pv.height;im.getContext('2d').drawImage(pv,0,0);card.append(im);const Fs=sysById(r.sys)||SYS,T=TYPES[r.type],moons=Fs.planets.filter(q=>q.moonOf===r.id).length;
+    scKV(dl,'Type',T.label);scKV(dl,'Système',Fs.name);scKV(dl,'Orbite',uaTxt(r.orbit));scKV(dl,'Rayon',fmt(Math.round(r.R))+' u');scKV(dl,'Anneaux',r.ring?'oui':'non');scKV(dl,'Lunes',String(moons));scKV(dl,'Atmosphère',T.cloud?'nuageuse':T.cloud===null?'ténue ou absente':'claire');if(r.moonOf){const h=Fs.planets.find(q=>q.id===r.moonOf);if(h)scKV(dl,'Lune de',h.name);}
+    scKV(dl,'Distance',Fs===SYS?dist(r.x,r.y):'autre système');}
   else if(S.kind==='relay'){scKV(dl,'Distance',dist(r.x,r.y));scKV(dl,'Services','commerce, réparation, chantier, hangar');const del=game.mis.active.filter(m=>{const q=misStepOf(m);return q&&(q.k==='dock'||q.k==='ore')&&(q.relay===r.id||q.relay==='*');});scKV(dl,'Livraisons possibles',del.length?del.map(m=>m.title.replace(/^★\s*/,'')).join(' · '):'aucune');}
   else if(S.kind==='cx'){const c=r,dn=c.secs.filter(d=>stIsDown(d)).length;scKV(dl,'Faction',TERR_TXT[c.fac]?TERR_TXT[c.fac].replace('territoire ',''):c.fac);scKV(dl,'Attitude',stHostile(c.fac)?'hostile':'amicale');scKV(dl,'Fonction',c.fn||'—');scKV(dl,'Menace',c.th+'/4');scKV(dl,'Sections',c.secs.length+(dn?' · '+dn+' détruite(s)':''));scKV(dl,'Distance',dist(c.x,c.y));}
   else if(S.kind==='field'){const f=r,o=(f.ore||[]).map((w,i)=>w>0.05?ORES[i].name:'').filter(Boolean).join(', ');scKV(dl,'Minerais',o||'—');scKV(dl,'Rayon',uTxt(f.rad));scKV(dl,'Distance',dist(f.x,f.y));}
@@ -14247,7 +14303,11 @@ function spiralImg(GA,w,h,cx,cy,R,stars,seed,mask){
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){
     const dx=(x-cx)/R,dy=(y-cy)/R*1.35,r=Math.hypot(dx,dy),a=Math.atan2(dy,dx);
     const arm=Math.pow(0.5+0.5*Math.cos(2*(a-Math.log(r+0.05)*tw)),3),n=pfbm2(x/48,y/48,64,77+seed,3);
-    let v=arm*Math.exp(-r*2.6)*1.5+Math.exp(-r*r*40)*1.2+(n-0.5)*0.35;if(mask){const m=mask(x,y);if(m<=0)continue;v*=m;}v+=(bay(x,y)-0.5)*0.18;
+    let v;
+    // galaxie barrée à anneau (Ysoria) : barre lumineuse, anneau intérieur grumeleux, deux bras lâches au-delà
+    if(GA.shape==='barre'){const q=0.5,bx=dx*Math.cos(q)+dy*Math.sin(q),by=-dx*Math.sin(q)+dy*Math.cos(q),rg=(r-0.6)/0.1;
+      v=Math.exp(-((bx/0.42)**2+(by/0.11)**2)*2.2)*1.35+Math.exp(-rg*rg)*(0.7+0.9*(n-0.5))+Math.pow(0.5+0.5*Math.cos(2*(a-q)-Math.log(r+0.05)*tw*0.7),4)*Math.exp(-r*1.7)*(r>0.66?1.2:0)+Math.exp(-r*r*70)*1.2+(n-0.5)*0.3;}
+    else v=arm*Math.exp(-r*2.6)*1.5+Math.exp(-r*r*40)*1.2+(n-0.5)*0.35;if(mask){const m=mask(x,y);if(m<=0)continue;v*=m;}v+=(bay(x,y)-0.5)*0.18;
     const l=v<0.12?-1:v<0.28?0:v<0.48?1:v<0.72?2:v<1?3:4;if(l<0)continue;
     const o=(y*w+x)*4,C=cols[l];d[o]=C[0];d[o+1]=C[1];d[o+2]=C[2];d[o+3]=l?255:150;
   }
@@ -14281,8 +14341,7 @@ function drawSysView(g,F,cx,cy,R,alpha,labels){
   if(labels)stratLanes(g,F);
   for(const p of F.planets){
     const [mx,my]=mapPt(p.x,p.y),x=Math.round(mx),y=Math.round(my),sz=p.R>1200?5:p.R>800?4:3,h=sz>>1;
-    g.fillStyle='#07050c';g.fillRect(x-h-1,y-h-1,sz+2,sz+2);g.fillStyle=p.scanned?TYPES[p.type].mapCol:'#5b5170';g.fillRect(x-h,y-h,sz,sz);
-    if(p.ring&&p.scanned){g.fillStyle=p.ring.cols[0];g.fillRect(x-h-2,y,sz+4,1);}
+    {const pv=planetMini(p,p.moonOf?6:sz*2+2);g.drawImage(pv,Math.round(x-pv.width/2),Math.round(y-pv.height/2));}
     if(labels){drawText(p.scanned?p.name:'?',x,y+h+3,p.scanned?'#efe9fa':'#ffc66d','c',g);mapUI.hov.push({x,y,r:h+3,p});}
   }
   if(F===SYS&&labels){
