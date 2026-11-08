@@ -2327,7 +2327,7 @@ function buildUnique(def){
         A.col[i]=ed?mixI(A.col[i],0x1a1410,0.5):tone(A.col[i],gray,0.85);
         if(!ed&&w>=60&&(x===x0+1||x===x0+pw-2)&&(y===y0+1||y===y0+ph-2))A.col[i]=0xc8c2b4;}}
     const per=w<60?2:w<300?4:w<900?7:11;
-    for(let y=0;y<h;y++)for(let x=Math.floor(w*0.87);x<w;x++){const i=y*w+x;if(!ok(i))continue;A.col[i]=tone(A.col[i],(((x+y)/per)|0)&1?0xe8b820:0x1c1612,0.82);}
+    if(!def.noHaz)for(let y=0;y<h;y++)for(let x=Math.floor(w*0.87);x<w;x++){const i=y*w+x;if(!ok(i))continue;A.col[i]=tone(A.col[i],(((x+y)/per)|0)&1?0xe8b820:0x1c1612,0.82);}
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(!ok(i))continue;
       const g=vn(x,y,sc,sd*13+5);if(g>0.58)A.col[i]=mixI(A.col[i],0x5c3218,Math.min(0.62,(g-0.58)*1.9));
       const s2=vn(x,y,sc*0.6,sd*17+9);if(s2<0.13)A.col[i]=mixI(A.col[i],0x14100c,0.55*(0.13-s2)/0.13);
@@ -3684,7 +3684,7 @@ MODEL_SHIPS.push(
    soudées, tôles rouillées. Xal'thar : croissants et lames violettes. Machines : fer noirci, bronze, flèches gothiques. */
 const ST_PAL={humain:{},pirate:{tint:'prouille',liv:'pocre',pirate:true},xalthar:{pal:'xalthar',tint:'xal',liv:'xrouge',skin:'xal',engPal:XAL_ENG},anciens:{pal:'anciens',tint:'anc',liv:'aor',engPal:ANC_ENG}};
 const ST_BASE=()=>Object.assign({},HUMAN_SHIPS.find(s=>s.id==='croiseur').st,{spd:0,acc:0,turn:0,cargo:0,shield:900,regen:0.05});
-function stDef(key,fac,L,H,fn,o){STB=[];const d=shipDef(L,H,fn),F=ST_PAL[fac];o=o||{};d.berths=STB.map(q=>({x:q.x*SHIP_K,y:(q.y-H/2)*SHIP_K+d.H/2,L:q.L*SHIP_K,W:q.W*SHIP_K,dir:q.dir,k:q.k}));STB=[];
+function stDef(key,fac,L,H,fn,o){STB=[];const d=shipDef(L,H,fn),F=ST_PAL[fac];o=o||{};d.berths=STB.map(q=>Object.assign({},q,{x:q.x*SHIP_K,y:(q.y-H/2)*SHIP_K+d.H/2,L:q.L*SHIP_K,W:q.W*SHIP_K}));STB=[];
   return Object.assign(d,{id:'st_'+key,fac,pal:F.pal,tint:F.tint,liv:F.liv,pirate:!!F.pirate,skin:F.skin,engPal:F.engPal,emb:FEMBLEM[fac],edge:fac==='anciens'||fac==='humain'?d.edge:false,
     st:Object.assign(ST_BASE(),{giant:L>=380},o.st||{}),info:{len:L+' m',m:L},seed:key.length*37+L,noXR:true,tscale:o.ts||2.2});}
 // croissant : disque extérieur moins disque intérieur décalé
@@ -3707,6 +3707,83 @@ function shipFrame(part,x,y,L,W,z,k){const h=W/2;STB.push({x,y,L,W,dir:1,k:'fram
   for(let u=-0.45;u<=0.46;u+=0.15)part('metal',z+0.04,[[x+L*u-3,y-h],[x+L*u+3,y-h],[x+L*u+3,y+h],[x+L*u-3,y+h]]);}
 const WINC=[0xfff0c0,0xffd27a,0xe6f3ff,0xa6e4ff];
 function windows(a,x0,x1,y,step,sd){for(let x=x0;x<=x1;x+=step)if(hash2(x|0,y|0,sd||3)>0.28)a.rect(x,y,x+step*0.45,y,{e:WINC[(hash2(x|0,y|0,9)*4)|0]});}
+/* ---------- plateformes d'amarrage ----------
+   Un pont central (l'« épine ») part de la station ; de chaque côté, des darses ouvertes vers l'extérieur : un pont
+   plat entre deux môles, rails de guidage, berceaux de serrage, sas d'embarquement, feux d'approche, numéro du poste.
+   Les vaisseaux y reposent tous proue vers le bout de l'épine et en sortent par le côté ouvert. Classes de darse :
+   M (corvettes, navettes, cargos moyens), L (frégates, gros cargos), C (vaisseaux capitaux). */
+const DOCK_ST={humain:{lit:0xffd27a,hot:0xe6f3ff,deck:0xa6e4ff,ok:0x6fe08a,ko:0xff5a6e},pirate:{lit:0xffb347,hot:0xfff0c0,deck:0xe8b820,ok:0x6fe08a,ko:0xff5a6e},
+  anciens:{lit:0xffa040,hot:0xffd890,deck:0xffa040,ok:0xffd890,ko:0xff6a3a},xalthar:{lit:0xb070ff,hot:0xe8d0ff,deck:0xb070ff,ok:0xe8d0ff,ko:0xff5aa0}};
+// o : L, H, ys (y de l'épine), sw (demi-largeur de l'épine), hub [longueur, au-dessus, au-dessous], bays [[x0, longueur, largeur, côté, classe]], mil
+function dockDef(key,fac,o){
+  const d=stDef(key,fac,o.L,o.H,({c,part,bx})=>{
+    const S=DOCK_ST[fac],L=o.L,ys=o.ys===undefined?c:o.ys,sw=o.sw||22,[hub,hu,hd]=o.hub||[130,70,70],fw=10,mil=!!o.mil,mods=[],dec=[],sd=key.length*13+L;
+    const R=(x0,y0,x1,y1)=>{const a=Math.min(y0,y1),b=Math.max(y0,y1);return[[x0,a],[x1,a],[x1,b],[x0,b]];};
+    const B=(x0,y0,x1,y1,ch)=>bx(x0,Math.min(y0,y1),x1,Math.max(y0,y1),ch);
+    // 1) épine : pont central, rail de service
+    const xs0=hub-24;
+    if(fac==='xalthar'){part('hull',1.44,[[xs0,ys-sw],[L-80,ys-sw],[L,ys],[L-80,ys+sw],[xs0,ys+sw]]);part('plate',1.56,[[xs0+20,ys-sw+7],[L-88,ys-sw+7],[L-22,ys],[L-88,ys+sw-7],[xs0+20,ys+sw-7]]);}
+    else if(fac==='pirate'){let x=xs0,i=0;while(x<L-16){const w=Math.min(L-x,56+hash2(i,3,sd)*64),a=(hash2(i,5,sd)-0.5)*0.035;part(i%2?'plate':'hull',1.44+(i%2)*0.05,plateR(x+w/2,ys+(hash2(i,7,sd)-0.5)*4,w/2+3,sw-(i%2)*3,a));x+=w-2;i++;}}
+    else{part('hull',1.44,bx(xs0,ys-sw,L,ys+sw,7));part('plate',1.56,bx(xs0+12,ys-sw+6,L-8,ys+sw-6,4));
+      if(fac==='anciens')for(let x=hub+40;x<L-30;x+=110)part('metal',1.68,bx(x,ys-sw-5,x+10,ys+sw+5,2));}
+    part('metal',1.64,bx(hub,ys-3,L-(fac==='xalthar'?60:14),ys+3,1));
+    // 2) darses
+    let n=0;
+    for(const [x0,len,W,side,cls] of o.bays){n++;const x1=x0+len,yi=ys+side*(sw+4),yo=yi+side*W,yc=(yi+yo)/2,tip=yo+side*16;
+      // pont de la darse : grille (nervures posées par le moteur), rails de guidage, lèvre extérieure
+      part('dark',1.36,B(x0,ys+side*(sw-3),x1,yo,3));
+      for(const f of [-0.3,0.3])part('metal',1.4,R(x0+8,yc+f*W-1.5,x1-8,yc+f*W+1.5));
+      part('metal',1.42,R(x0,yo-side*5,x1,yo));
+      // berceaux de serrage : patins sur la bordure de l'épine, butées de proue et de poupe sur les môles
+      const nk=Math.max(2,Math.round(len/80));for(let k=0;k<nk;k++){const x=x0+len*(k+0.5)/nk;part('metal',1.54,R(x-5,yi,x+5,yi+side*10));part('plate',1.6,R(x-3,yi,x+3,yi+side*7));}
+      for(const xe of [x0,x1-9])part('metal',1.54,R(xe,yc-7,xe+9,yc+7));
+      // môles : un à chaque bout, de l'épine jusqu'au-delà de la lèvre
+      for(const [fx0,fx1,beacon] of [[x0-2*fw,x0,S.ko],[x1,x1+2*fw,S.ok]]){const fxc=(fx0+fx1)/2;
+        if(fac==='xalthar'){part('hull',1.5,[[fx0,ys],[fx1,ys],[fx1-2,yo],[fxc+3,tip],[fxc,tip+side*14],[fxc-3,tip],[fx0+2,yo]]);part('plate',1.62,[[fx0+5,yi],[fx1-5,yi],[fxc+2,yo],[fxc-2,yo]]);}
+        else if(fac==='pirate'){part('hull',1.5,plateR(fxc,(ys+tip)/2,fw+1,Math.abs(tip-ys)/2,(hash2(fx0|0,side,sd)-0.5)*0.05));part('plate',1.6,R(fx0+4,yi+side*6,fx1-4,yo));}
+        else{part('hull',1.5,B(fx0,ys,fx1,tip,3));part('plate',1.6,B(fx0+3,yi,fx1-3,tip-side*5,2));
+          if(fac==='anciens')pinnacle(part,fxc,tip-side*6,8,1.82);else part('white',1.74,B(fx0+2,tip-side*12,fx1-2,tip-side*2,2));}
+        dec.push(a=>a.disc(fxc,tip-side*6,2.2,{e:beacon}));}
+      // sas d'embarquement sur l'épine, au droit du milieu du vaisseau
+      mods.push(['I',x0+len*0.42,ys+side*(sw-7)]);
+      // feux : lèvre (balisage), axe d'approche, numéro du poste, bandes de danger (militaire)
+      dec.push(a=>{a.lights(x0+4,x1-4,yo-side*2,mil?6:8,S.lit,0.92);a.lights(x0+14,x1-14,yc,16,S.deck,1);
+        // équerres peintes aux quatre coins du pont (lisibles dans tous les sens)
+        for(const [qx,dx] of [[x0+5,1],[x1-5,-1]])for(const [qy,dy] of [[yi+side*3,side],[yo-side*8,-side]]){a.rect(Math.min(qx,qx+dx*14),Math.min(qy,qy+dy*1.5),Math.max(qx,qx+dx*14),Math.max(qy,qy+dy*1.5),{m:'white'});a.rect(Math.min(qx,qx+dx*1.5),Math.min(qy,qy+dy*14),Math.max(qx,qx+dx*1.5),Math.max(qy,qy+dy*14),{m:'white'});}
+        if(mil)for(let x=x0+2;x<x1-6;x+=14)a.rect(x,Math.min(yo-side*5,yo),x+6,Math.max(yo-side*5,yo),{e:S.ko});});
+      STB.push({x:x0+len/2,y:yc,L:len,W,dir:1,k:'sil',cls,sp:side});}
+    // 3) moyeu : poste de contrôle, côté station
+    const hx=hub/2;
+    if(fac==='humain'){part('hull',1.46,bx(0,ys-hu,hub,ys+hd,16));part('plate',1.6,bx(10,ys-hu+10,hub-10,ys+hd-10,10));part('hull',1.8,ellPoly(hx,ys,42,42,8));part('white',2.0,ellPoly(hx,ys,26,26,16));part('blue',2.2,ellPoly(hx,ys,11,11,12));
+      part('metal',2.05,ribbon([[hx,ys],[hx+30,ys-hu*0.6]],6));part('white',2.15,ellPoly(hx+30,ys-hu*0.6,9,9,12));
+      dec.push(a=>{for(let y=ys-hu+6;y<=ys+hd-6;y+=8){windows(a,8,22,y,5,y);windows(a,hub-22,hub-8,y,5,y+3);}a.disc(hx,ys,5,{e:S.hot});a.emblem(hx,ys+hd-24,2);});
+      mods.push(['D',hx-30,ys+hd*0.5],['S',hx+30,ys+hd*0.5]);}
+    else if(fac==='pirate'){part('dark',1.32,rockBlob(hx,ys,Math.max(hu,hd)*0.95,sd,12));part('hull',1.44,plateR(hx+6,ys,hub*0.4,Math.min(hu,hd)*0.6,0.07));part('plate',1.56,plateR(hx-10,ys-10,hub*0.22,Math.min(hu,hd)*0.3,-0.12));
+      part('metal',1.7,ribbon([[hx,ys],[hx-20,ys-hu*0.7]],5));part('plate',1.8,ellPoly(hx-20,ys-hu*0.7,8,8,10));
+      dec.push(a=>{for(let k=0;k<12;k++)a.disc(hx+(hash2(k,1,sd)-0.5)*hub*0.6,ys+(hash2(k,2,sd)-0.5)*(hu+hd)*0.5,1.2,{e:[0xffb347,0x6fe08a,0xff5a6e,0xe6f3ff][k%4]});a.disc(hx-20,ys-hu*0.7,3,{e:0xff5a6e});});
+      mods.push(['D',hx,ys+10]);}
+    else if(fac==='anciens'){const r=Math.min(hu,hd);part('hull',1.46,bx(0,ys-hu,hub,ys+hd,20));part('metal',1.6,ellAnn(hx,ys,r*0.9,r*0.9,9,8));part('plate',1.58,ellPoly(hx,ys,r*0.74,r*0.74,8));part('dark',1.7,ellPoly(hx,ys,r*0.42,r*0.42,16));part('white',2.1,ellPoly(hx,ys,r*0.22,r*0.22,16));
+      for(const [px,py] of [[14,ys-hu+14],[hub-14,ys-hu+14],[14,ys+hd-14],[hub-14,ys+hd-14]])pinnacle(part,px,py,8,1.9);
+      dec.push(a=>{a.disc(hx,ys,r*0.3,{e:S.lit});a.disc(hx,ys,r*0.14,{e:S.hot});for(let k=0;k<20;k++){const an=k/20*TAU;a.disc(hx+Math.cos(an)*r*0.82,ys+Math.sin(an)*r*0.82,1.2,{e:S.lit});}});
+      mods.push(['D',hx-r*0.6,ys],['S',hx+r*0.6,ys]);}
+    else{const r=Math.min(hu,hd);part('hull',1.46,[[0,ys-hu*0.7],[hub*0.3,ys-hu],[hub*0.8,ys-hu],[hub,ys-hu*0.5],[hub,ys+hd*0.5],[hub*0.8,ys+hd],[hub*0.3,ys+hd],[0,ys+hd*0.7]]);
+      part('plate',1.62,hexP(hx,ys,r*0.8,r*0.8,0));part('hull',1.86,[[hx-r*0.5,ys],[hx,ys-r*0.55],[hx+r*0.5,ys],[hx,ys+r*0.55]]);part('plate',2.02,[[hx-r*0.26,ys],[hx,ys-r*0.3],[hx+r*0.26,ys],[hx,ys+r*0.3]]);
+      dec.push(a=>{a.disc(hx,ys,7,{e:S.lit});a.disc(hx,ys,3,{e:S.hot});for(let k=0;k<6;k++){const an=k*PI/3;a.rect(hx+Math.cos(an)*r*0.82-1,ys+Math.sin(an)*r*0.82-1,hx+Math.cos(an)*r*0.82+1,ys+Math.sin(an)*r*0.82+1,{e:S.lit});}});
+      mods.push(['D',hx-r*0.55,ys+r*0.5],['S',hx+r*0.55,ys-r*0.5]);}
+    // 4) bout de l'épine : phare d'approche
+    if(fac==='humain'){part('white',1.78,ellPoly(L-22,ys,sw*0.7,sw*0.7,12));part('blue',1.95,ellPoly(L-22,ys,sw*0.32,sw*0.32,10));}
+    else if(fac==='anciens')pinnacle(part,L-22,ys,sw*0.7,1.85);
+    dec.push(a=>{a.disc(fac==='xalthar'?L-14:L-22,ys,2.6,{e:S.hot});a.lights(hub+10,L-40,ys-sw+3,10,S.lit,0.7);a.lights(hub+10,L-40,ys+sw-3,10,S.lit,0.7);});
+    // défense : canons sur les môles extérieurs, obusiers et silos sur une plateforme militaire
+    const tips=[];for(const [x0,len,W,side] of o.bays){const yo=ys+side*(sw+4+W),tip=yo+side*10;tips.push([x0-fw,tip],[x0+len+fw,tip]);}
+    const seen=new Set();for(const [x,y] of tips){const k=Math.round(x)+':'+Math.round(y);if(seen.has(k))continue;seen.add(k);mods.push([mil?'K':'C',x,y]);}
+    if(mil){for(let x=hub+70;x<L-80;x+=180)mods.push(['m',x,ys]);mods.push(['S',L-70,ys],['R',hub+20,ys]);}
+    else mods.push(['O',hub+60,ys],['O',L-90,ys]);
+    return{edge:false,asym:true,decor:(a)=>{for(const f of dec)f(a);},mods};
+  },{st:Object.assign({shield:o.mil?2600:1400},o.st||{}),ts:o.ts||(o.mil?2.8:2.2)});
+  // pas de livrée (bandes, chevrons) : le pont reste lisible
+  d.liv=null;d.noHaz=true;return d;
+}
 MODEL_SHIPS.push(
   /* ======== Humains : modules blancs et gris, verrières bleues, feux chauds ======== */
   // noyau de la capitale : moyeu octogonal à étages, dôme de commandement, coursives éclairées, quatre raccords
@@ -3724,13 +3801,10 @@ MODEL_SHIPS.push(
     for(let x=36;x<490;x+=112){part('blue',1.72,bx(x,c-64,x+84,c-18,5));part('white',1.76,bx(x,c+18,x+84,c+64,5));part('metal',1.66,bx(x+40,c-80,x+44,c+80,0));}
     return{decor:(a)=>{windows(a,18,500,c-84,6,1);windows(a,18,500,c+84,6,2);for(let x=36;x<490;x+=112){for(let k=0;k<6;k++)a.disc(x+10+k*13,c-40,2,{e:0x6fe08a});windows(a,x+6,x+78,c+40,5,x);}},
       mods:[['S',260,c],['C',30,c],['C',490,c],['O',150,c],['F',370,c],['I',260,c-50]]};}),
-  // jetée d'amarrage : longue poutre, six postes, cargos amarrés, grues
-  stDef('h_dock','humain',640,170,({c,part,bx})=>{
-    part('metal',1.32,bx(0,c-22,640,c+22,4));
-    for(const x of [60,260,460]){part('hull',1.42,bx(x,c-74,x+150,c-24,6));part('hull',1.42,bx(x,c+24,x+150,c+74,6));shipSil(part,x+76,c-49,132,36,1.7,'white');shipSil(part,x+76,c+49,132,36,1.7,'white',-1);
-      part('metal',1.85,bx(x+66,c-84,x+72,c+84,0));part('metal',1.9,bx(x+40,c-84,x+100,c-78,0));}
-    return{decor:(a)=>{a.lights(4,636,c-16,6,STLIT.humain,0.9);a.lights(4,636,c+16,6,0x6fe08a,0.6);for(const x of [60,260,460])for(const s of [-1,1]){a.disc(x+4,c+s*72,1.6,{e:0xff5a6e});a.disc(x+146,c+s*72,1.6,{e:0x6fe08a});}},
-      mods:[['C',20,c],['C',620,c],['O',160,c],['O',360,c],['B',560,c]]};}),
+  // humains — plateforme civile : quatre darses (deux moyennes, deux grandes)
+  dockDef('h_dock','humain',{L:870,H:360,sw:22,hub:[130,74,74],bays:[[150,230,100,-1,'M'],[400,450,132,-1,'L'],[150,450,132,1,'L'],[620,230,100,1,'M']]}),
+  // humains — plateforme militaire : une darse capitale, deux darses de frégates, obusiers et silos
+  dockDef('h_milpier','humain',{L:1090,H:560,ys:366,sw:30,hub:[140,130,96],mil:1,bays:[[150,900,304,-1,'C'],[150,450,132,1,'L'],[620,450,132,1,'L']]}),
   // bloc-hangars : deux grandes baies de lancement à battants
   stDef('h_hangar','humain',320,280,({c,part,bx})=>{
     part('hull',1.45,bx(0,c-132,320,c+132,18));part('plate',1.6,bx(16,c-116,304,c+116,12));
@@ -3809,11 +3883,8 @@ MODEL_SHIPS.push(
     part('plate',1.62,plateR(130,c-110,60,24,0.3));part('plate',1.62,plateR(390,c+110,70,22,-0.2));part('hull',1.6,bx(380,c-40,520,c+40,6));
     return{decor:(a)=>{for(let k=0;k<20;k++)a.disc(170+hash2(k,1,9)*190,c+(hash2(k,2,9)-0.5)*120,1.2,{e:[0xffb347,0x6fe08a,0xff5a6e,0xe6f3ff][k%4]});a.emblem(460,c,2);},
       mods:[['R',260,c],['S',200,c-40],['V',250,c-30],['V',250,c+30],['C',150,c-150],['C',150,c+150],['C',380,c-150],['C',380,c+150],['K',470,c-30],['D',100,c],['B',300,c+120],['O',330,c-110]]};},{st:{shield:1800}}),
-  stDef('p_wreckhull','pirate',620,240,({c,part,bx})=>{
-    part('hull',1.38,[[0,c-60],[380,c-80],[500,c-30],[540,c],[500,c+30],[380,c+80],[0,c+60]]);part('plate',1.52,plateR(200,c-30,140,26,0.06));part('hull',1.46,plateR(470,c+60,150,44,-0.25));
-    part('plate',1.6,plateR(120,c+70,90,24,0.15));part('metal',1.66,bx(300,c-110,310,c+110,1));
-    return{decor:(a)=>{a.lights(20,500,c-40,10,0xffb347,0.5);a.lights(20,480,c+40,12,0x6fe08a,0.4);},
-      mods:[['C',100,c-50],['C',100,c+50],['K',420,c-50],['K',420,c+50],['O',220,c],['F',330,c]]};}),
+  // corsaires — quai d'épaves soudées : deux grandes darses, deux petites
+  dockDef('p_wreckhull','pirate',{L:740,H:330,sw:20,hub:[130,78,78],bays:[[150,420,126,-1,'L'],[590,130,100,-1,'M'],[150,130,100,1,'M'],[300,420,126,1,'L']]}),
   stDef('p_scrap','pirate',520,300,({c,part,bx})=>{
     part('hull',1.36,bx(0,c-120,520,c+120,10));shipFrame(part,300,c,400,150,1.5,'plate');for(const x of [80,200,320,440])part('metal',1.7,bx(x,c-130,x+8,c+130,1));
     return{decor:(a)=>{for(let k=0;k<30;k++)a.disc(60+hash2(k,3,7)*420,c+(hash2(k,4,7)-0.5)*200,1.2,{e:k%2?0xffb347:0xfff0c0});},
@@ -3846,11 +3917,9 @@ MODEL_SHIPS.push(
     shipFrame(part,350,c,480,170,1.56,'hull');for(const [x,s] of [[180,-1],[360,1],[520,-1]]){part('metal',1.8,ribbon([[x,c+s*130],[x+30,c+s*60]],9));pinnacle(part,x+30,c+s*60,6,2.0);}
     return{decor:(a)=>{for(let k=0;k<22;k++)a.disc(140+hash2(k,1,6)*440,c+(hash2(k,2,6)-0.5)*140,1.3,{e:k%3?MAC_LIT:MAC_HOT});a.lights(10,630,c-129,10,MAC_LIT,0.7);a.lights(10,630,c+129,10,MAC_LIT,0.7);},
       mods:[['K',620,c-129],['K',620,c+129],['y',30,c],['O',30,c-90],['B',30,c+90]]};}),
-  // dock lourd : vaisseau des Machines amarré entre deux môles
-  stDef('m_dock','anciens',560,220,({c,part,bx})=>{
-    part('hull',1.4,bx(0,c-104,560,c-60,8));part('hull',1.4,bx(0,c+60,560,c+104,8));part('metal',1.5,bx(0,c-60,40,c+60,4));shipSil(part,300,c,440,100,1.6,'hull');part('metal',1.75,bx(100,c-14,420,c+14,3));
-    return{decor:(a)=>{a.lights(10,550,c-82,10,MAC_LIT,0.7);a.lights(10,550,c+82,10,MAC_LIT,0.7);a.disc(300,c,5,{e:MAC_HOT});},
-      mods:[['K',540,c-82],['K',540,c+82],['O',20,c],['C',280,c-90],['C',280,c+90]]};}),
+  // Machines — dock lourd et darse capitale
+  dockDef('m_dock','anciens',{L:700,H:340,sw:24,hub:[150,80,80],bays:[[170,310,126,-1,'L'],[500,180,76,-1,'M'],[170,180,76,1,'M'],[370,310,126,1,'L']]}),
+  dockDef('m_capdock','anciens',{L:890,H:500,ys:316,sw:30,hub:[150,120,96],mil:1,bays:[[170,700,258,-1,'C'],[170,310,126,1,'L'],[500,310,126,1,'L']]}),
   // baie à drones : maintenance, extraction, transport
   stDef('m_dronebay','anciens',320,280,({c,part,bx})=>{
     part('hull',1.44,bx(0,c-130,320,c+130,22));part('plate',1.58,bx(16,c-114,304,c+114,14));for(const y of [-70,0,70]){part('metal',1.66,bx(70,c+y-26,250,c+y+26,6));part('dark',1.7,bx(80,c+y-18,240,c+y+18,4));}
@@ -3883,10 +3952,9 @@ MODEL_SHIPS.push(
     part('hull',1.46,hexP(x0,c,190,190,0));part('plate',1.62,hexP(x0,c,160,160,0));part('hull',1.82,hexP(x0,c,110,110,0));part('hull',2.05,[[x0-70,c],[x0,c-80],[x0+70,c],[x0,c+80]]);part('plate',2.2,[[x0-36,c],[x0,c-42],[x0+36,c],[x0,c+42]]);
     return{decor:(a)=>{a.disc(x0,c,22,{e:XAL_LIT});a.disc(x0,c,10,{e:XAL_HOT});for(let k=0;k<6;k++){const an=k*PI/3;a.rect(x0+Math.cos(an)*120-1,c+Math.sin(an)*120-1,x0+Math.cos(an)*150,c+Math.sin(an)*150,{e:XAL_LIT});}},
       mods:[['r',x0,c],['s',x0-110,c],['s',x0+110,c],['p',x0,c-150],['p',x0,c+150],['p',x0+150,c-80],['p',x0+150,c+80],['p',x0-150,c-80],['p',x0-150,c+80],['D',x0-60,c-60],['B',x0+60,c+60],['F',x0+60,c-60]]};},{st:{shield:4000}}),
-  stDef('x_bladesec','xalthar',620,180,({c,part,bx})=>{
-    part('hull',1.38,[[0,c-70],[520,c-50],[619.7,c],[520,c+50],[0,c+70]]);part('plate',1.58,[[20,c-46],[500,c-30],[580,c],[500,c+30],[20,c+46]]);
-    for(const x of [120,260,400])part('dark',1.7,bx(x,c-22,x+90,c+22,4));
-    return{decor:(a)=>{for(const x of [120,260,400])a.rect(x+4,c,x+86,c,{e:XAL_LIT});a.disc(600,c,3,{e:XAL_HOT});},mods:[['p',80,c],['p',540,c],['O',330,c+40],['V',165,c],['V',305,c]]};}),
+  // Xal'thar — lame d'amarrage et lame capitale
+  dockDef('x_bladesec','xalthar',{L:700,H:340,sw:22,hub:[130,74,74],bays:[[150,310,122,-1,'L'],[480,130,62,-1,'M'],[150,130,62,1,'M'],[300,310,122,1,'L']]}),
+  dockDef('x_capdock','xalthar',{L:960,H:520,ys:336,sw:28,hub:[140,120,96],mil:1,bays:[[150,720,282,-1,'C'],[150,310,122,1,'L'],[480,310,122,1,'L']]}),
   stDef('x_cavity','xalthar',360,320,({c,part,bx})=>{
     part('hull',1.4,hexP(180,c,170,150,0));part('plate',1.56,hexP(180,c,140,122,0));for(const [x,y] of [[120,-60],[240,-60],[120,60],[240,60]]){part('dark',1.72,hexP(x,c+y,40,34,0));}
     return{decor:(a)=>{for(const [x,y] of [[120,-60],[240,-60],[120,60],[240,60]])a.disc(x,c+y,6,{e:XAL_LIT});},mods:[['O',180,c],['p',40,c],['p',320,c]]};}),
@@ -4865,14 +4933,14 @@ function sysFac(){const f=terrOf(SYS);return f==='humain'||f===game.faction?'pir
    Placement déterministe ; tout reste dans l'espace, jamais sur une planète ou une lune.
    ========================================================= */
 // secteurs : nom, rôle, menace (1 à 4)
-const SEC={hc_core:['Noyau de commandement','core',3],hc_ring:['Quartier d’habitation','civil',1],h_dock:['Jetée d’amarrage','dock',1],h_hangar:['Hangars','hangar',2],
+const SEC={hc_core:['Noyau de commandement','core',3],hc_ring:['Quartier d’habitation','civil',1],h_dock:['Plateforme d’amarrage','dock',1],h_milpier:['Plateforme d’amarrage militaire','dock',3],h_hangar:['Hangars','hangar',2],
   h_tower:['Tour de contrôle et radar','radar',1],h_bastion:['Bastion à canon orbital titanesque','cannon',4],h_shield:['Générateur de bouclier orbital','power',1],
   h_yard:['Chantier naval','yard',1],h_cargo:['Parc à conteneurs','depot',1],h_refinery:['Raffinerie','refinery',1],h_quay:['Quai de réception du minerai','mine',1],
   h_hq:['Siège et contrôle','core',2],h_lab:['Laboratoires','lab',1],h_fortcore:['Citadelle de commandement','core',4],
-  p_rockcore:['Repaire creusé','core',2],p_wreckhull:['Épaves soudées','dock',2],p_scrap:['Zone de démantèlement','yard',1],p_loot:['Réserve de butin','depot',1],p_watch:['Poste de guet','radar',2],p_gunb:['Batterie volée','cannon',3],
-  m_forgecore:['Cœur de la Forge','core',4],m_frame:['Cadre d’assemblage','depot',2],m_dock:['Dock lourd','dock',2],m_dronebay:['Baie à drones','hangar',2],m_cannonb:['Canon à énergie','cannon',4],
+  p_rockcore:['Repaire creusé','core',2],p_wreckhull:['Quai d’épaves soudées','dock',2],p_scrap:['Zone de démantèlement','yard',1],p_loot:['Réserve de butin','depot',1],p_watch:['Poste de guet','radar',2],p_gunb:['Batterie volée','cannon',3],
+  m_forgecore:['Cœur de la Forge','core',4],m_frame:['Cadre d’assemblage','depot',2],m_dock:['Dock lourd','dock',2],m_capdock:['Darse capitale','dock',3],m_dronebay:['Baie à drones','hangar',2],m_cannonb:['Canon à énergie','cannon',4],
   m_spire:['Flèche de capteurs','radar',1],m_dead:['Secteur éteint','civil',1],m_gateq:['Cadre de la porte','core',3],
-  x_heart:['Cœur de la station','core',3],x_bladesec:['Lame d’amarrage','dock',2],x_cavity:['Cavités de fret','depot',1],x_spireb:['Aiguille à plasma','cannon',4],x_eyes:['Œil de surveillance','radar',1],x_harvsec:['Moissonneuse','mine',1]};
+  x_heart:['Cœur de la station','core',3],x_bladesec:['Lame d’amarrage','dock',2],x_capdock:['Lame capitale','dock',3],x_cavity:['Cavités de fret','depot',1],x_spireb:['Aiguille à plasma','cannon',4],x_eyes:['Œil de surveillance','radar',1],x_harvsec:['Moissonneuse','mine',1]};
 const STRUCTS={};for(const k in SEC){const [n,role,th]=SEC[k],D=MODEL_SHIP_BY['st_'+k];if(!D)continue;STRUCTS[k]={key:k,n,role,th,fac:D.fac,fn:n};D.info.name=n;}
 const ST_FACN={humain:'Humains',pirate:'Corsaires',xalthar:'Xal’thar',anciens:'Machines'},ST_THN=['','faible','modérée','élevée','extrême'];
 const ST_COL={humain:'#7fb8ff',pirate:'#e8b820',xalthar:'#b070ff',anciens:'#ffa040'},ST_THC=['','#7fe08a','#ffd36b','#ff9a3c','#ff4f6a'];
@@ -4880,33 +4948,33 @@ const ST_MIL=new Set(['cannon','hangar']);
 for(const k in STRUCTS){const S=STRUCTS[k];ECLASS['st_'+k]=Object.assign({},HFOE.croiseur||{},{key:'st_'+k,uid:'st_'+k,hull:'croiseur',name:S.n,pal:'elite',breakAt:0.3,dying:S.th>=3?3:1.5,credits:S.th*S.th*90,drops:[S.th*3,S.th*6],cost:0,tier:'st',stInfo:S,shock:[1.5+S.th,300+S.th*120]});}
 // plans des complexes : [secteur, dx, dy, angle] en unités du monde, autour du centre du complexe
 const CPLX={
-  capital:{fac:'humain',fn:'gouvernement, commandement militaire, services, docks',th:4,lay:[['hc_core',0,0,0],['hc_ring',0,-555,0],['hc_ring',0,555,0],['h_dock',870,0,0],['h_dock',-870,0,PI],['h_hangar',630,-600,0],['h_hangar',630,600,0],
-    ['h_tower',-555,-555,0],['h_tower',-555,555,0],['h_shield',0,-915,0],['h_shield',0,915,0],['h_bastion',1155,-600,-0.4],['h_bastion',1155,600,0.4],['h_bastion',-1005,-555,PI+0.4],['h_bastion',-1005,555,PI-0.4]]},
-  port:{fac:'humain',fn:'grand port commercial : quais, entrepôts, contrôle du trafic',th:3,lay:[['h_hq',0,0,0],['h_dock',735,0,0],['h_dock',-735,0,PI],['h_dock',0,-735,-PI/2],['h_dock',0,735,PI/2],
-    ['h_cargo',645,-465,0],['h_cargo',645,465,0],['h_cargo',-645,-465,0],['h_cargo',-645,465,0],['h_tower',1200,-465,0],['h_tower',-1200,465,0],['h_bastion',1270,465,0.5],['h_bastion',-1270,-465,PI+0.5]]},
+  capital:{fac:'humain',fn:'gouvernement, commandement militaire, services, docks',th:4,lay:[['hc_core',0,0,0],['hc_ring',0,-555,0],['hc_ring',0,555,0],['h_dock',1052,0,0],['h_milpier',-1217,129,PI],['h_hangar',630,-600,0],['h_hangar',630,600,0],
+    ['h_tower',-555,-570,0],['h_tower',-2222,129,0],['h_shield',0,-915,0],['h_shield',0,915,0],['h_bastion',1155,-660,-0.4],['h_bastion',1155,660,0.4],['h_bastion',-1120,-720,PI+0.4],['h_bastion',-1080,940,PI-0.4]]},
+  port:{fac:'humain',fn:'grand port commercial : quais, entrepôts, contrôle du trafic',th:3,lay:[['h_hq',0,0,0],['h_dock',925,0,0],['h_dock',-925,0,PI],['h_dock',0,-925,-PI/2],['h_dock',0,925,PI/2],
+    ['h_cargo',1000,-720,0],['h_cargo',1000,720,0],['h_cargo',-1000,-720,0],['h_cargo',-1000,720,0],['h_tower',1755,0,0],['h_tower',-1755,0,0],['h_bastion',1560,1260,0.5],['h_bastion',-1560,-1260,PI+0.5]]},
   fort:{fac:'humain',fn:'forteresse : canons titanesques, missiles, hangars blindés, commandement',th:4,lay:[['h_fortcore',0,0,0],['h_bastion',440,-440,-PI/4],['h_bastion',440,440,PI/4],['h_bastion',-440,440,3*PI/4],['h_bastion',-440,-440,-3*PI/4],
-    ['h_tower',0,-510,0],['h_tower',0,510,0],['h_shield',540,0,0],['h_shield',-540,0,0],['h_hangar',975,0,0],['h_hangar',-975,0,PI]]},
+    ['h_tower',0,-510,0],['h_tower',0,510,0],['h_shield',540,0,0],['h_shield',-540,0,0],['h_hangar',975,0,0],['h_hangar',-975,0,PI],['h_milpier',-129,-1600,-PI/2]]},
   banquise:{fac:'humain',fn:'grand port minier et de fret : quais, raffinerie, stockage, garnison',th:3,lay:[['h_hq',0,0,0],['h_quay',600,0,0],['h_quay',-600,0,PI],['h_refinery',0,-495,0],['h_cargo',0,465,0],['h_hangar',600,-420,0],['h_tower',-560,-420,0],['h_bastion',640,520,0.5]]},
   outpost:{fac:'humain',fn:'avant-poste : quai, baies, atelier, surveillance, garnison',th:3,lay:[['h_hq',0,0,0],['h_quay',600,0,0],['h_hangar',-495,0,PI],['h_tower',0,-420,0],['h_bastion',0,540,PI/2]]},
-  serres:{fac:'humain',fn:'serres orbitales : agriculture, eau, approvisionnement',th:1,lay:[['hc_ring',0,0,0],['hc_ring',0,-330,0],['hc_ring',0,330,0],['h_dock',870,0,0],['h_tower',-555,0,0]]},
-  lair:{fac:'pirate',fn:'repaire : docks cachés, ateliers, démantèlement, butin, guet',th:3,lay:[['p_rockcore',0,0,0],['p_wreckhull',800,0,0],['p_wreckhull',-800,0,PI],['p_scrap',0,440,0],['p_loot',0,-430,0],['p_watch',640,-230,0],['p_watch',-640,230,PI],['p_gunb',-470,-420,PI+0.6]]},
-  lairport:{fac:'pirate',fn:'port corsaire : amarrage, recel, réparations',th:2,lay:[['p_rockcore',0,0,0],['p_wreckhull',800,0,0],['p_watch',640,-230,0],['p_loot',0,-430,0]]},
+  serres:{fac:'humain',fn:'serres orbitales : agriculture, eau, approvisionnement',th:1,lay:[['hc_ring',0,0,0],['hc_ring',0,-330,0],['hc_ring',0,330,0],['h_dock',1052,0,0],['h_tower',-555,0,0]]},
+  lair:{fac:'pirate',fn:'repaire : docks cachés, ateliers, démantèlement, butin, guet',th:3,lay:[['p_rockcore',0,0,0],['p_wreckhull',955,0,0],['p_wreckhull',-955,0,PI],['p_scrap',0,440,0],['p_loot',0,-430,0],['p_watch',640,-480,0],['p_watch',-640,480,PI],['p_gunb',-660,-720,PI+0.6]]},
+  lairport:{fac:'pirate',fn:'port corsaire : amarrage, recel, réparations',th:2,lay:[['p_rockcore',0,0,0],['p_wreckhull',955,0,0],['p_watch',640,-480,0],['p_loot',0,-430,0]]},
   forge:{fac:'anciens',fn:'Forge ancienne : fabrique, répare et ravitaille la flotte des Machines',th:4,lay:[['m_forgecore',0,0,0],['m_frame',930,0,0],['m_frame',-930,0,PI],['m_frame',0,-930,-PI/2],['m_frame',0,930,PI/2],
-    ['m_dronebay',560,-560,-PI/4],['m_dock',600,600,PI/4],['m_dead',-600,600,3*PI/4],['m_dronebay',-560,-560,-3*PI/4],['m_cannonb',880,-880,-PI/4],['m_cannonb',-880,880,3*PI/4],['m_spire',1490,0,0],['m_spire',-1490,0,PI]]},
+    ['m_dronebay',560,-560,-PI/4],['m_dock',800,800,PI/4],['m_dead',-600,600,3*PI/4],['m_dronebay',-560,-560,-3*PI/4],['m_cannonb',880,-880,-PI/4],['m_cannonb',-880,880,3*PI/4],['m_spire',1490,0,0],['m_spire',-1490,0,PI]]},
   gate:{fac:'anciens',fn:'forteresse de la porte du Sillage : cadre fortifié, canons, drones',th:4,lay:[['m_gateq',-465,-465,0],['m_gateq',465,-465,PI/2],['m_gateq',465,465,PI],['m_gateq',-465,465,3*PI/2],
-    ['m_cannonb',1200,0,0],['m_cannonb',-1200,0,PI],['m_dronebay',0,-1130,-PI/2],['m_dronebay',0,1130,PI/2]]},
+    ['m_cannonb',1200,0,0],['m_cannonb',-1200,0,PI],['m_dronebay',0,-1130,-PI/2],['m_dronebay',0,1130,PI/2],['m_capdock',1484,1344,PI/4]]},
   bastion:{fac:'anciens',fn:'bastion : réserves internes, docks, défenses automatisées',th:4,lay:[['m_cannonb',520,-520,-PI/4],['m_cannonb',520,520,PI/4],['m_cannonb',-520,520,3*PI/4],['m_cannonb',-520,-520,-3*PI/4],
-    ['m_frame',0,-520,0],['m_frame',0,520,0],['m_dronebay',560,0,0],['m_dronebay',-560,0,PI]]},
+    ['m_frame',0,-520,0],['m_frame',0,520,0],['m_dronebay',560,0,0],['m_dronebay',-560,0,PI],['m_capdock',1527,-99,0]]},
   mpost:{fac:'anciens',fn:'relais automatisé : capteurs et drones',th:2,lay:[['m_spire',0,-480,0],['m_spire',0,480,0],['m_dronebay',560,0,0],['m_dronebay',-560,0,PI]]},
-  xhub:{fac:'xalthar',fn:'station : cœur, lames d’amarrage, cavités de fret, aiguilles à plasma',th:3,lay:[['x_heart',0,0,0],['x_bladesec',594,-594,-PI/4],['x_bladesec',594,594,PI/4],['x_bladesec',-594,594,3*PI/4],['x_bladesec',-594,-594,-3*PI/4],
-    ['x_cavity',555,0,0],['x_cavity',-555,0,0],['x_spireb',0,-570,-PI/2],['x_spireb',0,570,PI/2]]},
-  xout:{fac:'xalthar',fn:'avant-poste : cœur, lames, œil de surveillance',th:2,lay:[['x_heart',0,0,0],['x_bladesec',840,0,0],['x_bladesec',-840,0,PI],['x_eyes',0,-465,0],['x_eyes',0,465,0]]},
-  xcit:{fac:'xalthar',fn:'citadelle : aiguilles à plasma et yeux de surveillance',th:4,lay:[['x_heart',0,0,0],['x_spireb',570,0,0],['x_spireb',-570,0,PI],['x_spireb',0,-570,-PI/2],['x_spireb',0,570,PI/2],['x_eyes',480,-480,0],['x_eyes',-480,480,0]]},
+  xhub:{fac:'xalthar',fn:'station : cœur, lames d’amarrage, cavités de fret, aiguilles à plasma',th:3,lay:[['x_heart',0,0,0],['x_bladesec',940,0,0],['x_bladesec',-940,0,PI],
+    ['x_cavity',640,660,0],['x_cavity',-640,-660,0],['x_spireb',0,-570,-PI/2],['x_spireb',0,570,PI/2]]},
+  xout:{fac:'xalthar',fn:'avant-poste : cœur, lames, œil de surveillance',th:2,lay:[['x_heart',0,0,0],['x_bladesec',940,0,0],['x_bladesec',-940,0,PI],['x_eyes',0,-465,0],['x_eyes',0,465,0]]},
+  xcit:{fac:'xalthar',fn:'citadelle : aiguilles à plasma et yeux de surveillance',th:4,lay:[['x_heart',0,0,0],['x_spireb',570,0,0],['x_spireb',-570,0,PI],['x_spireb',0,-570,-PI/2],['x_spireb',0,570,PI/2],['x_eyes',480,-480,0],['x_eyes',-480,480,0],['x_capdock',1595,-114,0]]},
   xharv:{fac:'xalthar',fn:'moissonneuses : extraction des astéroïdes',th:2,lay:[['x_cavity',0,0,0],['x_harvsec',600,0,0],['x_harvsec',-600,0,PI],['x_eyes',0,-420,0]]}};
 // complexe minier et complexe d'entreprise : variantes selon le minerai ou le métier
 function layMine(rich){return[['h_quay',0,0,0],['h_refinery',0,-405,0],['h_cargo',0,375,0],['h_tower',510,0,0],rich?['h_bastion',-630,0,PI]:['h_hangar',-585,0,PI]];}
 function layEnt(k){const L=[['h_hq',0,0,0],['h_tower',0,-420,0]];
-  if(k==='yard'||k==='yard2'||k==='yardlab')L.push(['h_yard',795,0,0]);if(k==='lab')L.push(['h_lab',510,0,0]);if(k==='fret')L.push(['h_dock',735,0,0]);if(k==='mining')L.push(['h_quay',600,0,0]);
+  if(k==='yard'||k==='yard2'||k==='yardlab')L.push(['h_yard',795,0,0]);if(k==='lab')L.push(['h_lab',510,0,0]);if(k==='fret')L.push(['h_dock',917,0,0]);if(k==='mining')L.push(['h_quay',600,0,0]);
   L.push(k==='yard2'?['h_yard',-795,0,PI]:k==='yardlab'||k==='lab'?['h_lab',-510,0,0]:k==='mining'?['h_refinery',-540,0,0]:['h_cargo',-645,0,0]);
   L.push(k==='yard'?['h_bastion',0,540,PI/2]:['h_shield',0,450,0]);return L;}
 const stDe=n=>/^[AEIOUYÉÈÊÂÎÔŒ]/i.test(n)?'d’'+n:'de '+n;
@@ -5174,10 +5242,10 @@ const PADS={hc_core:Array.from({length:8},(_,k)=>{const a=k*PI/4+PI/8;return[Mat
   p_rockcore:[[-130,-110,24],[130,110,24]],m_forgecore:[[-280,0,24],[280,0,24],[0,-280,24],[0,280,24]],x_heart:[[-120,-70,22],[-120,70,22],[120,-70,22],[120,70,22]],
   hc_ring:[[-200,0,20],[200,0,20]],h_hangar:[[-130,0,20],[130,0,20]]};
 // secteurs où les cargos déchargent, et côté du poste (+1 : bord du bas du secteur)
-const UNLOAD={h_cargo:1,h_quay:1,h_dock:1,m_dock:1,m_frame:1,x_cavity:1,x_bladesec:1,p_loot:1,p_wreckhull:1};
-const UNLOAD_ORDER=['h_cargo','h_quay','h_dock','m_dock','m_frame','x_cavity','x_bladesec','p_loot','p_wreckhull'];
+const UNLOAD={h_cargo:1,h_quay:1,m_frame:1,x_cavity:1,p_loot:1};
+const UNLOAD_ORDER=['h_cargo','h_quay','m_frame','x_cavity','p_loot'];
 // postes d'amarrage ajoutés aux secteurs sans berceau dessiné (lames xal'thar, épaves corsaires)
-const XBERTH={x_bladesec:[{x:300,y:-120,L:240,W:60,dir:1,k:'sil'},{x:300,y:120,L:240,W:60,dir:-1,k:'sil'}],p_wreckhull:[{x:220,y:-150,L:220,W:60,dir:1,k:'sil'}]};
+const XBERTH={};
 function pickFit(list,L,k,sd){const fit=list.filter(id=>(DECO_LEN[id]||100)<=L*k);const P=fit.length?fit:list.slice().sort((a,b)=>(DECO_LEN[a]||100)-(DECO_LEN[b]||100)).slice(0,1);return P[Math.floor(hash2(sd,P.length,77)*P.length)%P.length];}
 function sdOf(str){let h=7;for(const ch of str)h=(h*31+ch.charCodeAt(0))>>>0;return h;}
 // ---- plateformes d'amarrage (dans le repère du secteur ; la station est du côté −y une fois le repère retourné) ----
@@ -5190,43 +5258,24 @@ function hullNear(I,B,xl,sg){const hw=I.w/2,hh=I.h/2;let ymin,ymax;
   if(B.dir>=0){const cI=Math.round(xl+hw);if(cI<0||cI>=I.w||I.top[cI]<0)return null;ymin=-hh+I.top[cI];ymax=-hh+I.bot[cI];}
   else{const cI=Math.round(hw-xl);if(cI<0||cI>=I.w||I.top[cI]<0)return null;ymin=hh-I.bot[cI];ymax=hh-I.top[cI];}
   return sg>0?ymin:-ymax;}
-function drawPier(B,I,bx,by,fac,t,sd,empty){
-  const C=PIER_C[fac]||PIER_C.humain,sg=Math.sign(by)||1,hw=I.w/2,hh=I.h/2,Q=B.Q||30,mil=!!B.mil,qb=-hh*0.45,qa=qb-Q,x0=-hw*1.06-12,x1=hw*1.06+12,ye=-(Math.abs(by)-Math.abs(B.ye))-(B.ein||18);
+// bras de mouillage des postes dessinés (quais de minerai…) : du berceau à la coque, patin de serrage au contact
+function drawMoor(B,I,bx,by,fac,t,sd){const C=PIER_C[fac]||PIER_C.humain,sg=Math.sign(by)||1,hw=I.w/2,hh=I.h/2,step=Math.max(26,45*SHIP_K),qa=-hh-Math.max(6,(B.W||60)*0.2);
   ctx.save();ctx.translate(Math.round(bx),Math.round(by));ctx.scale(1,sg);
   const R=(xa,ya,xb,yb,col)=>{ctx.fillStyle=col;ctx.fillRect(Math.round(Math.min(xa,xb)),Math.round(Math.min(ya,yb)),Math.max(1,Math.round(Math.abs(xb-xa))),Math.max(1,Math.round(Math.abs(yb-ya))));};
-  // passerelles : de la station au quai, resserrées vers l'axe de la section (elles atteignent aussi les coques rondes)
-  const nb=I.w>420?3:2,wb=Math.max(10,Math.min(34,Q*0.4)),sw=B.sw||hw;
-  for(let i=0;i<nb;i++){const xq=clamp(x0+(x1-x0)*(i+0.5)/nb,-hw*0.7,hw*0.7),xs=clamp(xq*0.5,-sw,sw),steps=Math.max(2,Math.ceil(Math.abs(qa-ye)/3));
-    for(let k=0;k<=steps;k++){const u=k/steps,y=qa+(ye-qa)*u,x=xq+(xs-xq)*u;R(x-wb/2,y,x+wb/2,y+(ye<qa?-3:3),k%4===0?C.dark:C.deck2);R(x-wb/2,y,x-wb/2+1,y+(ye<qa?-3:3),C.edge);R(x+wb/2-1,y,x+wb/2,y+(ye<qa?-3:3),C.edge);}}
-  // quai : tôle à joints, rambardes, bandes d'extrémité (jaune et noir, ou rouge et blanc pour l'armée)
-  R(x0,qa,x1,qb,C.deck);for(let x=x0+6;x<x1;x+=14)R(x,qa+1,x+1,qb-1,C.deck2);R(x0,qa,x1,qa+1,C.edge);R(x0,qb-1,x1,qb,C.edge);
-  for(const xe of [x0,x1-10])for(let k=0;k<10;k+=2)R(xe+k,qa+1,xe+k+1,qb-1,mil?(((k>>1)&1)?'#ffffff':C.mil):(((k>>1)&1)?'#1a1a1a':C.civ));
-  if(mil)for(let x=x0+12;x<x1-12;x+=28)R(x,qa+3,x+10,qb-3,C.deck2);
-  // feux de quai : une rangée qui s'allume en chenillard le long du bord extérieur
-  const nL=Math.max(4,Math.floor((x1-x0)/9)),ph=(t*9|0)%nL;for(let i=0;i<nL;i++){const x=x0+4+i*9;R(x,qa+1,x+2,qa+2,(i===ph||i===(ph+nL/2|0))?C.lit:C.dark);}
-  if(!empty){
-    // tube d'embarquement à soufflets, au milieu du vaisseau, voyant vert qui clignote
-    const xg=-hw*0.12,yh=hullNear(I,B,xg,sg),yq=qa+Q*0.35;if(yh!==null){for(let y=yq;y<yh+1;y+=2)R(xg-4,y,xg+4,y+2,((y-yq)>>1)%2?C.deck2:C.edge);R(xg-6,yq-3,xg+6,yq,C.dark);if(((t*2)|0)%2)R(xg-1,yq-2,xg+1,yq-1,'#5cff9a');}
-    // lignes de carburant et de refroidissement, une impulsion qui file vers le vaisseau
-    for(const [xf,col] of [[hw*0.34,'#ffd23c'],[-hw*0.46,'#6ad8ff']]){const yf=hullNear(I,B,xf,sg),yq=qa+Q*0.3;if(yf===null)continue;R(xf,yq,xf+1,yf+1,C.dark);const u=((t*0.8+xf*0.01)%1),yp=yq+(yf-yq)*u;R(xf,yp,xf+1,yp+2,col);}
-    // conteneurs (quais civils) ou tourelles de défense (quais militaires)
-    if(!mil){const r=mulberry(sd);for(let i=0;i<3;i++){const x=x0+18+r()*(x1-x0-50),w=6+((r()*3)|0)*3,col=['#c8503a','#3a7ac8','#c8a03a','#4a9a6a'][(r()*4)|0];R(x,qa+3,x+w,qa+3+Math.min(Q-6,6),col);R(x,qa+3,x+w,qa+4,'#ffffff22');}}
-    else for(const xe of [x0+18,x1-18]){const a=Math.sin(t*0.4+xe)*0.6-Math.PI/2;ctx.fillStyle=C.dark;ctx.beginPath();ctx.arc(Math.round(xe),Math.round((qa+qb)/2),Math.max(4,Q*0.32),0,TAU);ctx.fill();
-      ctx.fillStyle=C.edge;ctx.beginPath();ctx.arc(Math.round(xe),Math.round((qa+qb)/2),Math.max(2,Q*0.2),0,TAU);ctx.fill();ctx.strokeStyle=C.edge;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(xe,(qa+qb)/2);ctx.lineTo(xe+Math.cos(a)*Q*0.6,(qa+qb)/2+Math.sin(a)*Q*0.6);ctx.stroke();ctx.lineWidth=1;}
-    // projecteurs aux deux bouts : un cône de lumière tramé sur la coque
-    if(mil||I.w>200)for(const xe of [x0+4,x1-4]){ctx.globalAlpha=0.16;ctx.fillStyle=C.lit;for(let k=1;k<9;k++){const yy=qb+k*Math.max(2,hh/5),sp=k*Math.max(1.5,hw/30);for(let x=-sp;x<=sp;x+=2)if(((x+k)&3)===0)ctx.fillRect(Math.round(xe+x*(xe<0?1:-1)*0.6+(xe<0?sp*0.6:-sp*0.6)),Math.round(yy),1,1);}ctx.globalAlpha=1;R(xe-2,qa-2,xe+2,qa+2,C.lit);}}
+  const n=Math.max(2,Math.floor(I.w*0.8/step));for(let i=0;i<n;i++){const x=-hw*0.8+(hw*1.6)*(i+0.5)/n,yh=hullNear(I,B,x,sg);if(yh===null)continue;
+    R(x-1,qa,x+2,yh+1,C.dark);R(x-1,qa,x,yh+1,C.edge);R(x-3,yh-1,x+4,yh+2,C.edge);R(x-3,yh+1,x+4,yh+2,C.dark);if(((t*1.5+i)|0)%5===0)R(x,yh-1,x+1,yh,C.lit);}
   ctx.restore();}
-// bras de mouillage : de la plateforme (ou du berceau) à la coque, tous les ~45 m, patin de serrage au contact
-function drawMoor(B,I,bx,by,fac,t,sd){const C=PIER_C[fac]||PIER_C.humain,sg=Math.sign(by)||1,hw=I.w/2,hh=I.h/2,step=Math.max(26,45*SHIP_K),Q=B.Q||30,qa=B.gen?-hh*0.45-Q:-hh-Math.max(6,(B.W||60)*0.2);
-  ctx.save();ctx.translate(Math.round(bx),Math.round(by));ctx.scale(1,sg);
+// darse d'une plateforme : bras de serrage depuis la bordure de l'épine, passerelle à soufflets vers le sas, conduites
+// de carburant et de refroidissement ; dans le repère retourné, l'épine est toujours du côté −y
+function drawBayMoor(B,I,bx,by,fac,t){const C=PIER_C[fac]||PIER_C.humain,s=B.sp||1,hw=I.w/2,W2=B.W/2,y0=-W2+2,step=Math.max(54,64*SHIP_K);
+  ctx.save();ctx.translate(Math.round(bx),Math.round(by));ctx.scale(1,s);
   const R=(xa,ya,xb,yb,col)=>{ctx.fillStyle=col;ctx.fillRect(Math.round(Math.min(xa,xb)),Math.round(Math.min(ya,yb)),Math.max(1,Math.round(Math.abs(xb-xa))),Math.max(1,Math.round(Math.abs(yb-ya))));};
-  // patins de serrage : des mâchoires sortent du quai et pincent le bord de la coque
-  const n=Math.max(2,Math.floor(I.w*0.8/step));for(let i=0;i<n;i++){const x=-hw*0.8+(hw*1.6)*(i+0.5)/n,yh=hullNear(I,B,x,sg);if(yh===null)continue;const y0=B.gen?Math.min(yh,qa+Q*0.6):qa;
-    R(x-1,y0,x+2,yh+1,C.dark);R(x-1,y0,x,yh+1,C.edge);R(x-3,yh-1,x+4,yh+2,C.edge);R(x-3,yh+1,x+4,yh+2,C.dark);if(((t*1.5+i)|0)%5===0)R(x,yh-1,x+1,yh,C.lit);}
-  // portiques : poutres qui enjambent le vaisseau d'un bord à l'autre, comme une cale sèche, feu de gabarit au sommet
-  if(B.gen&&(B.mil||B.cap)){const nP=I.w>420?3:2;for(let i=0;i<nP;i++){const x=-hw*0.62+(hw*1.24)*(nP>1?i/(nP-1):0.5),yF=hh+8,gw=Math.max(2,Math.round(hh*0.05));
-    R(x-gw-1,qa,x+gw+1,yF,C.dark);R(x-gw,qa,x+gw,yF,C.deck);R(x-gw,qa,x-gw+1,yF,C.edge);for(let y=qa+6;y<yF;y+=8)R(x-gw,y,x+gw,y+1,C.dark);R(x-gw-5,yF-3,x+gw+5,yF+2,C.deck2);R(x-gw-5,yF-3,x+gw+5,yF-2,C.edge);
-    if(((t*1.2+i*0.7)|0)%2)R(x-1,yF,x+1,yF+2,B.mil?C.mil:C.lit);}}
+  const n=Math.max(2,Math.round(I.w*0.7/step));
+  for(let i=0;i<n;i++){const x=Math.round(-hw*0.7+(hw*1.4)*(i+0.5)/n),yh=hullNear(I,B,x,s);if(yh===null||yh<y0+3)continue;
+    R(x-2,y0,x+3,yh,C.dark);R(x-1,y0,x+2,yh,C.deck);R(x-1,y0,x,yh,C.edge);R(x-4,yh-3,x+5,yh,C.edge);R(x-4,yh-1,x+5,yh,C.dark);if(((t*1.3+i*0.7)|0)%4===0)R(x,yh-3,x+1,yh-2,C.lit);}
+  const xg=Math.round(-hw*0.16),yg=hullNear(I,B,xg,s);
+  if(yg!==null&&yg>y0+3){for(let y=y0;y<yg;y+=2)R(xg-5,y,xg+5,y+2,((y-y0)>>1)%2?C.deck2:C.edge);R(xg-6,yg-2,xg+6,yg,C.dark);if(((t*2)|0)%2)R(xg-1,y0,xg+1,y0+1,'#5cff9a');}
+  for(const [xf,col] of [[Math.round(hw*0.3),'#ffd23c'],[Math.round(-hw*0.5),'#6ad8ff']]){const yf=hullNear(I,B,xf,s);if(yf===null||yf<y0+3)continue;R(xf,y0,xf+2,yf,C.dark);const u=(t*0.8+xf*0.01)%1,yp=y0+(yf-y0)*u;R(xf,yp,xf+2,yp+2,col);}
   ctx.restore();}
 // --- 4) dessin dans le repère d'un secteur
 function inSec(b,fn){ctx.save();ctx.translate(Math.round(b.x-ox),Math.round(b.y-oy));ctx.rotate(b.qa);fn();ctx.restore();}
@@ -5242,7 +5291,7 @@ function drawSecDeco(b){
   const berths=secBerths(d,D);
   berths.forEach((B,k)=>{const bx=B.x-cx0,by=B.y-cy0,s2=sd+k*131;
     if(B.k==='sil'){const id=moorId(d,B,k,fac);if(!id)return;const out=(d.cx.gout&&d.cx.gout[d.id+':'+k])||berthTaken(berthWorld(b,D,B),30);
-      const I=decoImg(id);if(!I)return;inSec(b,()=>{if(B.gen)drawPier(B,I,bx,by,fac,t,s2,out);if(out)return;drawShipAt(I,bx,by,B.dir<0?PI:0,2,fac);drawMoor(B,I,bx,by,fac,t,s2);});}
+      const I=decoImg(id);if(!I)return;if(out)return;const Bf=berthFace(b,B);inSec(b,()=>{drawShipAt(I,bx,by,Bf.dir<0?PI:0,2,fac);if(B.cls)drawBayMoor(Bf,I,bx,by,fac,t);else drawMoor(B,I,bx,by,fac,t,s2);});}
     else{const list=fac==='humain'?(BRAND_YARD[c.brand]||(c.kind==='capital'?BRAND_YARD.ars:BRAND_YARD.aldL)):fac==='anciens'?['a_gardien','a_vigile','a_clepsydre']:fac==='pirate'?['p_ecorcheur','p_forban','p_brulot']:['x_selene','x_strige'];
       // un grand modèle seul, ou deux plus petits l'un derrière l'autre, à des stades différents
       const id1=pickFit(list,B.L/K,1.05,s2),L1=(DECO_LEN[id1]||100)*K,two=L1<B.L*0.48,ids=two?[id1,pickFit(list,B.L/K*0.48,1.0,s2+9)]:[id1];
@@ -5292,7 +5341,7 @@ const PLAT_W=56;
 function uSide(d){if(d.us)return d.us;const D=secDef(d),ca=Math.cos(d.a),sa=Math.sin(d.a),off=(D?D.H/2:100)+PLAT_W+90;let best=1,bv=-1e9;
   for(const s2 of [1,-1]){const x=d.x-sa*off*s2,y=d.y+ca*off*s2;let v=1e9;for(const q of d.cx.secs)if(q!==d)v=Math.min(v,hyp(q.x-x,q.y-y)-q.r*0.7);if(v>bv){bv=v;best=s2;}}
   return d.us=best;}
-const UNLOAD_MAIN={h_cargo:1,h_quay:1,m_dock:1,x_cavity:1,p_loot:1};
+const UNLOAD_MAIN={h_cargo:1,h_quay:1,x_cavity:1,p_loot:1};
 function unloadBerth(d,ship){const D=secDef(d);if(!D)return null;const us=uSide(d),hw=(ship?ship.h/2:30)+D.H/2+PLAT_W+6,ca=Math.cos(d.a),sa=Math.sin(d.a),lx=0,ly=hw*us;
   return{x:d.x+lx*ca-ly*sa,y:d.y+lx*sa+ly*ca,a:d.a,off:hw,us};}
 const CRANE_C={humain:['#c8d0dc','#59616f','#ffd27a','#3a414c'],pirate:['#b08a60','#563624','#e8b820','#3c2a1c'],anciens:['#e4c488','#3a3436','#ffa040','#2a2628'],xalthar:['#8a76c0','#221a3c','#b070ff','#1c1630']};
@@ -5424,46 +5473,34 @@ function slotSprite(sh,k){const C=sh._slotCv||(sh._slotCv=[]);if(C[k]!==undefine
 // ---- garnisons des stations : des vaisseaux de guerre amarrés aux bras d'amarrage (y compris de nouveaux bras sur les
 // flancs libres des secteurs) ; à l'approche d'une menace, ils larguent les amarres et engagent ; les hangars lancent
 // leurs chasseurs de défense ; la menace passée, tout le monde rentre et se ramarre
-const DEF_SET={humain:['eclaireur','vedette','murmure','sentinelle','sabre','gardienne','rempart'],pirate:['p_brulot','p_ecorcheur','p_forban'],anciens:['a_clepsydre','a_vigile','a_gardien'],xalthar:['x_strige','x_selene','x_noctule']};
+const DEF_SET={humain:['eclaireur','vedette','murmure','sentinelle','sabre','gardienne','rempart'],pirate:['p_brulot','p_ecorcheur','p_forban'],anciens:['a_clepsydre','a_vigile','a_gardien','a_horloge','a_ostensoir','a_vernier','a_rouage'],xalthar:['x_strige','x_selene','x_noctule','x_luciole','x_chimere','x_anguille','x_nereide','x_orchidee','x_ondine']};
 const DEF_IDS=new Set([].concat(...Object.values(DEF_SET)));
-const GEN_MOOR={hc_ring:2,hc_core:2,h_tower:1,h_hq:2,h_fortcore:2,h_lab:1,h_refinery:1,h_bastion:1,h_shield:1,h_hangar:1,p_rockcore:2,p_loot:1,p_scrap:1,p_watch:1,m_forgecore:2,m_frame:1,m_dead:1,m_spire:1,x_heart:2,x_cavity:1,x_harvsec:1,x_spireb:1};
-// postes d'un secteur : ceux de son plan, puis des bras ajoutés sur les flancs que rien ne touche dans le complexe
-function secBerths(d,D){if(d._berths)return d._berths;const K=SHIP_K,Lm=D.L/K,Hm=D.H/K,cy0=D.H/2;
-  const L=(D.berths||[]).concat((XBERTH[d.key]||[]).map(q=>({x:q.x*K,y:q.y*K+cy0,L:q.L*K,W:q.W*K,dir:q.dir,k:q.k})));
-  const n=GEN_MOOR[d.key]||0,c=d.cx,fac=c.fac,mil=MIL_CX.has(c.kind);
-  // plateforme d'amarrage : le vaisseau est choisi d'avance pour que le quai et les passerelles soient à sa taille ;
-  // un poste n'est gardé que si le vaisseau, son quai et ses passerelles ne touchent ni une autre section, ni une
-  // coursive, ni le relais, ni une autre plateforme
-  // forteresses et bases : un poste de vaisseau capital, cherché d'abord sur les sections les plus excentrées
-  if(mil&&CAP_MOOR[fac]&&!c._capDone){c._capDone=1;const order=c.secs.slice().sort((a,b)=>hyp(b.x-c.x,b.y-c.y)-hyp(a.x-c.x,a.y-c.y)),set=CAP_MOOR[fac];
-    outer:for(const id of set.slice().sort((a,b)=>hash2(sdOf(c.id),a.length,b.length)-0.5))for(const q of order){const Dq=secDef(q);if(!Dq)continue;for(const sg of [1,-1]){const B=pierMake(q,Dq,id,sg,{cap:1});if(B){c._cap={sec:q.id,B};break outer;}}}}
-  if(n){const bl=Math.min(Lm*0.72,250);for(const sg of [1,-1]){if(L.filter(q=>q.gen&&!q.cap).length>=n)break;const B=pierMake(d,D,moorId(d,{L:bl*K,gen:1},L.length,fac),sg);if(B)L.push(B);}}
-  if(c._cap&&c._cap.sec===d.id)L.push(c._cap.B);
-  return d._berths=L;}
-// plateforme d'amarrage pour ce vaisseau, de ce côté de la section, si la place est libre (sinon null)
-function pierMake(d,D,id,sg,extra){if(!id)return null;let T;try{T=uniqueTpl(id);}catch(e){return null;}const K=SHIP_K,c=d.cx,hw=T.w/2,hh=T.h/2,Q=Math.max(30,Math.min(80,hh*0.9)),yl=sg*(D.H/2+PIER_GAP*K+Q+hh*0.45);
-  if(!pierFree(d,yl,hw+12,hh+Q+PIER_GAP*K*0.5,sg))return null;
-  return Object.assign({x:D.L/2,y:yl+D.H/2,L:T.w,W:T.h,dir:sg,k:'sil',gen:1,id,Q,mil:MIL_CX.has(c.kind),ye:sg*D.H/2,ein:Math.max(18,D.H*0.12),sw:D.L*0.36},extra||{});}
-// complexes militaires (quais blindés, vaisseaux de guerre) ; vaisseaux capitaux qu'on peut y trouver à quai
-const MIL_CX=new Set(['fort','gate','bastion','xcit','lair','capital','forge']),PIER_GAP=26;
-const CAP_MOOR={humain:['meteore','bastion','monolithe','souverain','gardienne','sabre'],anciens:['a_monarque','a_gardien','a_cathedrale'],xalthar:['x_umbra','x_kraken','x_leviathe','x_selene'],pirate:['p_forban','p_ecorcheur']};
-// place libre pour une plateforme : on sonde le rectangle du vaisseau et de son quai, dans le repère du monde
-function pierFree(d,yl,hw,hh,sg){const c=d.cx,ca=Math.cos(d.a),sa=Math.sin(d.a),P=[],LW=(LINK_W[c.fac]||30)*SHIP_K*0.5+30;
-  for(let u=-1;u<=1.001;u+=0.2)for(const v of [-1,-0.5,0,0.5,1]){const lx=u*hw,ly=yl-sg*hh*0.15+v*hh;P.push([d.x+lx*ca-ly*sa,d.y+lx*sa+ly*ca]);}
-  const segD=(px,py,ax,ay,bx,by)=>{const dx=bx-ax,dy=by-ay,L2=dx*dx+dy*dy||1,t=clamp(((px-ax)*dx+(py-ay)*dy)/L2,0,1);return hyp(px-ax-dx*t,py-ay-dy*t);};
-  const links=cxLinks(c);
-  for(const [px,py] of P){
-    for(const q of c.secs){if(q===d)continue;if(hyp(q.x-px,q.y-py)<q.r*0.92)return false;}
-    for(const l of links){const A=c.secs[l.i],B=c.secs[l.j];if(segD(px,py,A.x,A.y,B.x,B.y)<LW&&hyp(px-d.x,py-d.y)>d.r*0.6)return false;}
-    if(c.wrap&&hyp(STATION.x-px,STATION.y-py)<DOCK_R+60)return false;
-    for(const R of c._piers||[])if(hyp(R[0]-px,R[1]-py)<R[2])return false;}
-  (c._piers||(c._piers=[])).push([d.x-sa*yl,d.y+ca*yl,Math.max(hw,hh)*0.9]);return true;}
+// postes d'un secteur : ceux de son plan (darses des plateformes, berceaux des quais)
+function secBerths(d,D){if(d._berths)return d._berths;const K=SHIP_K,cy0=D.H/2;
+  return d._berths=(D.berths||[]).concat((XBERTH[d.key]||[]).map(q=>({x:q.x*K,y:q.y*K+cy0,L:q.L*K,W:q.W*K,dir:q.dir,k:q.k})));}
+// complexes militaires : leurs darses reçoivent des vaisseaux de guerre
+const MIL_CX=new Set(['fort','gate','bastion','xcit','lair','capital','forge']);
+// vaisseaux qu'on trouve dans chaque classe de darse : M (corvettes, navettes, cargos moyens), L (frégates, gros
+// cargos), C (vaisseaux capitaux) ; « m » : variante militaire
+const DOCK_SHIPS={humain:{M:['messager','arpenteur','pioche','pelle','vedette','eclaireur'],L:['boeuf','mulet','longcourrier'],Mm:['eclaireur','vedette','murmure','messager'],Lm:['sabre','sentinelle','gardienne','rempart'],C:['meteore','bastion','monolithe','souverain']},
+  pirate:{M:['p_brulot'],L:['p_ecorcheur','p_forban']},
+  anciens:{M:['a_vigile','a_horloge','a_ostensoir','a_vernier','a_rouage'],L:['a_gardien'],C:['a_monarque','a_cathedrale','a_basilique']},
+  xalthar:{M:['x_strige','x_luciole','x_chimere','x_anguille'],L:['x_selene','x_nereide','x_orchidee','x_ondine'],C:['x_umbra','x_kraken','x_leviathe']}};
+// taille d'un modèle sans le construire (pixels)
+function hullWH(id){const T=UNIQ_TPL[id];if(T)return[T.w,T.h];const D=MODEL_SHIP_BY[id]||HUMAN_SHIPS.find(q=>q.id===id);if(D)return[D.L,D.H];try{const t=uniqueTpl(id);return[t.w,t.h];}catch(e){return[9999,9999];}}
+function dockPick(d,B,k,fac){const P=d._pk||(d._pk={});if(k in P)return P[k];return P[k]=dockPick0(d,B,k,fac);}
+function dockPick0(d,B,k,fac){const c=d.cx,s2=sdOf(d.id)+k*131,F=DOCK_SHIPS[fac]||DOCK_SHIPS.humain,mil=MIL_CX.has(c.kind)||d.key.indexOf('cap')>0||d.key==='h_milpier';
+  if(B.cls!=='C'&&hash2(s2,3,5)<0.14)return null;
+  const set=(mil&&F[B.cls+'m'])||F[B.cls]||[],fit=set.filter(id=>{const [w,h]=hullWH(id);return w<=B.L+4&&h<=B.W+2;});
+  return fit.length?fit[Math.floor(hash2(s2,fit.length,77)*fit.length)%fit.length]:null;}
 // position d'un poste dans le monde
-function berthWorld(b,D,B){const bx=B.x-D.L/2,by=B.y-D.H/2,c=Math.cos(b.qa),s2=Math.sin(b.qa);return{x:b.x+bx*c-by*s2,y:b.y+bx*s2+by*c,a:b.qa+(B.dir<0?PI:0)};}
+function berthWorld(b,D,B){const bx=B.x-D.L/2,by=B.y-D.H/2,c=Math.cos(b.qa),s2=Math.sin(b.qa);return{x:b.x+bx*c-by*s2,y:b.y+bx*s2+by*c,a:b.qa+(berthFace(b,B).dir<0?PI:0)};}
+// sens du vaisseau dans une darse : sur une plateforme tournée vers l'ouest, il est amarré proue à l'est (jamais la tête en bas)
+function berthFace(b,B){if(!B.cls||Math.cos(b.qa)>=-0.2)return B;return B._fB||(B._fB=Object.assign({},B,{dir:-(B.dir||1)}));}
 // un vaisseau (réel) occupe-t-il ce poste ? (vrai aussi chez l'invité, d'après les copies de l'hôte)
 function berthTaken(P,r){for(const L of [allies,enemies])for(const o of L){if(o.dead||o.stc)continue;if(Math.abs(o.x-P.x)<r&&Math.abs(o.y-P.y)<r&&hyp(o.x-P.x,o.y-P.y)<r)return o;}return null;}
-function moorId(d,B,k,fac){if(B.id)return B.id;const c=d.cx,s2=sdOf(d.id)+k*131;if(hash2(s2,3,5)<0.12)return null;
-  const set=B.gen?(DEF_SET[fac]||[]):fac==='humain'?(MOOR_SET[c.kind]||MOOR_SET.port):MOOR_SET[fac]||[];return set.length?pickFit(set,B.L/SHIP_K,B.gen?1.25:1.8,s2):null;}
+function moorId(d,B,k,fac){if(B.id)return B.id;if(B.cls)return dockPick(d,B,k,fac);const c=d.cx,s2=sdOf(d.id)+k*131;if(hash2(s2,3,5)<0.12)return null;
+  const set=fac==='humain'?(MOOR_SET[c.kind]||MOOR_SET.port):MOOR_SET[fac]||[];return set.length?pickFit(set,B.L/SHIP_K,1.8,s2):null;}
 // menace autour d'un complexe : pour une station amie, des ennemis armés ; pour une station hostile, toi ou tes alliés,
 // si elle est en alerte
 function cxThreat(c,side){const R=c.r+3500;
