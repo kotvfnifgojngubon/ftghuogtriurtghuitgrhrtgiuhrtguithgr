@@ -1209,6 +1209,8 @@ const MODS={
   k:{name:'Batterie capitale',short:'Batterie',tier:3,cost:900,mass:14,hp:2.2,weapon:true,big:true,capOnly:true,desc:'Tourelle lourde à trois canons, réservée aux capitaux : de gros obus lents qui traversent l’absorption des boucliers et creusent des cratères énormes. Clic gauche.'},
   q:{name:'Canon spinal',short:'Spinal',tier:4,cost:2400,mass:22,hp:2,weapon:true,big:true,capOnly:true,desc:'Arme d’axe, réservée aux capitaux : il charge deux secondes puis tire droit devant un projectile qui traverse tout. Vise avec le nez du vaisseau. Clic gauche.'},
   m:{name:'Silo de croisière',short:'Croisière',tier:3,cost:1100,mass:12,hp:1.6,weapon:true,big:true,capOnly:true,desc:'Deux missiles de croisière lourds, guidés, qui brisent les secteurs de bouclier. Réservé aux capitaux. Clic droit.'},
+  ρ:{name:'Réacteur moyen',short:'Réacteur',cost:0,mass:7,hp:2.2,desc:'Cœur des corvettes lourdes et des frégates : un seul par vaisseau. Plus puissant que le petit réacteur, il saute plus fort.'},
+  Ρ:{name:'Réacteur titan',short:'Réacteur',cost:0,mass:30,hp:3,big:true,capOnly:true,desc:'Le cœur des porte-flottes et des titans : un seul par vaisseau. Énergie abondante ; s’il lâche, l’onde balaie toute la flotte proche.'},
   r:{name:'Réacteur capital',short:'Réacteur',cost:0,mass:16,hp:2.5,big:true,capOnly:true,desc:'Le cœur d’un vaisseau capital : un seul par vaisseau, à la place du petit réacteur. +300 d’énergie. S’il lâche, tout le vaisseau saute.'},
   e:{name:'Propulseur capital',short:'Propulseur',cost:500,mass:12,hp:1.4,big:true,capOnly:true,desc:'Vaut quatre propulseurs. L’arrière doit rester dégagé.'},
   s:{name:'Bouclier capital',short:'Bouclier',cost:900,mass:12,hp:1.5,big:true,capOnly:true,desc:'Vaut deux générateurs de bouclier.'},
@@ -1292,7 +1294,9 @@ const SMIS_CATS=new Set(['intercepteur','chasseur','chbomb']);
 for(const S of SMIS)MODS[S.c]={name:'Missile '+S.n+' ('+S.id+')',short:S.n,tier:S.kg>1000?3:S.kg>300?2:1,cost:Math.round(60+S.kg*0.12),mass:0.3+S.kg/1100,hp:1,weapon:true,desc:S.role+' : '+S.guid.toLowerCase()+'. '+S.plus+' ; '+S.moins.toLowerCase()+'.'};
 MODS.c={name:'Canon orbital titanesque',short:'Canon titan',tier:4,cost:9000,mass:40,hp:2.4,weapon:true,big:true,capOnly:true,desc:'Arme des structures orbitales : la plateforme pivote lentement dans un arc borné, charge, puis tire un trait qui traverse tout.'};
 // réacteur : le petit (R) ou le capital (r)
-const isR=c=>c==='R'||c==='r';
+const isR=c=>c==='R'||c==='r'||c==='ρ'||c==='Ρ';
+// taille d'un réacteur : rayon du cœur, rayon de l'explosion, bonus d'énergie
+const REACT_SZ={R:{core:2.6,boom:7,en:0},ρ:{core:5,boom:12,en:0.15},r:{core:9.5,boom:18,en:0.3},Ρ:{core:14,boom:26,en:0.5}};
 const MOD_GROUPS=[['Structure',['H','A','R','D']],['Énergie et propulsion',['E','B','S']],['Canons',['C','K']],['Lasers',['L','X']],['Roquettes et bombes',['U','M','Z','b','h']],['Missiles guidés',['J','G','Y','N']],['Soutien',['P','F','W','O','I']]];
 const MOD_ORDER=MOD_GROUPS.flatMap(g=>g[1]);
 const TIER_TXT=['','I','II','III','☢'];
@@ -2047,9 +2051,16 @@ function skinTint(def,A,emi,mt,w,h,sd,P){
 // tourelles vivantes (mandibles à plasma) et instruments des Anciens (fourches, prismes, rails de bronze)
 function drawAlienTurret(g,fx,c,mx,my,a,r,sc,sh,ready){
   const ca=Math.cos(a),sa=Math.sin(a),P=(d,o)=>[mx+ca*d-sa*o,my+sa*d+ca*o],px=(x,y,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),1,1);},D=sh?'#03040a':null;
-  if(fx==='xalthar'){const body=D||'#2a2640',hi=D||'#8a7cb8',glow=D||'#c890ff',core=D||(((now*3)|0)%2?'#e8d0ff':'#a060ff'),L=(c==='P'?5:8)*sc;
-    for(const s of c==='P'?[0]:[-1,1]){let [x0,y0]=P(1.5*sc-r,s*1.6*sc);for(let k=1;k<=4;k++){const t=k/4,[x1,y1]=P(1.5*sc+(L-1.5*sc)*t-r,s*(1.6*sc+1.4*sc*Math.sin(t*PI)-0.9*sc*t*t));pline(x0,y0,x1,y1,k<3?body:hi,g);x0=x1;y0=y1;}px(x0,y0,glow);}
-    const [x,y]=P(0,0);px(x,y,core);px(x+1,y,core);
+  if(fx==='xalthar'){const body=D||'#2a2640',hi=D||'#8a7cb8',glow=D||'#c890ff',core=D||(((now*3)|0)%2?'#e8d0ff':'#a060ff');
+    // calibre : P (défense) et p (plasma) comme avant ; C léger, K lourd, k capital — dôme plus large, lances plus longues et plus épaisses
+    const Z={P:{d:0,L:5,n:1,t:0},p:{d:1.6,L:8,n:2,t:0},C:{d:2.2,L:8,n:2,t:0},K:{d:3.6,L:12,n:2,t:1},k:{d:6,L:20,n:3,t:1.4}}[c]||{d:1.6,L:8,n:2,t:0};
+    const L=Z.L*sc,dr=Z.d*sc,sp=(Z.n>2?2.6:1.7)*sc*(Z.d>3?1.25:1);
+    if(dr>1.5){const [x,y]=P(0,0);g.fillStyle=body;g.beginPath();g.arc(Math.round(x),Math.round(y),dr,0,TAU);g.fill();g.fillStyle=hi;g.beginPath();g.arc(Math.round(x-dr*0.25),Math.round(y-dr*0.25),dr*0.55,0,TAU);g.fill();
+      g.fillStyle=body;g.beginPath();g.arc(Math.round(x),Math.round(y),dr*0.42,0,TAU);g.fill();if(!D&&Z.d>=6){g.strokeStyle=glow;g.lineWidth=1;g.beginPath();g.arc(Math.round(x),Math.round(y),dr*0.78,0,TAU);g.stroke();}}
+    const offs=Z.n===1?[0]:Z.n===2?[-1,1]:[-1,0,1];
+    for(const s of offs){const ln=s===0&&Z.n>2?L*1.1:L;for(let w=-Z.t;w<=Z.t+0.01;w+=1){let [x0,y0]=P(dr*0.7+1.5*sc-r,s*sp+w*0.6);for(let k=1;k<=5;k++){const t=k/5,[x1,y1]=P(dr*0.7+1.5*sc+(ln-1.5*sc)*t-r,s*(sp+1.2*sc*Math.sin(t*PI)-0.8*sc*t*t)+w*0.6);pline(x0,y0,x1,y1,k<4?body:hi,g);x0=x1;y0=y1;}
+      if(w>=Z.t-0.01){px(x0,y0,glow);if(Z.t&&ready)px(x0+1,y0,glow);}}}
+    const [x,y]=P(0,0);px(x,y,core);px(x+1,y,core);if(Z.d>=3.6){px(x,y+1,core);px(x+1,y+1,core);}
   }else{const body=D||'#5a4424',gold=D||'#e4c488',glow=D||'#ffa040',prong=(o,L)=>{const [x0,y0]=P(2-r,o),[x1,y1]=P(L-r,o);pline(x0,y0,x1,y1,body,g);px(x1,y1,gold);};
     if(c==='g'){for(const o of [-2.2,0,2.2])prong(o*sc,(o?9:7)*sc);if(ready){const [x,y]=P(10*sc,0);for(const [dx,dy] of [[0,0],[1,0],[0,1],[1,1]])px(x+dx,y+dy,glow);}}
     else if(c==='v'){const d=[[3,0],[6,-1.6],[9,0],[6,1.6],[3,0]].map(([u,v])=>P(u*sc,v*sc));for(let k=0;k<4;k++)pline(d[k][0],d[k][1],d[k+1][0],d[k+1][1],body,g);const [x,y]=P(6*sc,0);px(x,y,glow);}
@@ -2260,8 +2271,12 @@ function buildUnique(def){
     }
   }
   // cœur du réacteur, sous le blindage
-  for(const m of list){if(!isR(m.code))continue;const r=m.big?9.5:2.6,cx=m.c*MS+5,cy=m.vy!==undefined?Math.round(m.vy):m.r*MS+5;
-    for(let y=Math.floor(cy-r);y<=Math.ceil(cy+r);y++)for(let x=Math.floor(cx-r);x<=Math.ceil(cx+r);x++){const i=at(x,y);if(i<0||!zh[i]||Math.hypot(x-cx,y-cy)>r)continue;tp[i]=T_CORE;}}
+  for(const m of list){if(!isR(m.code))continue;const r=(REACT_SZ[m.code]||REACT_SZ.R).core,cx=m.c*MS+5,cy=m.vy!==undefined?Math.round(m.vy):m.r*MS+5;
+    for(let y=Math.floor(cy-r);y<=Math.ceil(cy+r);y++)for(let x=Math.floor(cx-r);x<=Math.ceil(cx+r);x++){const i=at(x,y);if(i<0||!zh[i]||Math.hypot(x-cx,y-cy)>r)continue;tp[i]=T_CORE;}
+    // Xal'thar et Machines : le cœur se voit à travers la coque — cristal violet ou fourneau ambré, anneaux tramés à sa taille
+    if((def.fac==='xalthar'||def.fac==='anciens')&&r>=4){const L1=def.fac==='xalthar'?XAL_LIT:MAC_LIT,L2=def.fac==='xalthar'?XAL_HOT:MAC_HOT,rv=r*0.55;
+      for(let y=Math.floor(cy-rv);y<=Math.ceil(cy+rv);y++)for(let x=Math.floor(cx-rv);x<=Math.ceil(cx+rv);x++){const i=at(x,y);if(i<0||!zh[i])continue;const d=Math.hypot(x-cx,y-cy)/rv;if(d>1)continue;
+        const ring=Math.abs(d-0.72)<0.12,core=d<0.32;if(core||ring||(d<0.6&&((x+y)&1)===0)){ec[i]=core?L2:L1;emi[i]=1;}}}}
   // 7) contour, puis lumière : arêtes, ombres portées, joints
   const A={w,h,type:new Uint8Array(n),col:new Uint32Array(n),hp:new Float32Array(n),modOf:new Int16Array(n).fill(-1),emi:new Uint8Array(n)};
   const ol=new Uint8Array(n),samples=[],noOl=!/^st_/.test(def.id||'');
@@ -2364,9 +2379,10 @@ function specStats(t,act){
   const sf0=Math.max(1,t.cells/1000),sf=sf0<=16?sf0:16+Math.pow(sf0-16,0.7);
   return{accel:ek>0?sp.acc*(0.35+0.65*ek):0,maxSpd:ek>0?sp.spd*(0.5+0.5*ek):0,turn:sp.turn*(ek>0?1:0.3),
     shieldMax:sT&&!t.small?Math.round(sp.shield*sk):0,shieldRegen:sT&&!t.small?sp.shield*sp.regen*sk:0,absorb:Math.min(9,1.2*Math.pow(sf,0.6)),shDelay:Math.min(5,2+0.6*Math.sqrt(sf)),size:sf,
-    energyMax:Math.round(sp.energy*(0.6+0.4*bk)),energyRegen:sp.eRegen*(0.6+0.4*bk),cargo:sp.cargo,magnet:sp.magnet,crew:sp.crew,giant:!!sp.giant,fighters:sp.fighters||0};
+    energyMax:Math.round(sp.energy*(0.6+0.4*bk)*(1+reactBonus(t))),energyRegen:sp.eRegen*(0.6+0.4*bk)*(1+reactBonus(t)),cargo:sp.cargo,magnet:sp.magnet,crew:sp.crew,giant:!!sp.giant,fighters:sp.fighters||0};
 }
 function statsOf(t,mass,act,cells){return t.spec?specStats(t,act):statsFrom(t.count,mass,act,cells);}
+function reactBonus(t){for(const k in REACT_SZ)if(t.count&&t.count[k])return REACT_SZ[k].en;return 0;}
 // silhouette symétrique : points du bord supérieur, de la poupe au nez ; le bord inférieur en est le reflet
 // les vaisseaux de la faction sont dessinés 1,5 fois plus grands que leur plan, pour qu'un équipier (aussi haut que le
 // cockpit du chasseur) y reste crédible. Les plans restent écrits à l'échelle d'origine : x est multiplié, y l'est
@@ -3201,7 +3217,7 @@ const MAC_LIT=0xffa040,MAC_HOT=0xffd890,XAL_LIT=0xb070ff,XAL_HOT=0xe8d0ff;
 //   o.pods   : [[fx, fy, rx, ry, rot]] ; o.eng : [[fy, h, len]] ; o.mods : [[code, fx, fy]] ; o.glow : [[fx, fy, r]]
 //   o.hulls  : [[fy, fx0, fx1, demi-largeur]] coques latérales en miroir ; o.ribs : nervures courbes en carapace sur le
 //   fuseau ; o.crest : nombre de petites lames dorsales le long de l'axe ; o.bw : épaisseur des lames (×)
-/* ---------- Xal'thar : briques de navires de guerre lissés (coques, nacelles, pylônes, passerelles, cloques) ---------- */
+/* ---------- Xal'thar : briques de navires de guerre (coques lissées, plaques angulaires, affûts, nacelles) ---------- */
 // Xal'thar : coques lissées en courbes, toujours en miroir (bâbord = tribord)
 // coque : profil [[x, demi-largeur], ...] de la poupe au nez, lissé
 function xHull(part,c,prof,z,mat){const top=spline(prof.map(([x,y])=>[x,c-y]),8,false);part(mat||'hull',z,top.concat(top.map(([x,y])=>[x,2*c-y]).reverse()));}
@@ -3234,6 +3250,68 @@ function xlPanels(part,c,x0,x1,n,y,h,z,mat){const L=(x1-x0)/n;for(let i=0;i<n;i+
 // bloc moteur de poupe : carénage lisse et n tuyères réparties sur sa hauteur
 function xStern(part,eng,c,x0,x1,w,n,z){const P=[[x0,w*0.85],[x0+(x1-x0)*0.3,w],[x1,w*0.7]];xHull(part,c,P,z||1.5,'hull');xHull(part,c,P.map(([x,y])=>[x,y*0.6]),(z||1.5)+0.14,'plate');
   const st=2*w*0.8/n;for(let i=0;i<n;i++){const y=-w*0.8+st*(i+0.5);if(y<-0.01)eng(c+y,st*0.38,Math.max(1.5,st*0.5),0,1,1,x0);else if(Math.abs(y)<0.01)eng(c,st*0.38,Math.max(1.5,st*0.5),2,0,undefined,x0);}}
+// ---- relief sans boules ni demi-lunes : plaques angulaires, affûts hexagonaux, entretoises droites ----
+// demi-largeur du profil à l'abscisse x
+function xW(prof,x){for(let k=0;k<prof.length-1;k++){const [a,ya]=prof[k],[b,yb]=prof[k+1];if(x>=a&&x<=b)return ya+(yb-ya)*(x-a)/(b-a);}return 0;}
+// sponson angulaire : trapèze à extrémités fuyantes, plaque intérieure et tranchée sombre (en miroir)
+function xSponA(part,c,x0,x1,yIn,yOut,z){const L=x1-x0,d=yOut-yIn;z=z||1.44;
+  part('hull',z,[[x0,c-yIn+1],[x0+L*0.22,c-yOut],[x1-L*0.14,c-yOut],[x1,c-yIn+1]],1);
+  part('plate',z+0.14,[[x0+L*0.18,c-yIn],[x0+L*0.28,c-yOut+d*0.22],[x1-L*0.2,c-yOut+d*0.22],[x1-L*0.1,c-yIn]],1);
+  part('dark',z+0.2,[[x0+L*0.3,c-yOut+d*0.42],[x1-L*0.24,c-yOut+d*0.42],[x1-L*0.24,c-yOut+d*0.52],[x0+L*0.3,c-yOut+d*0.52]],1);}
+// affût de tourelle hexagonal (en miroir hors de l'axe)
+function xMount(part,c,x,y,r,z){const P=[];for(let k=0;k<6;k++){const a=k*PI/3+PI/6;P.push([x+Math.cos(a)*r*1.15,c-y+Math.sin(a)*r]);}part('plate',z||1.86,P,y?1:0);
+  const Q=P.map(([px,py])=>[x+(px-x)*0.6,c-y+(py-(c-y))*0.6]);part('metal',(z||1.86)+0.12,Q,y?1:0);}
+// entretoise droite et biaise entre la coque (y0) et une nacelle (y1)
+function xStrut(part,c,x,y0,y1,w,sw,z){part('hull',z||1.46,[[x,c-y0],[x+w,c-y0],[x+w-sw,c-y1],[x-sw,c-y1]],1);part('dark',(z||1.46)+0.06,[[x+w*0.4,c-y0],[x+w*0.6,c-y0],[x+w*0.6-sw,c-y1],[x+w*0.4-sw,c-y1]],1);}
+// passe de détail sur une coque de profil P : plaques de blindage en gradins le long des flancs (deux tons, jointures
+// sombres), tranchée lumineuse, arête dorsale, ouïes de poupe — c'est elle qui donne le relief
+function xDetail(part,c,P,o){o=o||{};const x0=o.x0||P[0][0]+P[P.length-1][0]*0.04,x1=o.x1||P[P.length-1][0]*0.86,n=o.n||Math.max(4,Math.round((x1-x0)/((o.step)||22))),L=(x1-x0)/n;
+  for(let i=0;i<n;i++){const a=x0+i*L+L*0.06,b=a+L*0.88,wa=xW(P,a),wb=xW(P,b);if(wa<4||wb<4)continue;const hi=i%2?1.66:1.72,mat=i%3===1?'metal':'plate';
+    part(mat,hi,[[a,c-wa*0.92],[b,c-wb*0.92],[b-L*0.08,c-wb*0.66],[a+L*0.08,c-wa*0.66]],1);
+    part('dark',hi+0.04,[[a+L*0.3,c-wa*0.84],[a+L*0.62,c-(wa+wb)*0.42],[a+L*0.62,c-(wa+wb)*0.39],[a+L*0.3,c-wa*0.78]],1);}
+  // tranchée longitudinale (elle portera une nervure lumineuse)
+  const T=[];for(let i=0;i<=12;i++){const x=x0+(x1-x0)*i/12;T.push([x,c-Math.max(2,xW(P,x)*0.56)]);}
+  part('dark',1.6,ribbon(T,()=>Math.max(1.2,(o.tw||1.8))),1);
+  // arête dorsale effilée
+  if(o.spine!==false){const sx0=o.sx0||x0+(x1-x0)*0.12,sx1=o.sx1||x1,sw=o.sw||Math.max(2,xW(P,(sx0+sx1)/2)*0.12);part('metal',1.98,ribbon([[sx0,c],[sx1,c]],t=>sw*(1-0.7*t)+0.8));}
+  // ouïes de poupe
+  const vx=P[0][0]+Math.max(6,(x1-x0)*0.05);for(let k=0;k<4;k++){const w=xW(P,vx)*0.5;part('dark',1.7,[[vx+k*3.2,c-w],[vx+k*3.2+1.4,c-w],[vx+k*3.2+1.4,c-w*0.3],[vx+k*3.2,c-w*0.3]],1);}}
+// nacelle angulaire (prisme à pans) à (y) de l'axe, tuyère en x0
+function xNacA(part,eng,c,x0,x1,y,h,o){o=o||{};const L=x1-x0,z=o.z||1.5;
+  part('hull',z,[[x0,c-y-h*0.7],[x0+L*0.1,c-y-h],[x1-L*0.24,c-y-h],[x1,c-y-h*0.22],[x1,c-y+h*0.22],[x1-L*0.24,c-y+h],[x0+L*0.1,c-y+h],[x0,c-y+h*0.7]],1);
+  part('plate',z+0.14,[[x0+L*0.12,c-y-h*0.55],[x1-L*0.3,c-y-h*0.55],[x1-L*0.12,c-y],[x1-L*0.3,c-y+h*0.55],[x0+L*0.12,c-y+h*0.55]],1);
+  for(const f of [0.3,0.55])part('dark',z+0.2,[[x0+L*f,c-y-h*0.95],[x0+L*f+Math.max(1,L*0.03),c-y-h*0.95],[x0+L*f+Math.max(1,L*0.03),c-y+h*0.95],[x0+L*f,c-y+h*0.95]],1);
+  if(o.eng)o.eng(c-y,h*0.62,Math.max(1,h*0.7),o.g||0,1,o.gm===undefined?(o.g||0)+1:o.gm,x0);}
+// navire de guerre xal'thar complet à partir d'un plan
+function xWar(L,H,o){return shipDef(L,H,({c,part,eng,S,bx})=>{const P=o.P;
+  for(const [x0,x1,y,h,sx,sw,sw2] of o.nacs||[]){xNacA(part,eng,c,x0,x1,y,h,{eng,g:2});if(sx!==undefined&&sx!==null)xStrut(part,c,sx,xW(P,sx)*0.8,y-h*0.6,sw||6,sw2||8);
+    // grandes coques-hangars : rangées de plaques en relief sur leur dos
+    if(h>=20){const Ln=x1-x0;xlPanels(part,c,x0+Ln*0.14,x1-Ln*0.3,Math.max(3,Math.round(Ln/70)),y-h*0.5,h*0.32,1.68,'metal');xlPanels(part,c,x0+Ln*0.14,x1-Ln*0.3,Math.max(3,Math.round(Ln/90)),y+h*0.5,h*0.3,1.68,'plate');}}
+  for(const [x,y0,y1,w,sw] of o.struts||[])xStrut(part,c,x,y0,y1,w,sw);
+  for(const [x0,x1,yIn,yOut] of o.spons||[])xSponA(part,c,x0,x1,yIn,yOut);
+  for(const [pts,w] of o.fins||[])xFin(part,c,pts,w);
+  // éperons de proue angulaires (étrave fendue)
+  for(const [x0,x1,yIn,yOut] of o.prongs||[]){const L2=x1-x0;part('hull',1.4,[[x0,c-yIn],[x0+L2*0.4,c-yIn-(yOut-yIn)*0.2],[x1,c-(yIn+yOut)*0.5],[x1-L2*0.12,c-yOut],[x0,c-yOut]],1);
+    part('plate',1.54,[[x0+L2*0.1,c-yIn-(yOut-yIn)*0.2],[x1-L2*0.18,c-(yIn+yOut)*0.5],[x0+L2*0.1,c-yOut+(yOut-yIn)*0.2]],1);}
+  xHull(part,c,P,1.36);
+  for(const [k,x0,x1,z,mat] of o.layers||[[0.68,P[0][0]+4,P[P.length-1][0]-6,1.56]])xLayer(part,c,P,k,x0,x1,z,mat);
+  xDetail(part,c,P,o.det||{});
+  for(const [x0,x1,n,y,h,mat] of o.panels||[])xlPanels(part,c,x0,x1,n,y,h,1.9,mat||'metal');
+  for(const [x0,x1,n,y,h] of o.bays||[])xBays(part,c,x0,x1,n,y,h,1.74);
+  if(o.bridge){const [x,len,w,n]=o.bridge;xBridge(part,c,x,len,w,n||4);}
+  for(const [cd,x,y,r] of o.mounts||[])xMount(part,c,x,y,r);
+  if(o.stern){const [x1,w,n]=o.stern;xStern(part,eng,c,0,x1,w,n);}
+  if(o.channel){const [x0,x1,w]=o.channel;part('metal',1.96,ribbon([[x0,c],[x1,c]],t=>w*(1-0.5*t)));part('dark',2.02,ribbon([[x0+w,c],[x1,c]],t=>w*0.45*(1-0.5*t)));}
+  const mods=[];for(const [cd,x,y] of (o.mounts||[]).concat(o.y||[])){if(!cd)continue;mods.push([cd,x,c-y]);if(y)mods.push([cd,x,c+y]);}
+  return Object.assign({id:o.id,armorX:P[P.length-1][0]*0.95,engPal:XAL_ENG,skin:'xal',edge:false,tscale:o.tscale||1.25,
+    decor:(a)=>{const T=[];for(let i=0;i<=14;i++){const x=(o.det&&o.det.x0||P[0][0]+P[P.length-1][0]*0.04)+((o.det&&o.det.x1||P[P.length-1][0]*0.86)-(o.det&&o.det.x0||P[0][0]+P[P.length-1][0]*0.04))*i/14;T.push([x,c-Math.max(2,xW(P,x)*0.56)]);}
+      const vw=Math.max(0.8,(o.det&&o.det.tw||1.8)*0.6);a.band(T,vw,{e:XAL_LIT});a.band(T.map(([x,y])=>[x,2*c-y]),vw,{e:XAL_LIT});
+      const Lx=P[P.length-1][0];for(const s of [-1,1])a.lights(Lx*0.08,Lx*0.8,c+s*xW(P,Lx*0.45)*0.78,Math.max(4,Lx/60),XAL_LIT,0.5);
+      for(const [x0,x1,yIn,yOut] of o.spons||[])for(const s of [-1,1])a.band([[x0+(x1-x0)*0.3,c+s*(yIn+(yOut-yIn)*0.47)],[x1-(x1-x0)*0.24,c+s*(yIn+(yOut-yIn)*0.47)]],Math.max(0.7,(yOut-yIn)*0.05),{e:XAL_LIT});
+      for(const [x0,x1,y] of o.nacs||[])for(const s of [-1,1])a.disc(x1-1,c+s*y,Math.max(0.8,(x1-x0)*0.012),{e:XAL_HOT});
+      if(o.core){a.disc(o.core,c,Math.max(1.4,H*0.035),{e:XAL_LIT});a.disc(o.core,c,Math.max(0.8,H*0.018),{e:XAL_HOT});}
+      if(o.bridge)a.disc(o.bridge[0],c,Math.max(1,o.bridge[2]*0.16),{e:XAL_HOT});},
+    mods},o.extra||{});});}
 function xOrg(L,H,o){return shipDef(L,H,({c,part,eng,S})=>{
   const hh=H/2,X=f=>f*L,Y=f=>c-f*hh,P=pts=>pts.map(([x,y])=>[X(x),Y(y)]);
   // lames et pinces d'abord (le fuseau les recouvre à la base)
@@ -3408,69 +3486,31 @@ MODEL_SHIPS.push(
       mods:[['R',16,c],['w',26,c-9.4,37.6,c-5.7],['w',26,c+9.4,37.6,c+5.7]],
       st:{turn:6.6,spd:440},info:{len:'40 m',m:40,crew:1}};
   }),
-  // Strige (corvette, 110 m) : destroyer effilé à étrave en ogive, deux nacelles moteurs sur pylônes courbes,
-  // passerelle en goutte, tourelles à plasma en cloques, petits ailerons en croissant, nervures violettes
-  shipDef(110,48,({c,part,eng,S,bx})=>{
-    const P=[[0,7],[8,12],[30,14],[62,13.4],[84,9.6],[100,4.6],[110,0]];
-    xPod(part,c,2,46,17,4.2,1.5,{eng,g:2});xPylon(part,c,34,11,16,3,8);
-    xHull(part,c,P,1.36);xLayer(part,c,P,0.66,6,98,1.6);xSeams(part,c,14,52,4,9);
-    xBridge(part,c,58,30,7,3);xBlist(part,c,80,0,3);xBlist(part,c,42,8,2.4);
-    xFin(part,c,[[16,11],[9,17],[5,20]],2.6);
-    eng(c-5,3.6,3,0,1,1);
-    return{id:'x_strige',armorX:104,tscale:1.15,engPal:XAL_ENG,skin:'xal',edge:false,
-      decor:(a)=>{const v=spline([[8,c-9],[40,c-10.4],[70,c-8.6],[96,c-3]],8,false);a.band(v,0.8,{e:XAL_LIT});a.band(v.map(([x,y])=>[x,2*c-y]),0.8,{e:XAL_LIT});
-        for(const s of [-1,1])a.lights(20,80,c+s*6,4,XAL_LIT,0.5);a.disc(36,c,1.8,{e:XAL_LIT});a.disc(36,c,0.9,{e:XAL_HOT});a.disc(58,c,1.2,{e:XAL_HOT});},
-      mods:[['R',36,c],['S',50,c],['p',80,c],['p',42,c-8],['p',42,c+8],['D',20,c],['B',68,c-5],['B',68,c+5],['F',90,c],['I',28,c-9],['I',28,c+9]],info:{len:'110 m',m:110}};}),
-  // Sélène (frégate, 300 m) : étrave en ogive, sponsons lisses de tourelles au milieu, nacelles moteurs sur pylônes,
-  // passerelle en goutte à étages, petits ailerons, nervures violettes le long des flancs
-  shipDef(300,100,({c,part,eng,S,bx})=>{
-    const P=[[0,18],[16,30],[120,33],[200,30],[250,20],[284,9],[300,0]];
-    xPod(part,c,2,96,40,9,1.5,{eng,g:2});xPylon(part,c,74,28,38,6,14);
-    xlSpon(part,c,104,184,30,44);
-    xHull(part,c,P,1.36);xLayer(part,c,P,0.68,10,290,1.58);xLayer(part,c,P,0.36,30,240,1.78,'hull');xSeams(part,c,30,110,5,22);
-    xlPanels(part,c,30,110,5,16,6,1.8,'metal');xlPanels(part,c,190,240,3,18,5,1.8,'metal');xStern(part,eng,c,0,30,22,4);
-    xBridge(part,c,186,64,15,4);xBlist(part,c,246,0,6);xBlist(part,c,142,38,5.4);xBlist(part,c,58,19,4.4);
-    xFin(part,c,[[34,28],[22,38],[14,44]],5);
-    return{id:'x_selene',armorX:290,tscale:1.25,engPal:XAL_ENG,skin:'xal',edge:false,
-      decor:(a)=>{const v=spline([[14,c-24],[100,c-27],[200,c-24],[270,c-11]],10,false);a.band(v,1.2,{e:XAL_LIT});a.band(v.map(([x,y])=>[x,2*c-y]),1.2,{e:XAL_LIT});
-        for(const s of [-1,1]){a.lights(30,240,c+s*14,6,XAL_LIT,0.5);a.lights(110,180,c+s*40,6,XAL_LIT,0.6);a.disc(94,c+s*40,1.4,{e:XAL_HOT});}a.disc(110,c,4,{e:XAL_LIT});a.disc(110,c,2,{e:XAL_HOT});a.disc(186,c,2.4,{e:XAL_HOT});},
-      mods:[['R',110,c],['S',150,c],['S',220,c],['p',246,c],['p',142,c-38],['p',142,c+38],['p',58,c-19],['p',58,c+19],['B',200,c-12],['B',200,c+12],['F',80,c],['I',130,c-22],['I',130,c+22]],
-      info:{len:'300 m',m:300}};}),
-  // Umbra (cuirassé, 520 m) : coque à étrave en ogive, deux paires de sponsons lisses à tourelles lourdes, tour de
-  // commandement à quatre étages, deux nacelles moteurs sur pylônes, bloc de poupe, plaques et nervures violettes
-  shipDef(520,196,({c,part,eng,S,bx})=>{
-    const P=[[0,40],[30,60],[220,66],[360,60],[440,42],[496,20],[520,0]];
-    xPod(part,c,2,150,78,16,1.5,{eng,g:2});xPylon(part,c,124,56,74,9,20);
-    xlSpon(part,c,160,268,62,86);xlSpon(part,c,300,392,58,78);
-    xHull(part,c,P,1.36);xLayer(part,c,P,0.7,16,500,1.56);xLayer(part,c,P,0.42,60,440,1.74,'hull');xSeams(part,c,40,200,7,40);
-    xlPanels(part,c,40,160,6,30,10,1.86,'metal');xlPanels(part,c,380,460,4,24,8,1.86,'metal');xStern(part,eng,c,0,46,40,5);
-    xBridge(part,c,316,120,30,4);xBlist(part,c,470,0,9);xBlist(part,c,214,80,9);xBlist(part,c,346,72,8);xBlist(part,c,160,30,7);xBlist(part,c,420,32,7);
-    xFin(part,c,[[60,58],[40,74],[26,82]],8);
-    return{id:'x_umbra',engineCode:'e',armorX:500,panel:8,thr:24,rb:2,tscale:1.6,shadow:28,engPal:XAL_ENG,skin:'xal',edge:false,
-      decor:(a)=>{const v=spline([[20,c-52],[200,c-58],[360,c-52],[490,c-20]],12,false);a.band(v,1.6,{e:XAL_LIT});a.band(v.map(([x,y])=>[x,2*c-y]),1.6,{e:XAL_LIT});
-        for(const s of [-1,1]){a.lights(40,460,c+s*24,8,XAL_LIT,0.5);a.lights(170,260,c+s*82,8,XAL_LIT,0.6);a.disc(148,c+s*78,2.4,{e:XAL_HOT});}a.disc(250,c,7,{e:XAL_LIT});a.disc(250,c,3.4,{e:XAL_HOT});a.disc(316,c,4,{e:XAL_HOT});},
-      mods:[['r',250,c],['s',380,c],['p',470,c],['p',214,c-80],['p',214,c+80],['p',346,c-72],['p',346,c+72],['p',160,c-30],['p',160,c+30],['p',420,c-32],['p',420,c+32],
-        ['D',70,c],['B',280,c-30],['B',280,c+30],['O',190,c],['F',430,c],['I',240,c-50],['I',240,c+50]],
-      st:{spd:90,acc:36,turn:0.32},info:{len:'520 m',m:520}};}),
-  // Morrigane (cuirassé lourd, 780 m) : étrave fendue en deux éperons, trois paires de sponsons de batteries, haute
-  // superstructure arrière à quatre étages, quatre nacelles moteurs, échine de plaques
-  shipDef(780,290,({c,part,eng,S,bx})=>{
-    const P=[[0,58],[40,92],[340,100],[560,86],[640,46],[664,20]];
-    part('hull',1.4,[[620,c-14],[680,c-20],[760,c-40],[779.6,c-52],[750,c-64],[680,c-72],[620,c-72]],1);
-    part('plate',1.54,[[640,c-24],[700,c-30],[760,c-44],[740,c-56],[660,c-60]],1);
-    xPod(part,c,2,210,112,22,1.5,{eng,g:2});xPod(part,c,10,170,62,16,1.62,{eng,g:4});xPylon(part,c,180,90,108,12,26);
-    xlSpon(part,c,230,340,96,128);xlSpon(part,c,380,480,92,122);xlSpon(part,c,520,600,80,104);
-    xHull(part,c,P,1.36);xLayer(part,c,P,0.7,20,650,1.56);xLayer(part,c,P,0.42,80,600,1.74,'hull');xSeams(part,c,60,300,9,62);
-    xlPanels(part,c,240,600,9,40,12,1.86,'metal');xStern(part,eng,c,0,60,50,6);
-    xBridge(part,c,200,190,48,4);for(const [x,y,r] of [[284,118,12],[430,112,12],[560,98,11],[640,0,12],[330,44,10],[470,40,10],[120,46,9]])xBlist(part,c,x,y,r);
-    xFin(part,c,[[90,88],[60,110],[40,122]],12);
-    return{id:'x_morrigane',engineCode:'e',armorX:740,panel:8,thr:26,rb:2,tscale:1.7,shadow:30,engPal:XAL_ENG,skin:'xal',edge:false,
-      decor:(a)=>{const v=spline([[30,c-80],[340,c-88],[560,c-76],[650,c-36]],12,false);a.band(v,2,{e:XAL_LIT});a.band(v.map(([x,y])=>[x,2*c-y]),2,{e:XAL_LIT});
-        for(const s of [-1,1]){a.lights(60,620,c+s*30,10,XAL_LIT,0.5);a.lights(240,600,c+s*110,10,XAL_LIT,0.6);a.disc(206,c+s*112,3,{e:XAL_HOT});a.disc(776,c+s*52,2.4,{e:XAL_HOT});}
-        a.disc(400,c,10,{e:XAL_LIT});a.disc(400,c,5,{e:XAL_HOT});a.disc(200,c,6,{e:XAL_HOT});},
-      mods:[['r',400,c],['s',280,c],['s',520,c],['p',640,c],['p',284,c-118],['p',284,c+118],['p',430,c-112],['p',430,c+112],['p',560,c-98],['p',560,c+98],['p',330,c-44],['p',330,c+44],['p',470,c-40],['p',470,c+40],['p',120,c-46],['p',120,c+46],
-        ['D',100,c],['B',360,c-40],['B',360,c+40],['O',260,c],['F',600,c],['I',360,c-70],['I',360,c+70]],
-      st:{spd:80,acc:30,turn:0.26},info:{len:'780 m',m:780}};}),
+  // Strige (corvette, 110 m) : destroyer à étrave en ogive, flancs à plaques en gradins, nacelles moteurs angulaires sur
+  // entretoises, passerelle en goutte, affûts hexagonaux de lances légères, arête dorsale, ailerons
+  xWar(110,48,{id:'x_strige',P:[[0,8],[10,13],[40,14.5],[70,13],[92,8],[110,0]],
+    nacs:[[2,44,18,4.2,30,4,6]],layers:[[0.66,6,98,1.56]],det:{step:14,tw:1.2},bridge:[62,28,7,3],stern:[12,10,3],
+    mounts:[['C',84,0,3],['C',44,9,2.6]],fins:[[[[18,12],[11,17],[7,19]],2.4]],core:36,tscale:1.15,
+    y:[['R',36,0],['S',50,0],['D',20,0],['B',70,5],['F',90,0],['I',28,9]],extra:{info:{len:'110 m',m:110}}}),
+  // Sélène (frégate, 300 m) : étrave en ogive, flancs à plaques en gradins, sponsons angulaires de lances lourdes, nacelles
+  // moteurs angulaires sur entretoises, passerelle à étages, bloc moteur de poupe
+  xWar(300,100,{id:'x_selene',P:[[0,20],[16,30],[120,34],[200,31],[250,21],[284,10],[300,0]],
+    nacs:[[2,96,41,9,74,7,12]],spons:[[110,186,31,45]],layers:[[0.68,10,290,1.56],[0.36,30,240,1.76,'hull']],det:{step:20,tw:2},bridge:[192,64,15,4],stern:[30,22,4],
+    mounts:[['K',148,40,5.6],['C',250,0,4.6],['C',60,20,4],['C',216,22,4]],fins:[[[[34,28],[22,38],[14,44]],5]],core:110,
+    y:[['ρ',110,0],['S',160,0],['S',226,0],['B',204,12],['F',80,0],['I',130,22]],extra:{info:{len:'300 m',m:300}}}),
+  // Umbra (cuirassé, 520 m) : coque à flancs blindés en gradins, deux paires de sponsons angulaires de batteries
+  // capitales, tour de commandement à quatre étages, nacelles moteurs sur entretoises, bloc de poupe
+  xWar(520,200,{id:'x_umbra',P:[[0,40],[30,60],[220,66],[360,60],[440,42],[496,20],[520,0]],
+    nacs:[[2,150,80,16,124,9,20]],spons:[[160,268,62,90],[300,392,58,82]],layers:[[0.7,16,500,1.56],[0.42,60,440,1.74,'hull']],det:{step:26,tw:2.6},bridge:[318,120,30,4],stern:[46,40,5],
+    mounts:[['k',214,80,9],['k',346,74,8.6],['K',470,0,7],['C',160,32,5.4],['C',420,32,5.4]],fins:[[[[60,58],[40,74],[26,82]],8]],core:250,tscale:1.6,
+    y:[['r',250,0],['s',380,0],['D',70,0],['B',280,30],['O',190,0],['F',430,0],['I',240,50]],extra:{engineCode:'e',panel:8,thr:24,rb:2,shadow:28,st:{spd:90,acc:36,turn:0.32},info:{len:'520 m',m:520}}}),
+  // Morrigane (cuirassé lourd, 780 m) : étrave fendue en deux éperons angulaires, trois paires de sponsons de batteries,
+  // haute superstructure arrière, quatre nacelles moteurs, flancs blindés en gradins
+  xWar(780,296,{id:'x_morrigane',P:[[0,58],[40,92],[340,100],[560,86],[640,46],[664,20]],
+    prongs:[[620,779.6,14,72]],nacs:[[2,210,114,22,180,12,26],[10,170,62,16]],spons:[[230,340,96,132],[380,480,92,126],[520,600,80,108]],
+    layers:[[0.7,20,650,1.56],[0.42,80,600,1.74,'hull']],det:{step:30,tw:3},bridge:[200,190,48,4],stern:[60,50,6],
+    mounts:[['k',284,118,12],['k',430,114,12],['K',560,98,10],['k',640,0,11],['C',330,44,7],['C',470,40,7],['C',120,46,7]],fins:[[[[90,88],[60,110],[40,122]],12]],core:400,tscale:1.7,
+    y:[['r',400,0],['s',280,0],['s',520,0],['D',100,0],['B',360,40],['O',260,0],['F',600,0],['I',360,70]],extra:{engineCode:'e',panel:8,thr:26,rb:2,shadow:30,st:{spd:80,acc:30,turn:0.26},info:{len:'780 m',m:780}}}),
   // Ombrelle (bombardier, 150 m) : aile de chauve-souris en croissant recourbé vers l'avant, fuseau à quatre nacelles
   // de bombes guidées
   shipDef(150,140,({c,part,eng,S,bx})=>{
@@ -3485,45 +3525,22 @@ MODEL_SHIPS.push(
       mods:[['R',84,c],['b',62,c],['b',104,c],['b',30,c-14],['b',30,c+14],['i',44,c],['w',118,c-54,147.5,c-42.4],['w',118,c+54,147.5,c+42.4],['B',122,c-4],['F',122,c+4]],
       info:{len:'150 m',m:150,crew:4}};
   }),
-  // Sanctuaire (porte-flottes, 1 200 m) : fuseau central flanqué de deux longues galeries-hangars lisses, ponts d'envol
-  // lumineux, baies de lancement, îlots de commandement en goutte, quatre nacelles moteurs
-  shipDef(1200,430,({c,part,eng,S,bx})=>{
-    const P=[[0,70],[50,104],[700,110],[960,90],[1110,48],[1170,20],[1200,0]];
-    xlSpon(part,c,90,1010,100,196);
-    xPod(part,c,2,240,104,26,1.56,{eng,g:4});
-    xHull(part,c,P,1.36);xLayer(part,c,P,0.68,30,1160,1.56);xLayer(part,c,P,0.38,120,1080,1.74,'hull');xSeams(part,c,60,500,12,86);
-    xlPanels(part,c,120,960,14,56,14,1.84,'metal');xBays(part,c,120,920,10,160,9,1.72);xStern(part,eng,c,0,70,70,6);
-    part('dark',1.66,[[100,c-178],[960,c-178],[960,c-170],[100,c-170]],1);
-    for(const x of [380,760])xBlist(part,c,x,160,16);xBridge(part,c,840,220,56,4);
-    for(const [x,y,r] of [[1060,0,16],[1000,40,13],[200,180,12],[980,176,12],[500,0,14]])xBlist(part,c,x,y,r);
-    return{id:'x_sanctuaire',engineCode:'e',armorX:1170,panel:9,thr:30,rb:3,tscale:1.8,shadow:32,engPal:XAL_ENG,skin:'xal',edge:false,
-      decor:(a)=>{const v=spline([[40,c-90],[700,c-96],[960,c-78],[1150,c-22]],14,false);a.band(v,2.4,{e:XAL_LIT});a.band(v.map(([x,y])=>[x,2*c-y]),2.4,{e:XAL_LIT});
-        for(const s of [-1,1]){a.band([[100,c+s*174],[960,c+s*174]],1.4,{e:XAL_LIT});for(let x=120;x<950;x+=40)a.disc(x,c+s*174,1.6,{e:XAL_HOT});a.lights(80,1000,c+s*40,12,XAL_LIT,0.5);a.disc(976,c+s*160,4,{e:XAL_HOT});}
-        a.disc(600,c,12,{e:XAL_LIT});a.disc(600,c,6,{e:XAL_HOT});a.disc(840,c,7,{e:XAL_HOT});},
-      mods:[['r',600,c],['s',400,c],['s',800,c],['V',200,c-160],['V',200,c+160],['V',360,c-160],['V',360,c+160],['V',520,c-160],['V',520,c+160],['V',680,c-160],['V',680,c+160],['V',840,c-160],['V',840,c+160],
-        ['p',1060,c],['p',1000,c-40],['p',1000,c+40],['p',380,c-160],['p',380,c+160],['p',760,c-160],['p',760,c+160],['p',200,c-180],['p',200,c+180],['p',980,c-176],['p',980,c+176],['p',500,c],
-        ['D',100,c],['B',700,c-50],['B',700,c+50],['O',300,c],['F',950,c],['I',500,c-70],['I',500,c+70]],
-      st:{spd:50,acc:14,turn:0.14},info:{len:'1 200 m',m:1200}};}),
+  // Sanctuaire (porte-flottes, 1 200 m) : fuseau central flanqué de deux galeries-hangars angulaires en deux tronçons,
+  // baies de lancement, flancs blindés en gradins, passerelle à étages, batteries capitales sur affûts
+  xWar(1200,440,{id:'x_sanctuaire',P:[[0,70],[50,104],[700,110],[960,90],[1110,48],[1170,20],[1200,0]],
+    spons:[[90,560,100,200],[600,1010,100,184]],nacs:[[2,240,106,26,null]],bays:[[140,520,7,166,10],[650,980,6,156,10]],
+    layers:[[0.68,30,1160,1.56],[0.38,120,1080,1.74,'hull']],det:{step:40,tw:4},bridge:[840,220,56,4],stern:[70,70,6],
+    mounts:[['k',1060,0,16],['k',1000,44,13],['K',200,184,12],['K',980,168,12],['k',380,186,13],['k',760,172,13],['C',500,0,12],['C',300,40,10]],core:600,tscale:1.8,
+    y:[['Ρ',600,0],['s',400,0],['s',800,0],['V',200,150],['V',360,150],['V',520,150],['V',680,146],['V',840,146],['D',100,0],['B',700,50],['O',300,0],['F',950,0],['I',500,70]],
+    extra:{engineCode:'e',panel:9,thr:30,rb:3,shadow:32,st:{spd:50,acc:14,turn:0.14},info:{len:'1 200 m',m:1200}}}),
   // Hécate (porte-flottes lourd, 2 000 m) : super-porteur à canon spinal — longue gouttière de proue, deux grands ponts
-  // d'envol latéraux, superstructure à quatre étages, six nacelles moteurs, rangées de baies et de tourelles
-  shipDef(2000,640,({c,part,eng,S,bx})=>{
-    const P=[[0,110],[80,160],[1200,170],[1600,140],[1840,80],[1960,30],[2000,0]];
-    xlSpon(part,c,200,1500,160,250);
-    xPod(part,c,2,380,200,40,1.5,{eng,g:2});xPod(part,c,10,320,120,30,1.6,{eng,g:4});xPylon(part,c,340,160,196,24,40);
-    xHull(part,c,P,1.36);xLayer(part,c,P,0.7,40,1960,1.56);xLayer(part,c,P,0.4,200,1800,1.74,'hull');xSeams(part,c,80,800,16,130);
-    part('metal',1.86,ribbon([[1100,c],[1990,c]],t=>14-6*t));part('dark',1.92,ribbon([[1150,c],[1980,c]],t=>6-3*t));
-    xlPanels(part,c,240,1460,18,212,18,1.7,'metal');xBays(part,c,260,1440,14,232,12,1.74);xlPanels(part,c,200,1100,14,90,20,1.86,'metal');xStern(part,eng,c,0,110,110,8);
-    part('dark',1.66,[[230,c-244],[1460,c-244],[1460,c-236],[230,c-236]],1);
-    xBridge(part,c,820,360,90,4);for(const [x,y,r] of [[500,232,20],[900,236,20],[1300,232,20],[1700,90,18],[1500,120,18],[300,150,16],[1900,40,16]])xBlist(part,c,x,y,r);
-    xFin(part,c,[[160,152],[110,200],[80,220]],20);
-    return{id:'x_hecate',engineCode:'e',armorX:1960,panel:10,thr:36,rb:3,tscale:2,shadow:36,engPal:XAL_ENG,skin:'xal',edge:false,
-      decor:(a)=>{const v=spline([[60,c-140],[1200,c-150],[1600,c-124],[1960,c-26]],16,false);a.band(v,3,{e:XAL_LIT});a.band(v.map(([x,y])=>[x,2*c-y]),3,{e:XAL_LIT});
-        a.band([[1160,c],[1970,c]],2,{e:XAL_HOT});for(const s of [-1,1]){a.band([[230,c+s*240],[1460,c+s*240]],2,{e:XAL_LIT});for(let x=240;x<1450;x+=50)a.disc(x,c+s*240,2.2,{e:XAL_HOT});a.lights(100,1800,c+s*60,14,XAL_LIT,0.5);a.disc(376,c+s*200,5,{e:XAL_HOT});}
-        a.disc(1000,c,16,{e:XAL_LIT});a.disc(1000,c,8,{e:XAL_HOT});a.disc(820,c,9,{e:XAL_HOT});},
-      mods:[['r',1000,c],['s',600,c],['s',1300,c],['s',400,c],['s',1600,c],['q',1820,c],['V',360,c-212],['V',360,c+212],['V',560,c-212],['V',560,c+212],['V',760,c-212],['V',760,c+212],['V',960,c-212],['V',960,c+212],['V',1160,c-212],['V',1160,c+212],['V',1360,c-212],['V',1360,c+212],
-        ['p',500,c-232],['p',500,c+232],['p',900,c-236],['p',900,c+236],['p',1300,c-232],['p',1300,c+232],['p',1700,c-90],['p',1700,c+90],['p',1500,c-120],['p',1500,c+120],['p',300,c-150],['p',300,c+150],['p',1900,c-40],['p',1900,c+40],['p',1100,c],
-        ['D',150,c],['B',1200,c-80],['B',1200,c+80],['O',500,c],['F',1400,c],['I',700,c-110],['I',700,c+110]],
-      st:{spd:40,acc:10,turn:0.1},info:{len:'2 000 m',m:2000}};}),
+  // d'envol angulaires en deux tronçons, superstructure à quatre étages, six nacelles moteurs, batteries capitales
+  xWar(2000,660,{id:'x_hecate',P:[[0,110],[80,160],[1200,170],[1600,140],[1840,80],[1960,30],[2000,0]],
+    spons:[[200,820,160,262],[880,1520,160,250]],nacs:[[2,380,206,40,340,24,40],[10,320,120,30]],bays:[[240,780,9,236,12],[920,1480,9,228,12]],channel:[1100,1990,14],
+    layers:[[0.7,40,1960,1.56],[0.4,200,1800,1.74,'hull']],det:{step:60,tw:5,sx1:1080},bridge:[820,360,90,4],stern:[110,110,8],
+    mounts:[['k',500,240,20],['k',900,244,20],['k',1300,240,20],['K',1700,92,18],['K',1500,124,18],['k',300,150,16],['C',1900,40,16],['C',1100,90,14]],fins:[[[[160,152],[110,200],[80,220]],20]],core:1000,tscale:2,
+    y:[['Ρ',1000,0],['s',600,0],['s',1300,0],['s',400,0],['s',1600,0],['q',1820,0],['V',360,212],['V',560,212],['V',760,212],['V',960,212],['V',1160,212],['V',1360,212],['D',150,0],['B',1200,80],['O',500,0],['F',1400,0],['I',700,110]],
+    extra:{engineCode:'e',panel:10,thr:36,rb:3,shadow:36,st:{spd:40,acc:10,turn:0.1},info:{len:'2 000 m',m:2000}}}),
   /* ================= Machines : fer noirci et bronze, gothique industriel, flèches, anneaux, lumières orange ================= */
   // Sextant (chasseur, 34 m) : flèche de fer, deux dents avant, ailes crantées, pinacle dorsal
   shipDef(34,28,({c,part,eng,S,bx})=>{
@@ -3575,7 +3592,7 @@ MODEL_SHIPS.push(
     eng(c-6,5,3,0,1,1);eng(c-20,5,3,2,1,3,13);
     return{id:'a_vigile',armorX:132,tscale:1.25,engPal:ANC_ENG,
       decor:(a)=>{for(const s of [-1,1]){a.lights(14,96,c+s*13,3,MAC_LIT,0.65);a.lights(26,70,c+s*7.5,3,MAC_LIT,0.5);}a.rect(68,c-1,74,c+1,{e:MAC_HOT});a.emblem(100,c,1);},
-      mods:[['R',50,c],['S',86,c],['C',72,c-11],['C',72,c+11],['C',112,c],['K',58,c],['P',30,c-20],['P',30,c+20],['y',40,c-11],['y',40,c+11],
+      mods:[['ρ',50,c],['S',86,c],['C',72,c-11],['C',72,c+11],['C',112,c],['K',58,c],['P',30,c-20],['P',30,c+20],['y',40,c-11],['y',40,c+11],
         ['D',22,c],['B',100,c-6],['B',100,c+6],['J',60,c-10],['F',76,c],['I',56,c-14],['I',56,c+14]],
       st:{spd:200,acc:160,turn:1.2,shield:560},info:{len:'140 m',m:140}};
   }),
@@ -3636,7 +3653,7 @@ MODEL_SHIPS.push(
     return{id:'a_arche',engineCode:'e',armorX:1270,panel:9,thr:32,rb:3,tscale:1.85,shadow:34,engPal:ANC_ENG,
       decor:(a)=>{for(const s of [-1,1]){a.lights(160,1040,c+s*108,8,MAC_LIT,0.6);a.lights(200,1020,c+s*162,8,MAC_LIT,0.6);a.lights(60,1100,c+s*50,9,MAC_LIT,0.45);
         a.lights(220,960,c+s*134,14,0xffd890,0.5);}a.disc(600,c,9,{e:MAC_HOT});a.emblem(1120,c,4);},
-      mods:[['r',600,c],['s',400,c],['s',820,c],['V',300,c-136],['V',300,c+136],['V',440,c-136],['V',440,c+136],['V',580,c-136],['V',580,c+136],['V',720,c-136],['V',720,c+136],
+      mods:[['Ρ',600,c],['s',400,c],['s',820,c],['V',300,c-136],['V',300,c+136],['V',440,c-136],['V',440,c+136],['V',580,c-136],['V',580,c+136],['V',720,c-136],['V',720,c+136],
         ['k',1040,c-130],['k',1040,c+130],['k',180,c-140],['k',180,c+140],['K',1120,c-38],['K',1120,c+38],['C',1240,c-14],['C',1240,c+14],['C',1290,c],
         ['m',150,c],['o',900,c],['y',500,c-40],['y',500,c+40],['D',60,c],['B',700,c-40],['B',700,c+40],['O',300,c],['F',950,c],['I',520,c-50],['I',520,c+50]],
       st:{spd:42,acc:11,turn:0.11},info:{len:'1 300 m',m:1300}};}),
@@ -3656,7 +3673,7 @@ MODEL_SHIPS.push(
     return{id:'a_reliquaire',engineCode:'e',armorX:2060,panel:10,thr:36,rb:3,tscale:2,shadow:36,engPal:ANC_ENG,
       decor:(a)=>{for(const s of [-1,1]){a.lights(100,1800,c+s*110,10,MAC_LIT,0.55);for(const x of [220,480,740,1000,1260])a.lights(x+20,x+190,c+s*190,9,MAC_LIT,0.7);a.lights(220,1540,c+s*40,12,MAC_LIT,0.4);}
         a.disc(880,c,12,{e:MAC_HOT});a.emblem(1700,c,5);},
-      mods:[['r',880,c],['s',600,c],['s',1300,c],['V',325,c-160],['V',325,c+160],['V',585,c-160],['V',585,c+160],['V',845,c-160],['V',845,c+160],['V',1105,c-160],['V',1105,c+160],
+      mods:[['Ρ',880,c],['s',600,c],['s',1300,c],['V',325,c-160],['V',325,c+160],['V',585,c-160],['V',585,c+160],['V',845,c-160],['V',845,c+160],['V',1105,c-160],['V',1105,c+160],
         ['k',1600,c-100],['k',1600,c+100],['k',1365,c-170],['k',1365,c+170],['k',200,c-100],['k',200,c+100],['K',1800,c-60],['K',1800,c+60],['C',2000,c-20],['C',2000,c+20],['C',2090,c],
         ['m',140,c],['m',1700,c],['o',1200,c],['y',700,c-60],['y',700,c+60],['D',80,c],['B',1100,c-60],['B',1100,c+60],['O',400,c],['F',1500,c],['I',760,c-80],['I',760,c+80]],
       st:{spd:36,acc:9,turn:0.09},info:{len:'2 100 m',m:2100}};})
@@ -3970,147 +3987,61 @@ MODEL_SHIPS.push(
     return{id:'x_linceul',armorX:122,tscale:1.15,engPal:XAL_ENG,skin:'xal',edge:false,
       decor:(a)=>{for(const s of [-1,1]){a.band(spline([[22,c+s*36],[40,c+s*28],[80,c+s*14],[118,c+s*3]],8,false),0.6,{e:XAL_LIT});a.disc(24,c+s*37,0.8,{e:XAL_HOT});}a.disc(64,c,1.6,{e:XAL_LIT});a.band([[24,c],[110,c]],0.5,{e:XAL_LIT});},
       mods:[['R',64,c],['b',48,c-6],['b',48,c+6],['B',86,c],['B',30,c-12],['B',30,c+12]],info:{len:'130 m',m:130}};}),
-  // Luciole (corvette, 100 m) : canonnière trapue, lanterne de cristal incandescente à la poupe, sponsons de tourelles,
-  // ailes courtes balayées, étrave en ogive
-  shipDef(100,46,({c,part,eng,S,bx})=>{
-    const P=[[0,10],[10,14],[46,15],[72,10.4],[90,5],[100,0]];
-    blade(part,[[44,c-13],[34,c-18.6],[24,c-21.6]],4.4,1.4,1.42,'hull',1);
-    xHull(part,c,P,1.36);xLayer(part,c,P,0.64,8,94,1.6);
-    part('plate',1.5,ellPoly(56,c-14,6,4.4,20),1);xSeams(part,c,26,46,3,10);
-    part('metal',1.95,ellPoly(14,c,6.4,6,22));part('white',2.1,ellPoly(14,c,3.4,3.2,16));
-    xBridge(part,c,70,22,6,3);xBlist(part,c,86,0,2.6);
-    eng(c-9,3.4,2.6,0,1,1);
-    return{id:'x_luciole',armorX:94,tscale:1.15,engPal:XAL_ENG,skin:'xal',edge:false,
-      decor:(a)=>{const v=spline([[10,c-11],[40,c-12],[72,c-8],[92,c-3]],8,false);a.band(v,0.8,{e:XAL_LIT});a.band(v.map(([x,y])=>[x,2*c-y]),0.8,{e:XAL_LIT});
-        a.disc(14,c,4,{e:XAL_LIT});a.disc(14,c,2,{e:XAL_HOT});for(const s of [-1,1]){a.disc(24,c+s*21,0.8,{e:XAL_HOT});a.lights(30,64,c+s*7,4,XAL_LIT,0.5);}a.disc(70,c,1.1,{e:XAL_HOT});},
-      mods:[['R',30,c],['S',44,c],['S',60,c],['p',86,c],['p',56,c-14],['p',56,c+14],['D',24,c],['B',72,c-5],['B',72,c+5],['B',38,c],['F',80,c],['I',34,c-10],['I',34,c+10]],info:{len:'100 m',m:100}};}),
-  // Chimère (corvette, 116 m) : trois coques — un fuseau central et deux longues coques latérales armées, reliées par deux
-  // pylônes courbes ; passerelle en goutte, ailerons en croissant à la poupe
-  shipDef(116,54,({c,part,eng,S,bx})=>{
-    const P=[[0,8],[12,12],[70,12.4],[96,7],[116,0]];
-    xPod(part,c,4,88,18,6,1.48,{eng,g:2});
-    xPylon(part,c,36,10,15,3.6,6);xPylon(part,c,70,10,15,3.2,6);
-    xHull(part,c,P,1.36);xLayer(part,c,P,0.64,8,104,1.6);xSeams(part,c,16,64,4,9);
-    xBridge(part,c,52,30,7,3);xBlist(part,c,96,0,2.6);
-    xFin(part,c,[[14,10],[8,15],[4,17]],2.4);
-    eng(c,3.6,3,0);
-    return{id:'x_chimere',armorX:110,tscale:1.15,engPal:XAL_ENG,skin:'xal',edge:false,
-      decor:(a)=>{for(const s of [-1,1]){const v=spline([[10,c+s*18],[40,c+s*18.4],[76,c+s*18],[86,c+s*18]],6,false);a.band(v,0.7,{e:XAL_LIT});a.lights(20,80,c+s*6,4,XAL_LIT,0.5);a.disc(86,c+s*18,0.9,{e:XAL_HOT});}
-        a.disc(32,c,1.8,{e:XAL_LIT});a.disc(32,c,0.9,{e:XAL_HOT});a.disc(52,c,1.2,{e:XAL_HOT});},
-      mods:[['R',32,c],['S',62,c],['p',96,c],['p',66,c-18],['p',66,c+18],['D',20,c],['B',80,c-5],['B',80,c+5],['F',44,c],['I',24,c-8],['I',24,c+8]],info:{len:'116 m',m:116}};}),
-  // Anguille (corvette, 124 m) : vedette rapide très longue et basse, crête dorsale, trois cloques de tourelles le long
-  // de l'échine, courtes nacelles de poupe, ailerons en croissant
-  shipDef(124,40,({c,part,eng,S,bx})=>{
-    const P=[[0,6],[10,9.4],[60,10],[96,7],[112,3.4],[124,0]];
-    xPod(part,c,2,32,10.6,3.2,1.46,{eng,g:2});
-    xHull(part,c,P,1.36);xLayer(part,c,P,0.6,6,114,1.6);
-    part('metal',1.85,ribbon([[14,c],[100,c]],t=>1.4+0.6*Math.sin(t*PI)));
-    for(const x of [40,64,88])xBlist(part,c,x,0,2.4);xBridge(part,c,74,18,4.4,3);
-    xFin(part,c,[[18,8.6],[11,13],[7,15]],2.2);xFin(part,c,[[58,9],[52,12.4],[48,13.6]],1.6);
-    eng(c,2.8,2.6,0);
-    return{id:'x_anguille',armorX:118,tscale:1.12,engPal:XAL_ENG,skin:'xal',edge:false,
-      decor:(a)=>{const v=spline([[8,c-7],[50,c-8],[96,c-5.4],[118,c-1.4]],8,false);a.band(v,0.7,{e:XAL_LIT});a.band(v.map(([x,y])=>[x,2*c-y]),0.7,{e:XAL_LIT});
-        a.band([[16,c],[98,c]],0.6,{e:XAL_LIT});for(const x of [40,64,88])a.disc(x,c,0.8,{e:XAL_HOT});},
-      mods:[['R',28,c],['S',52,c],['p',88,c],['p',64,c],['p',40,c],['D',16,c],['B',76,c-5],['F',104,c],['I',22,c-6],['I',22,c+6]],info:{len:'124 m',m:124}};}),
-  // Néréide (frégate, 280 m) : coque à double étrave étagée, ailes courtes en faucille au milieu, îlot de passerelle à
-  // l'arrière, quatre tourelles, deux nacelles moteurs accolées
-  shipDef(280,104,({c,part,eng,S,bx})=>{
-    const P=[[0,22],[20,30],[110,32],[170,28],[214,18],[240,14],[262,7],[280,0]];
-    blade(part,[[150,c-26],[128,c-40],[104,c-48],[90,c-50]],10,2.6,1.44,'hull',1);blade(part,[[148,c-28],[128,c-38],[110,c-44]],4.4,1.4,1.56,'plate',1);
-    xPod(part,c,2,84,30,9,1.52,{eng,g:2});
-    xHull(part,c,P,1.36);xLayer(part,c,P,0.66,10,270,1.58);xSeams(part,c,26,100,4,22);
-    part('hull',1.62,ellPoly(232,c,22,11,24));
-    xlPanels(part,c,100,200,5,20,6,1.8,'metal');xStern(part,eng,c,0,32,24,4);
-    xBridge(part,c,70,60,15,4);xBlist(part,c,232,0,5.4);xBlist(part,c,180,20,4.6);xBlist(part,c,124,26,4.6);
-    return{id:'x_nereide',armorX:270,tscale:1.25,engPal:XAL_ENG,skin:'xal',edge:false,
-      decor:(a)=>{const v=spline([[12,c-26],[110,c-28],[200,c-20],[262,c-6]],10,false);a.band(v,1.2,{e:XAL_LIT});a.band(v.map(([x,y])=>[x,2*c-y]),1.2,{e:XAL_LIT});
-        for(const s of [-1,1]){a.lights(20,220,c+s*12,6,XAL_LIT,0.5);a.disc(92,c+s*49,1.6,{e:XAL_HOT});a.band(spline([[146,c+s*28],[126,c+s*39],[104,c+s*46]],6,false),1,{e:XAL_LIT});}
-        a.disc(150,c,4,{e:XAL_LIT});a.disc(150,c,2,{e:XAL_HOT});a.disc(70,c,2.4,{e:XAL_HOT});},
-      mods:[['R',150,c],['S',100,c],['S',200,c],['p',232,c],['p',180,c-20],['p',180,c+20],['p',124,c-26],['p',124,c+26],['B',40,c-12],['B',40,c+12],['B',210,c-10],['B',210,c+10],['F',120,c],['I',160,c-18],['I',160,c+18]],
-      info:{len:'280 m',m:280}};}),
-  // Orchidée (frégate, 290 m) : pont de batterie avant élargi en deux sponsons lisses, superstructure à trois étages au
-  // milieu, coque arrière fine entre deux nacelles, étrave courte
-  shipDef(290,112,({c,part,eng,S,bx})=>{
-    const P=[[0,16],[20,26],[100,28],[150,30],[200,36],[250,28],[276,12],[290,0]];
-    xlSpon(part,c,170,262,30,52);
-    xPod(part,c,2,110,34,10,1.5,{eng,g:2});xPylon(part,c,90,24,32,6,10);
-    xHull(part,c,P,1.36);xLayer(part,c,P,0.68,10,280,1.58);xLayer(part,c,P,0.4,60,250,1.8,'hull');xSeams(part,c,24,90,4,20);
-    xlPanels(part,c,24,100,4,16,6,1.8,'metal');xlPanels(part,c,160,240,4,22,6,1.8,'metal');xStern(part,eng,c,0,28,20,4);
-    xBridge(part,c,130,70,18,4);xBlist(part,c,214,48,6);xBlist(part,c,262,0,5.4);xBlist(part,c,190,24,4.6);
-    xFin(part,c,[[40,25],[28,34],[20,38]],4.4);
-    return{id:'x_orchidee',armorX:280,tscale:1.25,engPal:XAL_ENG,skin:'xal',edge:false,
-      decor:(a)=>{const v=spline([[12,c-21],[100,c-23],[200,c-28],[270,c-9]],10,false);a.band(v,1.2,{e:XAL_LIT});a.band(v.map(([x,y])=>[x,2*c-y]),1.2,{e:XAL_LIT});
-        for(const s of [-1,1]){a.lights(30,250,c+s*12,6,XAL_LIT,0.5);a.lights(180,250,c+s*46,6,XAL_LIT,0.6);a.disc(108,c+s*34,1.6,{e:XAL_HOT});}a.disc(170,c,4,{e:XAL_LIT});a.disc(170,c,2,{e:XAL_HOT});a.disc(130,c,2.6,{e:XAL_HOT});},
-      mods:[['R',170,c],['S',100,c],['S',150,c],['S',230,c],['p',262,c],['p',214,c-48],['p',214,c+48],['p',190,c-24],['p',190,c+24],['B',60,c-12],['B',60,c+12],['F',80,c],['I',150,c-20],['I',150,c+20]],
-      info:{len:'290 m',m:290}};}),
-  // Ondine (frégate, 300 m) : croiseur long et étroit, crête dorsale, deux paires de nacelles (moteurs à l'arrière,
-  // capteurs à l'avant), tourelles alignées sur l'échine
-  shipDef(300,92,({c,part,eng,S,bx})=>{
-    const P=[[0,16],[20,24],[140,26],[220,22],[266,13],[300,0]];
-    xPod(part,c,2,90,30,8.6,1.5,{eng,g:2});xPylon(part,c,72,22,28,5,10);
-    xPod(part,c,170,244,30,6,1.5);xPylon(part,c,226,18,28,4,10);
-    xHull(part,c,P,1.36);xLayer(part,c,P,0.62,10,290,1.58);
-    part('metal',1.82,ribbon([[24,c],[262,c]],t=>3+2*Math.sin(t*PI)));xSeams(part,c,24,140,6,18);
-    xlPanels(part,c,130,250,6,14,5,1.8,'metal');xStern(part,eng,c,0,30,18,4);
-    for(const x of [120,170,226])xBlist(part,c,x,0,5);xBridge(part,c,88,48,12,4);
-    xFin(part,c,[[30,22],[20,30],[14,34]],4);
-    return{id:'x_ondine',armorX:290,tscale:1.25,engPal:XAL_ENG,skin:'xal',edge:false,
-      decor:(a)=>{const v=spline([[12,c-19],[140,c-21],[230,c-17],[286,c-5]],10,false);a.band(v,1.1,{e:XAL_LIT});a.band(v.map(([x,y])=>[x,2*c-y]),1.1,{e:XAL_LIT});
-        a.band([[30,c],[250,c]],1,{e:XAL_LIT});for(const s of [-1,1]){a.disc(242,c+s*30,1.4,{e:XAL_HOT});a.lights(30,250,c+s*12,6,XAL_LIT,0.45);}for(const x of [120,170,226])a.disc(x,c,1.4,{e:XAL_HOT});a.disc(88,c,2.4,{e:XAL_HOT});},
-      mods:[['R',150,c],['S',60,c],['p',226,c],['p',170,c],['p',120,c],['p',206,c-30],['p',206,c+30],['B',40,c-10],['B',40,c+10],['F',100,c],['I',140,c-16],['I',140,c+16]],
-      info:{len:'300 m',m:300}};}),
-  // Léviathe (cuirassé, 640 m) : longue coque à quille dorsale, galeries latérales lisses sur presque toute la longueur,
-  // passerelle avancée à étages, deux nacelles moteurs, rangées de tourelles
-  shipDef(640,236,({c,part,eng,S,bx})=>{
-    const P=[[0,48],[30,74],[300,80],[480,70],[580,40],[624,16],[640,0]];
-    xlSpon(part,c,120,520,74,100);
-    xPod(part,c,2,180,86,18,1.5,{eng,g:2});xPylon(part,c,150,66,82,10,20);
-    xHull(part,c,P,1.36);xLayer(part,c,P,0.68,20,620,1.56);
-    part('metal',1.84,ribbon([[40,c],[600,c]],t=>8+5*Math.sin(t*PI)));xSeams(part,c,40,300,9,56);
-    xlPanels(part,c,140,500,8,88,9,1.84,'metal');xlPanels(part,c,60,280,6,34,10,1.86,'metal');xStern(part,eng,c,0,50,44,5);
-    xBridge(part,c,460,120,32,4);for(const [x,y,r] of [[200,90,10],[300,92,10],[400,90,10],[560,30,9],[600,0,9],[340,0,10],[240,0,9]])xBlist(part,c,x,y,r);
-    xFin(part,c,[[70,72],[50,88],[34,96]],9);
-    return{id:'x_leviathe',engineCode:'e',armorX:620,panel:8,thr:24,rb:2,tscale:1.6,shadow:28,engPal:XAL_ENG,skin:'xal',edge:false,
-      decor:(a)=>{const v=spline([[24,c-62],[300,c-70],[480,c-60],[610,c-14]],12,false);a.band(v,1.8,{e:XAL_LIT});a.band(v.map(([x,y])=>[x,2*c-y]),1.8,{e:XAL_LIT});
-        a.band([[50,c],[590,c]],1.4,{e:XAL_LIT});for(const s of [-1,1]){a.lights(130,510,c+s*96,10,XAL_LIT,0.6);a.lights(40,560,c+s*20,10,XAL_LIT,0.45);a.disc(176,c+s*86,2.6,{e:XAL_HOT});}
-        a.disc(300,c,8,{e:XAL_LIT});a.disc(300,c,4,{e:XAL_HOT});a.disc(460,c,5,{e:XAL_HOT});},
-      mods:[['S',150,c],['r',300,c],['s',420,c],['p',600,c],['p',200,c-90],['p',200,c+90],['p',300,c-92],['p',300,c+92],['p',400,c-90],['p',400,c+90],['p',560,c-30],['p',560,c+30],
-        ['D',80,c],['B',360,c-40],['B',360,c+40],['O',200,c],['F',520,c],['I',260,c-60],['I',260,c+60]],
-      st:{spd:86,acc:34,turn:0.3},info:{len:'640 m',m:640}};}),
-  // Kraken (croiseur de bataille, 700 m) : coque centrale étroite et quatre longues nacelles sur pylônes courbes, deux
-  // de chaque bord ; batteries sur les nacelles, passerelle en goutte, étrave en ogive
-  shipDef(700,268,({c,part,eng,S,bx})=>{
-    const P=[[0,40],[30,58],[300,62],[500,52],[620,30],[680,12],[700,0]];
-    xPod(part,c,2,330,104,18,1.5,{eng,g:2});xPod(part,c,240,520,108,15,1.52,{eng:null});
-    xPylon(part,c,200,56,98,12,30);xPylon(part,c,440,48,100,11,26);
-    xHull(part,c,P,1.36);xLayer(part,c,P,0.68,20,680,1.56);xLayer(part,c,P,0.4,80,620,1.74,'hull');xSeams(part,c,40,280,8,46);
-    xlPanels(part,c,60,300,8,30,10,1.86,'metal');xlPanels(part,c,40,300,8,104,8,1.66,'metal');xlPanels(part,c,260,500,7,108,7,1.68,'metal');xStern(part,eng,c,0,46,38,5);
-    xBridge(part,c,420,140,34,4);for(const [x,y,r] of [[150,104,10],[300,104,9],[400,108,9],[500,108,8],[620,0,9],[560,26,8],[220,30,8]])xBlist(part,c,x,y,r);
-    return{id:'x_kraken',engineCode:'e',armorX:680,panel:8,thr:24,rb:2,tscale:1.6,shadow:28,engPal:XAL_ENG,skin:'xal',edge:false,
-      decor:(a)=>{const v=spline([[24,c-48],[300,c-54],[500,c-44],[660,c-12]],12,false);a.band(v,1.6,{e:XAL_LIT});a.band(v.map(([x,y])=>[x,2*c-y]),1.6,{e:XAL_LIT});
-        for(const s of [-1,1]){for(const [x0,x1,y] of [[20,320,104],[250,510,108]])a.band([[x0,c+s*y],[x1,c+s*y]],1.2,{e:XAL_LIT});a.disc(516,c+s*108,2.4,{e:XAL_HOT});a.lights(40,600,c+s*22,10,XAL_LIT,0.45);}
-        a.disc(300,c,8,{e:XAL_LIT});a.disc(300,c,4,{e:XAL_HOT});a.disc(420,c,5,{e:XAL_HOT});},
-      mods:[['r',300,c],['s',460,c],['p',620,c],['p',150,c-104],['p',150,c+104],['p',300,c-104],['p',300,c+104],['p',400,c-108],['p',400,c+108],['p',560,c-26],['p',560,c+26],
-        ['D',80,c],['B',360,c-30],['B',360,c+30],['O',200,c],['F',540,c],['I',260,c-40],['I',260,c+40]],
-      st:{spd:96,acc:38,turn:0.34},info:{len:'700 m',m:700}};}),
-  // Matrice (porte-flottes, 1 500 m) : trois coques — un fuseau de commandement et deux grandes coques-hangars reliées par
-  // quatre pylônes ; baies de lancement en rang sur les coques latérales, ponts d'envol, passerelle à étages
-  shipDef(1500,540,({c,part,eng,S,bx})=>{
-    const P=[[0,70],[50,100],[900,104],[1200,80],[1400,38],[1500,0]];
-    xPod(part,c,10,1240,196,54,1.48,{eng,g:2});
-    for(const x of [320,620,920,1160])xPylon(part,c,x,96,160,24,34);
-    xHull(part,c,P,1.36);xLayer(part,c,P,0.66,30,1460,1.56);xLayer(part,c,P,0.36,140,1300,1.74,'hull');xSeams(part,c,60,700,14,84);
-    xlPanels(part,c,120,1200,16,196,26,1.62,'metal');xBays(part,c,140,1180,12,222,10,1.72);xBays(part,c,140,1180,12,170,10,1.72);
-    xlPanels(part,c,140,900,12,54,14,1.84,'metal');xStern(part,eng,c,0,70,70,6);
-    xBridge(part,c,1000,260,64,4);for(const [x,y,r] of [[1300,0,16],[1250,50,14],[260,196,15],[700,196,15],[1100,196,15],[500,0,14]])xBlist(part,c,x,y,r);
-    return{id:'x_matrice',engineCode:'e',armorX:1460,panel:9,thr:32,rb:3,tscale:1.85,shadow:34,engPal:XAL_ENG,skin:'xal',edge:false,
-      decor:(a)=>{const v=spline([[40,c-86],[900,c-92],[1200,c-70],[1460,c-20]],14,false);a.band(v,2.4,{e:XAL_LIT});a.band(v.map(([x,y])=>[x,2*c-y]),2.4,{e:XAL_LIT});
-        for(const s of [-1,1]){a.band([[40,c+s*196],[1230,c+s*196]],1.6,{e:XAL_LIT});for(let x=150;x<1180;x+=44)a.disc(x,c+s*246,1.8,{e:XAL_HOT});a.lights(60,1300,c+s*40,12,XAL_LIT,0.5);a.disc(1236,c+s*196,5,{e:XAL_HOT});}
-        a.disc(700,c,12,{e:XAL_LIT});a.disc(700,c,6,{e:XAL_HOT});a.disc(1000,c,8,{e:XAL_HOT});},
-      mods:[['r',700,c],['s',400,c],['s',900,c],['s',1150,c],['V',240,c-200],['V',240,c+200],['V',420,c-200],['V',420,c+200],['V',600,c-200],['V',600,c+200],['V',780,c-200],['V',780,c+200],['V',960,c-200],['V',960,c+200],
-        ['p',1300,c],['p',1250,c-50],['p',1250,c+50],['p',260,c-196],['p',260,c+196],['p',700,c-196],['p',700,c+196],['p',1100,c-196],['p',1100,c+196],['p',500,c],
-        ['D',100,c],['B',800,c-50],['B',800,c+50],['O',300,c],['O',500,c-50],['O',500,c+50],['F',1100,c],['I',600,c-70],['I',600,c+70]],
-      st:{spd:46,acc:12,turn:0.12},info:{len:'1 500 m',m:1500}};}),
+  // Luciole (corvette, 100 m) : canonnière trapue, lanterne de cristal à la poupe, sponsons angulaires armés, ailerons
+  xWar(100,48,{id:'x_luciole',P:[[0,11],[10,15],[46,16],[70,11],[88,5],[100,0]],
+    spons:[[42,70,14,22]],layers:[[0.64,8,94,1.56]],det:{step:13,tw:1.2,x0:24},bridge:[72,22,6,3],stern:[10,13,3],
+    mounts:[['C',86,0,2.6],['C',56,18,2.8]],fins:[[[[40,14],[32,19],[26,21]],2.6]],core:15,tscale:1.15,
+    y:[['R',30,0],['S',44,0],['D',24,0],['B',74,5],['F',80,0],['I',34,10]],extra:{info:{len:'100 m',m:100}}}),
+  // Chimère (corvette lourde, 116 m) : fuseau central et deux coques latérales angulaires reliées par des entretoises
+  // droites, tourelles légères sur les coques latérales, passerelle en goutte, réacteur moyen
+  xWar(116,56,{id:'x_chimere',P:[[0,9],[12,13],[72,13.4],[98,7],[116,0]],
+    nacs:[[4,92,20,6.4,36,5,5]],struts:[[70,10,15,5,5]],layers:[[0.62,8,106,1.56]],det:{step:14,tw:1.2},bridge:[54,30,7,3],stern:[12,11,3],
+    mounts:[['C',100,0,2.6],['C',64,20,3]],fins:[[[[16,12],[10,16],[6,18]],2.2]],core:32,tscale:1.15,
+    y:[['ρ',32,0],['S',60,0],['D',20,0],['B',82,5],['F',44,0],['I',24,8]],extra:{info:{len:'116 m',m:116}}}),
+  // Anguille (vedette rapide, 124 m) : coque très longue et basse, arête dorsale, trois affûts sur l'échine, nacelles de
+  // poupe, ailerons courts
+  xWar(124,40,{id:'x_anguille',P:[[0,7],[10,10],[60,10.5],[96,7.4],[112,3.6],[124,0]],
+    nacs:[[2,32,11.4,3.4]],layers:[[0.6,6,114,1.56]],det:{step:15,tw:1,sw:1.6},bridge:[76,18,4.4,3],stern:[10,8,3],
+    mounts:[['C',40,0,2.4],['C',64,0,2.4],['C',90,0,2.4]],fins:[[[[18,9],[12,13],[8,15]],2],[[[58,9.6],[53,12.6],[50,13.6]],1.5]],core:26,tscale:1.12,
+    y:[['R',26,0],['S',52,0],['D',16,0],['B',78,5],['F',104,0],['I',22,6]],extra:{info:{len:'124 m',m:124}}}),
+  // Néréide (frégate, 280 m) : coque à étrave étagée, ailes de batterie angulaires au milieu, îlot de passerelle à l'arrière,
+  // nacelles moteurs accolées
+  xWar(280,108,{id:'x_nereide',P:[[0,22],[20,30],[110,32],[170,28],[214,18],[240,14],[262,7],[280,0]],
+    nacs:[[2,84,30,9]],spons:[[96,160,29,50]],layers:[[0.66,10,270,1.56],[0.34,90,250,1.76,'hull']],det:{step:20,tw:2},bridge:[70,60,15,4],stern:[30,24,4],
+    mounts:[['K',130,42,5.6],['C',234,0,4.4],['C',184,20,4]],fins:[[[[30,28],[20,36],[14,40]],4.4]],core:150,
+    y:[['ρ',150,0],['S',100,0],['S',200,0],['B',40,12],['B',210,10],['F',120,0],['I',160,18]],extra:{info:{len:'280 m',m:280}}}),
+  // Orchidée (frégate, 290 m) : pont de batterie avant élargi en sponsons angulaires, superstructure à étages, poupe fine
+  // entre deux nacelles sur entretoises
+  xWar(290,116,{id:'x_orchidee',P:[[0,16],[20,26],[100,28],[150,30],[200,36],[250,28],[276,12],[290,0]],
+    nacs:[[2,110,35,10,90,7,10]],spons:[[166,262,32,56]],layers:[[0.68,10,280,1.56],[0.4,60,250,1.78,'hull']],det:{step:20,tw:2},bridge:[130,70,18,4],stern:[28,20,4],
+    mounts:[['K',216,46,5.8],['C',264,0,4.6],['C',192,24,4]],fins:[[[[40,25],[28,34],[20,38]],4.4]],core:170,
+    y:[['ρ',170,0],['S',100,0],['S',150,0],['S',230,0],['B',60,12],['F',80,0],['I',150,20]],extra:{info:{len:'290 m',m:290}}}),
+  // Ondine (frégate, 300 m) : croiseur long et étroit, arête dorsale, deux paires de nacelles angulaires (moteurs à
+  // l'arrière, capteurs à l'avant), affûts alignés sur l'échine
+  xWar(300,94,{id:'x_ondine',P:[[0,16],[20,24],[140,26],[220,22],[266,13],[300,0]],
+    nacs:[[2,90,30,8.6,72,6,10],[170,244,30,6,226,5,10]],layers:[[0.62,10,290,1.56]],det:{step:20,tw:1.8,sw:3},bridge:[88,48,12,4],stern:[30,18,4],
+    mounts:[['C',120,0,4.4],['K',172,0,5],['C',228,0,4.4]],fins:[[[[30,22],[20,30],[14,34]],4]],core:150,
+    y:[['ρ',150,0],['S',60,0],['B',40,10],['F',100,0],['I',140,16]],extra:{info:{len:'300 m',m:300}}}),
+  // Léviathe (cuirassé, 640 m) : longue coque à quille dorsale, deux galeries latérales angulaires de batteries,
+  // passerelle avancée à étages, nacelles moteurs, rangée d'affûts sur l'échine
+  xWar(640,240,{id:'x_leviathe',P:[[0,48],[30,74],[300,80],[480,70],[580,40],[624,16],[640,0]],
+    nacs:[[2,180,88,18,150,10,20]],spons:[[120,300,74,100],[330,520,72,98]],layers:[[0.68,20,620,1.56],[0.4,60,560,1.74,'hull']],det:{step:28,tw:2.8,sw:9},bridge:[460,120,32,4],stern:[50,44,5],
+    mounts:[['k',204,90,10],['k',420,88,10],['K',300,90,9],['K',560,30,8],['C',600,0,8],['C',340,0,8],['C',240,0,7]],fins:[[[[70,72],[50,88],[34,96]],9]],core:300,tscale:1.6,
+    y:[['r',300,0],['S',150,0],['s',420,0],['D',80,0],['B',360,40],['O',200,0],['F',520,0],['I',260,60]],extra:{engineCode:'e',panel:8,thr:24,rb:2,shadow:28,st:{spd:86,acc:34,turn:0.3},info:{len:'640 m',m:640}}}),
+  // Kraken (croiseur de bataille, 700 m) : coque centrale étroite et quatre longues nacelles angulaires sur entretoises
+  // droites ; batteries sur affûts, passerelle à étages, étrave en ogive
+  xWar(700,272,{id:'x_kraken',P:[[0,40],[30,58],[300,62],[500,52],[620,30],[680,12],[700,0]],
+    nacs:[[2,330,106,18,200,12,30],[240,520,110,15,440,11,26]],layers:[[0.68,20,680,1.56],[0.4,80,620,1.74,'hull']],det:{step:28,tw:2.6},bridge:[420,140,34,4],stern:[46,38,5],
+    mounts:[['k',150,106,10],['k',300,106,9],['K',400,110,9],['K',500,110,8],['C',620,0,9],['C',560,26,8],['C',220,30,8]],core:300,tscale:1.6,
+    y:[['r',300,0],['s',460,0],['D',80,0],['B',360,30],['O',200,0],['F',540,0],['I',260,40]],extra:{engineCode:'e',panel:8,thr:24,rb:2,shadow:28,st:{spd:96,acc:38,turn:0.34},info:{len:'700 m',m:700}}}),
+  // Matrice (porte-flottes, 1 500 m) : trois coques — un fuseau de commandement et deux grandes coques-hangars angulaires
+  // reliées par quatre entretoises droites ; baies en rang, flancs blindés, passerelle à étages
+  xWar(1500,560,{id:'x_matrice',P:[[0,70],[50,100],[900,104],[1200,80],[1400,38],[1500,0]],
+    nacs:[[10,1240,200,56,320,24,34]],struts:[[620,96,160,24,34],[920,96,160,24,34],[1160,90,160,22,30]],bays:[[140,1180,12,226,10],[140,1180,12,174,10]],
+    layers:[[0.66,30,1460,1.56],[0.36,140,1300,1.74,'hull']],det:{step:40,tw:4},bridge:[1000,260,64,4],stern:[70,70,6],
+    mounts:[['k',1300,0,16],['k',1250,50,14],['k',260,200,15],['K',700,200,15],['k',1100,200,15],['C',500,0,14]],core:700,tscale:1.85,
+    y:[['Ρ',700,0],['s',400,0],['s',900,0],['s',1150,0],['V',240,200],['V',420,200],['V',600,200],['V',780,200],['V',960,200],['D',100,0],['B',800,50],['O',300,0],['O',500,50],['F',1100,0],['I',600,70]],
+    extra:{engineCode:'e',panel:9,thr:32,rb:3,shadow:34,st:{spd:46,acc:12,turn:0.12},info:{len:'1 500 m',m:1500}}}),
   // Compas (intercepteur, 38 m) : aiguille de fer, charnière de bronze et deux branches de compas ouvertes vers l'avant
   shipDef(38,26,({c,part,eng,S,bx})=>{
     part('plate',1.2,[[4,c-2],[11,c-2],[7.6,c-9.2],[3.6,c-9.6]],1);
@@ -4283,7 +4214,7 @@ MODEL_SHIPS.push(
     eng(c-7,4.6,3,4,1,5);
     return{id:'a_horloge',armorX:162,tscale:1.25,engPal:ANC_ENG,
       decor:(a)=>{for(const s of [-1,1]){a.lights(14,98,c+s*16,3,MAC_LIT,0.6);a.lights(26,58,c+s*26,4,MAC_LIT,0.6);a.lights(108,132,c+s*24,4,MAC_LIT,0.6);}a.disc(72,c,1.6,{e:MAC_HOT});a.emblem(140,c,1);},
-      mods:[['R',58,c],['S',90,c],['K',150,c],['C',120,c-21],['C',120,c+21],['C',40,c-23],['C',40,c+23],['P',28,c-15],['P',28,c+15],['y',100,c-14],['y',100,c+14],
+      mods:[['ρ',58,c],['S',90,c],['K',150,c],['C',120,c-21],['C',120,c+21],['C',40,c-23],['C',40,c+23],['P',28,c-15],['P',28,c+15],['y',100,c-14],['y',100,c+14],
         ['D',14,c],['B',86,c-8],['B',86,c+8],['F',110,c],['I',50,c-14],['I',50,c+14]],
       st:{spd:190,acc:150,turn:1.1},info:{len:'170 m',m:170}};}),
   // Ostensoir (frégate, 164 m) : coque en losange allongé, citadelle carrée au plus large, rayons de bronze en soleil,
@@ -4301,7 +4232,7 @@ MODEL_SHIPS.push(
     eng(c-6,4.6,3,4,1,5);
     return{id:'a_ostensoir',armorX:156,tscale:1.25,engPal:ANC_ENG,
       decor:(a)=>{for(const s of [-1,1]){a.lights(16,112,c+s*15,3,MAC_LIT,0.6);a.lights(56,78,c+s*25,4,MAC_LIT,0.6);}a.disc(86,c,2,{e:MAC_HOT});a.emblem(130,c,1);},
-      mods:[['R',100,c],['S',60,c],['C',148,c],['C',112,c-15],['C',112,c+15],['K',66,c-23],['K',66,c+23],['P',36,c-14],['P',36,c+14],
+      mods:[['ρ',100,c],['S',60,c],['C',148,c],['C',112,c-15],['C',112,c+15],['K',66,c-23],['K',66,c+23],['P',36,c-14],['P',36,c+14],
         ['D',14,c],['B',122,c-6],['B',122,c+6],['F',46,c],['I',74,c-12],['I',74,c+12]],
       st:{spd:190,acc:150,turn:1.1},info:{len:'164 m',m:164}};}),
   // Cathédrale (cuirassé, 620 m) : nef surélevée hérissée de flèches, galeries latérales de batteries reliées par des
@@ -4365,7 +4296,7 @@ MODEL_SHIPS.push(
     return{id:'a_fonderie',engineCode:'e',armorX:1270,panel:9,thr:32,rb:3,tscale:1.85,shadow:34,engPal:ANC_ENG,
       decor:(a)=>{for(const s of [-1,1]){a.lights(60,1100,c+s*80,9,MAC_LIT,0.55);for(const [x0,x1] of [[230,490],[650,910]]){for(let x=x0;x<x1;x+=x1>x0?26:1)a.rect(x+4,c+s*108-3,x+14,c+s*108+3,{e:MAC_HOT});a.lights(x0,x1,c+s*146,8,MAC_LIT,0.7);}}
         a.disc(570,c,8,{e:MAC_HOT});a.emblem(1060,c,4);},
-      mods:[['r',650,c],['s',440,c],['s',860,c],['V',300,c-116],['V',300,c+116],['V',440,c-116],['V',440,c+116],['V',720,c-114],['V',720,c+114],['V',860,c-114],['V',860,c+114],
+      mods:[['Ρ',650,c],['s',440,c],['s',860,c],['V',300,c-116],['V',300,c+116],['V',440,c-116],['V',440,c+116],['V',720,c-114],['V',720,c+114],['V',860,c-114],['V',860,c+114],
         ['k',1040,c-66],['k',1040,c+66],['k',160,c-70],['k',160,c+70],['K',1120,c-40],['K',1120,c+40],['C',1260,c-50],['C',1260,c+50],
         ['m',100,c],['o',780,c],['y',400,c-40],['y',400,c+40],['D',60,c],['B',730,c-40],['B',730,c+40],['O',300,c],['F',950,c],['I',520,c-56],['I',520,c+56]],
       st:{spd:42,acc:11,turn:0.11},info:{len:'1 300 m',m:1300}};}),
@@ -4387,7 +4318,7 @@ MODEL_SHIPS.push(
     return{id:'a_carillon',engineCode:'e',armorX:1470,panel:9,thr:32,rb:3,tscale:1.85,shadow:34,engPal:ANC_ENG,
       decor:(a)=>{for(const s of [-1,1]){a.lights(160,1100,c+s*146,9,MAC_LIT,0.65);a.lights(60,1300,c+s*90,9,MAC_LIT,0.5);a.lights(200,1050,c+s*124,14,0xffd890,0.5);a.disc(1494,c+s*64,3,{e:MAC_LIT});}
         for(const x of [420,680,940])a.disc(x,c,8,{e:MAC_HOT});a.emblem(1250,c,4);},
-      mods:[['r',680,c],['s',540,c],['s',1050,c],['V',300,c-122],['V',300,c+122],['V',500,c-122],['V',500,c+122],['V',800,c-114],['V',800,c+114],
+      mods:[['Ρ',680,c],['s',540,c],['s',1050,c],['V',300,c-122],['V',300,c+122],['V',500,c-122],['V',500,c+122],['V',800,c-114],['V',800,c+114],
         ['k',1200,c-70],['k',1200,c+70],['k',240,c-80],['k',240,c+80],['K',1320,c-50],['K',1320,c+50],['C',1460,c],
         ['m',120,c],['o',900,c],['y',600,c-50],['y',600,c+50],['D',60,c],['B',860,c-50],['B',860,c+50],['O',300,c],['F',1120,c],['I',580,c-60],['I',580,c+60]],
       st:{spd:40,acc:10,turn:0.1},info:{len:'1 500 m',m:1500}};}),
@@ -4850,6 +4781,10 @@ const XWEAP={},AWEAP={};{
   XWEAP.w=Object.assign({},WEAP.w,{pc:'#c890ff',plasma:true,fx:'xalw',fc:'#c890ff',dmg:WEAP.w.dmg*0.9,sdmg:WEAP.w.sdmg*1.8,fire:0.08});
   XWEAP.q=Object.assign({},WEAP.q,{fx:'xal',fc:'#c890ff'});
   XWEAP.P=Object.assign({},WEAP.P,{pc:'#c890ff'});
+  // trois calibres de lances à plasma, comme les canons, obusiers et batteries capitales des humains et des Machines
+  XWEAP.C=Object.assign({},WEAP.C,{pc:'#c890ff',fx:'xal',fc:'#c890ff',plasma:true,sdmg:WEAP.C.sdmg*1.3});
+  XWEAP.K=Object.assign({},WEAP.K,{pc:'#b070ff',fx:'xal',fc:'#e0b0ff',plasma:true,sdmg:WEAP.K.sdmg*1.25,rad:WEAP.K.rad*1.1});
+  XWEAP.k=Object.assign({},WEAP.k,{pc:'#b070ff',fx:'xal',fc:'#e8d0ff',plasma:true,sdmg:WEAP.k.sdmg*1.25});
   for(const k of ['b','h','l'])XWEAP[k]=Object.assign({},WEAP[k],{kind:'missile',turn:1.7,spMax:WEAP[k].spMax*1.25,life:WEAP[k].life*1.6,aimPt:true,fx:'xalbomb'});
   // Machines : canons à arc (éclairs ambrés), obusiers et batteries à fusion (boulets incandescents), canon spinal ancien
   AWEAP.C=Object.assign({},WEAP.C,{pc:'#ffa040',fx:'arc',fc:'#ffa040',dmg:WEAP.C.dmg*1.1,sp:WEAP.C.sp*1.1});
@@ -4870,7 +4805,7 @@ PWEAP.c=Object.assign({},WEAP.c,{fx:'kinp',fc:'#ffb347',tc:'#ffb347',pc:'#ffb347
 XWEAP.c=Object.assign({},WEAP.c,{fx:'xal',fc:'#c890ff',tc:'#b070ff',pc:'#c890ff',dmg:WEAP.c.dmg*0.85,sdmg:WEAP.c.sdmg*1.35,sp:2300});
 // Machines : canon à énergie à très longue portée
 AWEAP.c=Object.assign({},WEAP.c,{fx:'fusion',fc:'#ffb050',tc:'#ffa040',pc:'#ffb050',range:6200,life:3.3,cd:13});
-const FWNAMES={pirate:PWNAMES,xalthar:{w:'Lances à plasma',b:'Bombes guidées',h:'Bombes lourdes guidées',l:'Bombes légères guidées',p:'Canons à plasma',i:'Leurres psychiques',q:'Lance spinale à plasma',P:'Épines défensives'},anciens:{C:'Canons à arc',K:'Obusiers à fusion',k:'Batteries capitales à fusion',w:'Canons à arc',q:'Canon spinal ancien',P:'Grêle défensive',m:'Silos à dards de forge',J:'Dards de forge'}};
+const FWNAMES={pirate:PWNAMES,xalthar:{C:'Lances à plasma légères',K:'Lances à plasma lourdes',k:'Batteries capitales à plasma',w:'Lances à plasma',b:'Bombes guidées',h:'Bombes lourdes guidées',l:'Bombes légères guidées',p:'Canons à plasma',i:'Leurres psychiques',q:'Lance spinale à plasma',P:'Épines défensives'},anciens:{C:'Canons à arc',K:'Obusiers à fusion',k:'Batteries capitales à fusion',w:'Canons à arc',q:'Canon spinal ancien',P:'Grêle défensive',m:'Silos à dards de forge',J:'Dards de forge'}};
 const weapOf=(b,code)=>{const F=b.tpl&&FWEAP[b.tpl.fac];return(F&&F[code])||WEAP[code];};
 const ECLASS={
   raider:{key:'raider',name:'Corsaire',pal:'raider',cost:1,orbit:200,breakAt:0.5,dying:0.3,credits:35,drops:[1,3],speedMul:0.72,shock:[1,240],weight:0.25},
@@ -8240,7 +8175,7 @@ function torpKill(o){
   if(mp.on&&o.copy){mpSend({t:'tk',to:NET.authId,id:o.netId});return;}
   if(bigShip(o)){o.reactorDead=true;const D=o.dm;if(D){const cs=D.rt.comps;for(let c=0;c<cs.length;c++)if(cs[c].t==='reactor'){D.alive[c]=0;D.st[c]=2;}}
     const R=reactorPos(o);damageAt(o,R.lx,R.ly,40,2.5,0.4);floater(o.x,o.y-(o.rad||40)*0.6-20,'RÉACTEUR DÉTRUIT','#ffd23c');addShake(4);return;}
-  for(const m of o.mods){if(!isR(m.code))continue;hitWorld(o,o.wx(m.lx,m.ly),o.wy(m.lx,m.ly),9999,m.code==='r'?18:7,0.5);}floater(o.x,o.y-(o.rad||40)*0.6-20,'RÉACTEUR DÉTRUIT','#ffd23c');addShake(4);}
+  for(const m of o.mods){if(!isR(m.code))continue;hitWorld(o,o.wx(m.lx,m.ly),o.wy(m.lx,m.ly),9999,(REACT_SZ[m.code]||REACT_SZ.R).boom,0.5);}floater(o.x,o.y-(o.rad||40)*0.6-20,'RÉACTEUR DÉTRUIT','#ffd23c');addShake(4);}
 function launchMissile(b,m,W,own,target,tx,ty,mul){
   if(mp.on&&(b.copy||b.remote)&&!NET.evSpawn)return;
   if(W.kind==='nuke'&&b!==player)return; // garde-fou : jamais d'arme nucléaire pour une IA
