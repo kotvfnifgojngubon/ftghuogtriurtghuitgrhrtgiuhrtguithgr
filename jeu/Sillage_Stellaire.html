@@ -5347,29 +5347,34 @@ function drawStructLabels(){
 function cxLinks(c){if(c.links)return c.links;const S=c.secs,n=S.length,L=[],used=new Set([0]);
   while(used.size<n){let best=null;for(const i of used)for(let j=0;j<n;j++){if(used.has(j))continue;const d=hyp(S[i].x-S[j].x,S[i].y-S[j].y);if(!best||d<best.d)best={i,j,d};}if(!best)break;used.add(best.j);L.push(best);}
   return c.links=L;}
-const LINK_W={humain:30,pirate:24,anciens:36,xalthar:28},LINK_SPR={};
+// liaisons entre secteurs : de vraies branches de bâtiment, larges, à ponts et à fenêtres (blanches chez les humains ;
+// fer et rouille chez les corsaires, fer noirci et bronze chez les Machines, obsidienne chez les Xal'thar)
+const LINK_W={humain:150,pirate:112,anciens:136,xalthar:120},LINK_SPR={};
 function linkSprite(fac,L,Wl){L=Math.max(16,Math.ceil(L/16)*16);const k=fac+L+'|'+Wl;let cv=LINK_SPR[k];if(cv)return cv;
-  cv=mkCanvas(L,Wl);const g=cv.getContext('2d'),R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);},h=Wl>>1;
-  if(fac==='humain'){
-    const prof=['#20262f','#5a6474','#8f98a8','#b4bcc8','#c8d0dc','#a8b0bd','#8f98a8','#737c8a','#59616f','#3a414c','#20262f'];
-    for(let y=0;y<Wl;y++)R(0,y,L,1,prof[Math.floor(y/(Wl-1)*(prof.length-1))]);
-    R(0,h-2,L,4,'#141b29');for(let x=3;x<L;x+=6)R(x,h-1,3,2,hash2(x,L,3)>0.35?'#ffd27a':'#2a3242');
-    R(0,3,L,2,'#2f6fd0');R(0,Wl-5,L,2,'#2f6fd0');
-    for(let x=24;x<L-4;x+=48){R(x,0,4,Wl,'#59616f');R(x+1,0,1,Wl,'#c8d0dc');}
-  }else if(fac==='pirate'){
-    R(0,0,L,5,'#6e4a30');R(0,1,L,1,'#8a6442');R(0,Wl-5,L,5,'#563624');R(0,Wl-4,L,1,'#8a6442');
-    for(let x=-18;x<L;x+=18)for(let t=0;t<Wl-10;t++){const x1=x+Math.round(t*0.9),x2=x+18-Math.round(t*0.9);if(x1>=0&&x1<L)R(x1,5+t,2,1,'#5a3a24');if(x2>=0&&x2<L)R(x2,5+t,2,1,'#4a2e1c');}
-    for(let k=0;k<L/70;k++){const x=Math.floor(hash2(k,L,7)*Math.max(1,L-20));R(x,1,14,Wl-2,'#6c7076');R(x+1,2,12,Wl-4,'#8d9198');R(x+2,3,1,1,'#c8c2b4');R(x+11,Wl-4,1,1,'#c8c2b4');}
-    for(let x=0;x<Math.min(L,28);x+=4){R(x,0,2,5,'#e8b820');R(x+2,0,2,5,'#1c1612');}
-  }else if(fac==='anciens'){
-    R(0,0,L,6,'#3a3436');R(0,0,L,2,'#c8a04a');R(0,Wl-6,L,6,'#3a3436');R(0,Wl-2,L,2,'#c8a04a');
-    for(let x=0;x<L;x+=40){for(let t=0;t<Wl-12;t++){const u=Math.round(t*(20/(Wl-12)));R(Math.min(L-3,x+u),6+t,3,1,'#4a4244');R(Math.max(0,Math.min(L-3,x+40-u)),6+t,3,1,'#2a2628');}
-      R(x,0,6,Wl,'#5e5452');R(x+1,1,4,Wl-2,'#c8a04a');R(x+2,h-1,2,2,'#ffa040');}
-  }else{
-    for(let y=0;y<Wl;y++){const e=Math.min(y,Wl-1-y);R(0,y,L,1,e<2?'#3e3264':e<5?'#2a2148':'#1c1630');}
-    R(0,h-1,L,2,'#6a34b8');for(let x=8;x<L;x+=30)R(x,h-1,6,2,'#e8d0ff');
-    for(let x=0;x<L;x+=60)R(x,1,2,Wl-2,'#54447e');
+  cv=mkCanvas(L,Wl);const g=cv.getContext('2d'),R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);},h=Wl>>1,r=mulberry(L*7+Wl*13+fac.length);
+  const PAL={humain:{out:'#2a3140',prof:['#f4f7fb','#e8edf4','#dde3ec','#d0d7e2','#c3cbd7','#b5bdcb','#a3acbc','#8e97a8','#767f91'],joint:'#7d8798',jhi:'#f8fbff',glass:'#2f6fd0',ghi:'#7fb8ff',win:['#ffd27a','#e6f3ff','#a6e4ff','#fff0c0'],off:'#4a5466',roof:['#ffffff','#c8d0dc','#8f98a8'],trim:'#2f6fd0'},
+    pirate:{out:'#1c140e',prof:['#9a7a5a','#8a6a4a','#7e6046','#70543c','#644a34','#58402c','#4c3626','#40301f','#34261a'],joint:'#3a2a1c',jhi:'#b08a60',glass:'#6a4a20',ghi:'#e8b820',win:['#ffb347','#e8b820','#ff8a3a'],off:'#2a1c12',roof:['#8d9198','#6c7076','#4a4c50'],trim:'#e8b820'},
+    anciens:{out:'#141216',prof:['#5e5856','#544e4e','#4a4446','#423c3e','#3a3436','#332e30','#2c2729','#262124','#201c1e'],joint:'#c8a04a',jhi:'#ffe0a0',glass:'#5a3a10',ghi:'#ffa040',win:['#ffa040','#ffd890'],off:'#1a1618',roof:['#c8a04a','#8a6a2a','#5a4424'],trim:'#c8a04a'},
+    xalthar:{out:'#0c0816',prof:['#5a4a8a','#4e4078','#443868','#3a305a','#32294e','#2a2244','#241c3a','#1e1832','#18142a'],joint:'#6a34b8',jhi:'#c8a8ff',glass:'#3a1a6a',ghi:'#e8d0ff',win:['#b070ff','#e8d0ff'],off:'#1a1430',roof:['#7a66b0','#54447e','#30264e'],trim:'#b070ff'}}[fac]||null;
+  const P=PAL||PAL.humain;
+  // corps : ombré du haut (éclairé) vers le bas, contour sombre
+  for(let y=0;y<Wl;y++){const e=Math.min(y,Wl-1-y);R(0,y,L,1,e<2?P.out:P.prof[Math.min(P.prof.length-1,Math.floor(y/(Wl-1)*(P.prof.length-0.01)))]);}
+  // sections du bâtiment : joints en relief, plaques de deux tons tramées
+  let x=0;const segs=[];while(x<L){const w=Math.min(L-x,80+Math.floor(r()*64));segs.push([x,w]);x+=w;}
+  for(const [x0,w] of segs){
+    for(let py=4;py<Wl-4;py+=12)for(let px=x0+4;px<x0+w-4;px+=24){if(r()<0.5)continue;const t=r()<0.5?'rgba(255,255,255,0.10)':'rgba(0,0,0,0.08)';g.fillStyle=t;g.fillRect(px,py,Math.min(22,x0+w-4-px),10);}
+    R(x0,2,3,Wl-4,P.joint);R(x0+3,2,1,Wl-4,P.jhi);R(x0,2,4,2,P.jhi);
+    // fenêtres : deux rangées de chaque côté de la galerie centrale
+    for(const fy of [0.2,0.3,0.7,0.8]){const yy=Math.round(Wl*fy)-1;for(let px=x0+8;px<x0+w-6;px+=6){const lit=r()<0.72;R(px,yy,3,2,lit?P.win[Math.floor(r()*P.win.length)]:P.off);}}
+    // modules en toiture : blocs surélevés (arête claire, ombre portée)
+    if(w>60&&r()<0.8){const bw=24+Math.floor(r()*Math.min(40,w-40)),bx=x0+8+Math.floor(r()*Math.max(1,w-bw-16)),top=r()<0.5,by=top?Math.round(Wl*0.36):Math.round(Wl*0.5)+6,bh=Math.max(8,Math.round(Wl*0.1));
+      R(bx,by,bw,bh,P.roof[1]);R(bx,by,bw,1,P.roof[0]);R(bx,by,1,bh,P.roof[0]);R(bx,by+bh,bw,2,'rgba(0,0,0,0.35)');for(let q=bx+4;q<bx+bw-3;q+=5)R(q,by+3,2,bh-6,P.roof[2]);}
   }
+  // galerie centrale vitrée, ses montants, et le liseré de la faction le long des deux bords
+  const gh=Math.max(6,Math.round(Wl*0.1));R(0,h-(gh>>1),L,gh,P.glass);R(0,h-(gh>>1),L,1,P.ghi);for(let px=4;px<L;px+=8)R(px,h-(gh>>1),1,gh,P.out);
+  R(0,4,L,2,P.trim);R(0,Wl-6,L,2,P.trim);
+  // feux de position sur les bords
+  for(let px=32;px<L;px+=64){R(px,1,2,2,'#ff5a6e');R(px,Wl-3,2,2,'#ffffff');}
   return LINK_SPR[k]=cv;}
 function drawStructLinks(){
   if(!SYS||!SYS._cx||arena.on)return;
@@ -5641,7 +5646,9 @@ const DEF_IDS=new Set([].concat(...Object.values(DEF_SET)));
 const GEN_MOOR={};
 // postes d'un secteur : ceux de son plan, puis des bras ajoutés sur les flancs que rien ne touche dans le complexe
 function secBerths(d,D){if(d._berths)return d._berths;const K=SHIP_K,Lm=D.L/K,Hm=D.H/K,cy0=D.H/2;
-  const L=(D.berths||[]).concat((XBERTH[d.key]||[]).map(q=>({x:q.x*K,y:q.y*K+cy0,L:q.L*K,W:q.W*K,dir:q.dir,k:q.k})));
+  // les vaisseaux ne se posent plus sur les secteurs d'origine : seuls restent les berceaux des chantiers et les darses et
+  // pistes des plateformes à part
+  const L=(D.berths||[]).filter(q=>q.cls||q.k!=='sil');
   const n=GEN_MOOR[d.key]||0;
   if(n){const ca=Math.cos(d.a),sa=Math.sin(d.a),bl=Math.min(Lm*0.72,250);
     for(const sg of [1,-1]){if(L.filter(q=>q.gen).length>=n)break;const yl=sg*(Hm/2+34),wx=d.x-sa*yl*K,wy=d.y+ca*yl*K;let ok=true;
