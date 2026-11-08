@@ -5245,6 +5245,54 @@ const UNLOAD_ORDER=['h_cargo','h_quay','h_dock','m_dock','m_frame','x_cavity','x
 const XBERTH={x_bladesec:[{x:300,y:-120,L:240,W:60,dir:1,k:'sil'},{x:300,y:120,L:240,W:60,dir:-1,k:'sil'}],p_wreckhull:[{x:220,y:-150,L:220,W:60,dir:1,k:'sil'}]};
 function pickFit(list,L,k,sd){const fit=list.filter(id=>(DECO_LEN[id]||100)<=L*k);const P=fit.length?fit:list.slice().sort((a,b)=>(DECO_LEN[a]||100)-(DECO_LEN[b]||100)).slice(0,1);return P[Math.floor(hash2(sd,P.length,77)*P.length)%P.length];}
 function sdOf(str){let h=7;for(const ch of str)h=(h*31+ch.charCodeAt(0))>>>0;return h;}
+// ---- plateformes d'amarrage (dans le repère du secteur ; la station est du côté −y une fois le repère retourné) ----
+const PIER_C={humain:{deck:'#5d6675',deck2:'#4a5262',edge:'#b4bcc8',dark:'#262b34',lit:'#ffd27a',civ:'#f0c020',mil:'#d83a3a'},
+  pirate:{deck:'#5a4434',deck2:'#46342a',edge:'#8a6a4a',dark:'#22180f',lit:'#ffb347',civ:'#c8a050',mil:'#c8503a'},
+  anciens:{deck:'#3e3c46',deck2:'#2e2c36',edge:'#c8a04a',dark:'#18161e',lit:'#ffa040',civ:'#c8a04a',mil:'#ff6a3a'},
+  xalthar:{deck:'#2e2640',deck2:'#241e34',edge:'#7a5ab8',dark:'#120e1c',lit:'#c890ff',civ:'#8a6ad8',mil:'#ff5aa0'}};
+// bord de la coque côté station, à l'abscisse locale xl (le vaisseau peut être tourné d'un demi-tour)
+function hullNear(I,B,xl,sg){const hw=I.w/2,hh=I.h/2;let ymin,ymax;
+  if(B.dir>=0){const cI=Math.round(xl+hw);if(cI<0||cI>=I.w||I.top[cI]<0)return null;ymin=-hh+I.top[cI];ymax=-hh+I.bot[cI];}
+  else{const cI=Math.round(hw-xl);if(cI<0||cI>=I.w||I.top[cI]<0)return null;ymin=hh-I.bot[cI];ymax=hh-I.top[cI];}
+  return sg>0?ymin:-ymax;}
+function drawPier(B,I,bx,by,fac,t,sd,empty){
+  const C=PIER_C[fac]||PIER_C.humain,sg=Math.sign(by)||1,hw=I.w/2,hh=I.h/2,Q=B.Q||30,mil=!!B.mil,qb=-hh*0.45,qa=qb-Q,x0=-hw*1.06-12,x1=hw*1.06+12,ye=-(Math.abs(by)-Math.abs(B.ye))-(B.ein||18);
+  ctx.save();ctx.translate(Math.round(bx),Math.round(by));ctx.scale(1,sg);
+  const R=(xa,ya,xb,yb,col)=>{ctx.fillStyle=col;ctx.fillRect(Math.round(Math.min(xa,xb)),Math.round(Math.min(ya,yb)),Math.max(1,Math.round(Math.abs(xb-xa))),Math.max(1,Math.round(Math.abs(yb-ya))));};
+  // passerelles : de la station au quai, resserrées vers l'axe de la section (elles atteignent aussi les coques rondes)
+  const nb=I.w>420?3:2,wb=Math.max(10,Math.min(34,Q*0.4)),sw=B.sw||hw;
+  for(let i=0;i<nb;i++){const xq=clamp(x0+(x1-x0)*(i+0.5)/nb,-hw*0.7,hw*0.7),xs=clamp(xq*0.5,-sw,sw),steps=Math.max(2,Math.ceil(Math.abs(qa-ye)/3));
+    for(let k=0;k<=steps;k++){const u=k/steps,y=qa+(ye-qa)*u,x=xq+(xs-xq)*u;R(x-wb/2,y,x+wb/2,y+(ye<qa?-3:3),k%4===0?C.dark:C.deck2);R(x-wb/2,y,x-wb/2+1,y+(ye<qa?-3:3),C.edge);R(x+wb/2-1,y,x+wb/2,y+(ye<qa?-3:3),C.edge);}}
+  // quai : tôle à joints, rambardes, bandes d'extrémité (jaune et noir, ou rouge et blanc pour l'armée)
+  R(x0,qa,x1,qb,C.deck);for(let x=x0+6;x<x1;x+=14)R(x,qa+1,x+1,qb-1,C.deck2);R(x0,qa,x1,qa+1,C.edge);R(x0,qb-1,x1,qb,C.edge);
+  for(const xe of [x0,x1-10])for(let k=0;k<10;k+=2)R(xe+k,qa+1,xe+k+1,qb-1,mil?(((k>>1)&1)?'#ffffff':C.mil):(((k>>1)&1)?'#1a1a1a':C.civ));
+  if(mil)for(let x=x0+12;x<x1-12;x+=28)R(x,qa+3,x+10,qb-3,C.deck2);
+  // feux de quai : une rangée qui s'allume en chenillard le long du bord extérieur
+  const nL=Math.max(4,Math.floor((x1-x0)/9)),ph=(t*9|0)%nL;for(let i=0;i<nL;i++){const x=x0+4+i*9;R(x,qa+1,x+2,qa+2,(i===ph||i===(ph+nL/2|0))?C.lit:C.dark);}
+  if(!empty){
+    // tube d'embarquement à soufflets, au milieu du vaisseau, voyant vert qui clignote
+    const xg=-hw*0.12,yh=hullNear(I,B,xg,sg),yq=qa+Q*0.35;if(yh!==null){for(let y=yq;y<yh+1;y+=2)R(xg-4,y,xg+4,y+2,((y-yq)>>1)%2?C.deck2:C.edge);R(xg-6,yq-3,xg+6,yq,C.dark);if(((t*2)|0)%2)R(xg-1,yq-2,xg+1,yq-1,'#5cff9a');}
+    // lignes de carburant et de refroidissement, une impulsion qui file vers le vaisseau
+    for(const [xf,col] of [[hw*0.34,'#ffd23c'],[-hw*0.46,'#6ad8ff']]){const yf=hullNear(I,B,xf,sg),yq=qa+Q*0.3;if(yf===null)continue;R(xf,yq,xf+1,yf+1,C.dark);const u=((t*0.8+xf*0.01)%1),yp=yq+(yf-yq)*u;R(xf,yp,xf+1,yp+2,col);}
+    // conteneurs (quais civils) ou tourelles de défense (quais militaires)
+    if(!mil){const r=mulberry(sd);for(let i=0;i<3;i++){const x=x0+18+r()*(x1-x0-50),w=6+((r()*3)|0)*3,col=['#c8503a','#3a7ac8','#c8a03a','#4a9a6a'][(r()*4)|0];R(x,qa+3,x+w,qa+3+Math.min(Q-6,6),col);R(x,qa+3,x+w,qa+4,'#ffffff22');}}
+    else for(const xe of [x0+18,x1-18]){const a=Math.sin(t*0.4+xe)*0.6-Math.PI/2;ctx.fillStyle=C.dark;ctx.beginPath();ctx.arc(Math.round(xe),Math.round((qa+qb)/2),Math.max(4,Q*0.32),0,TAU);ctx.fill();
+      ctx.fillStyle=C.edge;ctx.beginPath();ctx.arc(Math.round(xe),Math.round((qa+qb)/2),Math.max(2,Q*0.2),0,TAU);ctx.fill();ctx.strokeStyle=C.edge;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(xe,(qa+qb)/2);ctx.lineTo(xe+Math.cos(a)*Q*0.6,(qa+qb)/2+Math.sin(a)*Q*0.6);ctx.stroke();ctx.lineWidth=1;}
+    // projecteurs aux deux bouts : un cône de lumière tramé sur la coque
+    if(mil||I.w>200)for(const xe of [x0+4,x1-4]){ctx.globalAlpha=0.16;ctx.fillStyle=C.lit;for(let k=1;k<9;k++){const yy=qb+k*Math.max(2,hh/5),sp=k*Math.max(1.5,hw/30);for(let x=-sp;x<=sp;x+=2)if(((x+k)&3)===0)ctx.fillRect(Math.round(xe+x*(xe<0?1:-1)*0.6+(xe<0?sp*0.6:-sp*0.6)),Math.round(yy),1,1);}ctx.globalAlpha=1;R(xe-2,qa-2,xe+2,qa+2,C.lit);}}
+  ctx.restore();}
+// bras de mouillage : de la plateforme (ou du berceau) à la coque, tous les ~45 m, patin de serrage au contact
+function drawMoor(B,I,bx,by,fac,t,sd){const C=PIER_C[fac]||PIER_C.humain,sg=Math.sign(by)||1,hw=I.w/2,hh=I.h/2,step=Math.max(26,45*SHIP_K),Q=B.Q||30,qa=B.gen?-hh*0.45-Q:-hh-Math.max(6,(B.W||60)*0.2);
+  ctx.save();ctx.translate(Math.round(bx),Math.round(by));ctx.scale(1,sg);
+  const R=(xa,ya,xb,yb,col)=>{ctx.fillStyle=col;ctx.fillRect(Math.round(Math.min(xa,xb)),Math.round(Math.min(ya,yb)),Math.max(1,Math.round(Math.abs(xb-xa))),Math.max(1,Math.round(Math.abs(yb-ya))));};
+  // patins de serrage : des mâchoires sortent du quai et pincent le bord de la coque
+  const n=Math.max(2,Math.floor(I.w*0.8/step));for(let i=0;i<n;i++){const x=-hw*0.8+(hw*1.6)*(i+0.5)/n,yh=hullNear(I,B,x,sg);if(yh===null)continue;const y0=B.gen?Math.min(yh,qa+Q*0.6):qa;
+    R(x-1,y0,x+2,yh+1,C.dark);R(x-1,y0,x,yh+1,C.edge);R(x-3,yh-1,x+4,yh+2,C.edge);R(x-3,yh+1,x+4,yh+2,C.dark);if(((t*1.5+i)|0)%5===0)R(x,yh-1,x+1,yh,C.lit);}
+  // portiques : poutres qui enjambent le vaisseau d'un bord à l'autre, comme une cale sèche, feu de gabarit au sommet
+  if(B.gen&&(B.mil||B.cap)){const nP=I.w>420?3:2;for(let i=0;i<nP;i++){const x=-hw*0.62+(hw*1.24)*(nP>1?i/(nP-1):0.5),yF=hh+8,gw=Math.max(2,Math.round(hh*0.05));
+    R(x-gw-1,qa,x+gw+1,yF,C.dark);R(x-gw,qa,x+gw,yF,C.deck);R(x-gw,qa,x-gw+1,yF,C.edge);for(let y=qa+6;y<yF;y+=8)R(x-gw,y,x+gw,y+1,C.dark);R(x-gw-5,yF-3,x+gw+5,yF+2,C.deck2);R(x-gw-5,yF-3,x+gw+5,yF-2,C.edge);
+    if(((t*1.2+i*0.7)|0)%2)R(x-1,yF,x+1,yF+2,B.mil?C.mil:C.lit);}}
+  ctx.restore();}
 // --- 4) dessin dans le repère d'un secteur
 function inSec(b,fn){ctx.save();ctx.translate(Math.round(b.x-ox),Math.round(b.y-oy));ctx.rotate(b.qa);fn();ctx.restore();}
 function drawShipAt(I,cx,cy,ang,mode,fac){if(!I)return;ctx.save();ctx.translate(Math.round(cx),Math.round(cy));ctx.rotate(ang);const x0=-Math.round(I.w/2),y0=-Math.round(I.h/2);
@@ -5258,9 +5306,8 @@ function drawSecDeco(b){
   // postes : jetées et docks (amarrés), chantiers (en construction)
   const berths=secBerths(d,D);
   berths.forEach((B,k)=>{const bx=B.x-cx0,by=B.y-cy0,s2=sd+k*131;
-    if(B.k==='sil'){const id=moorId(d,B,k,fac);if(!id)return;if(d.cx.gout&&d.cx.gout[d.id+':'+k])return;if(berthTaken(berthWorld(b,D,B),30))return;
-      const I=decoImg(id);if(!I)return;inSec(b,()=>{drawShipAt(I,bx,by,B.dir<0?PI:0,2,fac);ctx.fillStyle=fac==='anciens'?'#c8a04a':fac==='pirate'?'#6e4a30':fac==='xalthar'?'#54447e':'#8f98a8';
-        const sg=Math.sign(by)||1,y1=by-sg*(I.h/2-1),y2=by-sg*(B.W*0.62);for(const u of [-0.25,0.25])ctx.fillRect(Math.round(bx+I.w*u)-1,Math.round(Math.min(y1,y2)),3,Math.max(2,Math.round(Math.abs(y2-y1))));});}
+    if(B.k==='sil'){const id=moorId(d,B,k,fac);if(!id)return;const out=(d.cx.gout&&d.cx.gout[d.id+':'+k])||berthTaken(berthWorld(b,D,B),30);
+      const I=decoImg(id);if(!I)return;inSec(b,()=>{if(B.gen)drawPier(B,I,bx,by,fac,t,s2,out);if(out)return;drawShipAt(I,bx,by,B.dir<0?PI:0,2,fac);drawMoor(B,I,bx,by,fac,t,s2);});}
     else{const list=fac==='humain'?(BRAND_YARD[c.brand]||(c.kind==='capital'?BRAND_YARD.ars:BRAND_YARD.aldL)):fac==='anciens'?['a_gardien','a_vigile','a_clepsydre']:fac==='pirate'?['p_ecorcheur','p_forban','p_brulot']:['x_selene','x_strige'];
       // un grand modèle seul, ou deux plus petits l'un derrière l'autre, à des stades différents
       const id1=pickFit(list,B.L/K,1.05,s2),L1=(DECO_LEN[id1]||100)*K,two=L1<B.L*0.48,ids=two?[id1,pickFit(list,B.L/K*0.48,1.0,s2+9)]:[id1];
@@ -5448,18 +5495,39 @@ const GEN_MOOR={hc_ring:2,hc_core:2,h_tower:1,h_hq:2,h_fortcore:2,h_lab:1,h_refi
 // postes d'un secteur : ceux de son plan, puis des bras ajoutés sur les flancs que rien ne touche dans le complexe
 function secBerths(d,D){if(d._berths)return d._berths;const K=SHIP_K,Lm=D.L/K,Hm=D.H/K,cy0=D.H/2;
   const L=(D.berths||[]).concat((XBERTH[d.key]||[]).map(q=>({x:q.x*K,y:q.y*K+cy0,L:q.L*K,W:q.W*K,dir:q.dir,k:q.k})));
-  const n=GEN_MOOR[d.key]||0;
-  if(n){const ca=Math.cos(d.a),sa=Math.sin(d.a),bl=Math.min(Lm*0.72,250);
-    for(const sg of [1,-1]){if(L.filter(q=>q.gen).length>=n)break;const yl=sg*(Hm/2+34),wx=d.x-sa*yl*K,wy=d.y+ca*yl*K;let ok=true;
-      for(const q of d.cx.secs){if(q===d)continue;if(hyp(q.x-wx,q.y-wy)<q.r*0.85+bl*K*0.45){ok=false;break;}}
-      if(d.cx.wrap&&hyp(STATION.x-wx,STATION.y-wy)<DOCK_R+bl*K*0.4)ok=false;
-      if(ok)L.push({x:D.L/2,y:yl*K+cy0,L:bl*K,W:56*K,dir:sg,k:'sil',gen:1});}}
+  const n=GEN_MOOR[d.key]||0,c=d.cx,fac=c.fac,mil=MIL_CX.has(c.kind);
+  // plateforme d'amarrage : le vaisseau est choisi d'avance pour que le quai et les passerelles soient à sa taille ;
+  // un poste n'est gardé que si le vaisseau, son quai et ses passerelles ne touchent ni une autre section, ni une
+  // coursive, ni le relais, ni une autre plateforme
+  // forteresses et bases : un poste de vaisseau capital, cherché d'abord sur les sections les plus excentrées
+  if(mil&&CAP_MOOR[fac]&&!c._capDone){c._capDone=1;const order=c.secs.slice().sort((a,b)=>hyp(b.x-c.x,b.y-c.y)-hyp(a.x-c.x,a.y-c.y)),set=CAP_MOOR[fac];
+    outer:for(const id of set.slice().sort((a,b)=>hash2(sdOf(c.id),a.length,b.length)-0.5))for(const q of order){const Dq=secDef(q);if(!Dq)continue;for(const sg of [1,-1]){const B=pierMake(q,Dq,id,sg,{cap:1});if(B){c._cap={sec:q.id,B};break outer;}}}}
+  if(n){const bl=Math.min(Lm*0.72,250);for(const sg of [1,-1]){if(L.filter(q=>q.gen&&!q.cap).length>=n)break;const B=pierMake(d,D,moorId(d,{L:bl*K,gen:1},L.length,fac),sg);if(B)L.push(B);}}
+  if(c._cap&&c._cap.sec===d.id)L.push(c._cap.B);
   return d._berths=L;}
+// plateforme d'amarrage pour ce vaisseau, de ce côté de la section, si la place est libre (sinon null)
+function pierMake(d,D,id,sg,extra){if(!id)return null;let T;try{T=uniqueTpl(id);}catch(e){return null;}const K=SHIP_K,c=d.cx,hw=T.w/2,hh=T.h/2,Q=Math.max(30,Math.min(80,hh*0.9)),yl=sg*(D.H/2+PIER_GAP*K+Q+hh*0.45);
+  if(!pierFree(d,yl,hw+12,hh+Q+PIER_GAP*K*0.5,sg))return null;
+  return Object.assign({x:D.L/2,y:yl+D.H/2,L:T.w,W:T.h,dir:sg,k:'sil',gen:1,id,Q,mil:MIL_CX.has(c.kind),ye:sg*D.H/2,ein:Math.max(18,D.H*0.12),sw:D.L*0.36},extra||{});}
+// complexes militaires (quais blindés, vaisseaux de guerre) ; vaisseaux capitaux qu'on peut y trouver à quai
+const MIL_CX=new Set(['fort','gate','bastion','xcit','lair','capital','forge']),PIER_GAP=26;
+const CAP_MOOR={humain:['meteore','bastion','monolithe','souverain','gardienne','sabre'],anciens:['a_monarque','a_gardien','a_cathedrale'],xalthar:['x_umbra','x_kraken','x_leviathe','x_selene'],pirate:['p_forban','p_ecorcheur']};
+// place libre pour une plateforme : on sonde le rectangle du vaisseau et de son quai, dans le repère du monde
+function pierFree(d,yl,hw,hh,sg){const c=d.cx,ca=Math.cos(d.a),sa=Math.sin(d.a),P=[],LW=(LINK_W[c.fac]||30)*SHIP_K*0.5+30;
+  for(let u=-1;u<=1.001;u+=0.2)for(const v of [-1,-0.5,0,0.5,1]){const lx=u*hw,ly=yl-sg*hh*0.15+v*hh;P.push([d.x+lx*ca-ly*sa,d.y+lx*sa+ly*ca]);}
+  const segD=(px,py,ax,ay,bx,by)=>{const dx=bx-ax,dy=by-ay,L2=dx*dx+dy*dy||1,t=clamp(((px-ax)*dx+(py-ay)*dy)/L2,0,1);return hyp(px-ax-dx*t,py-ay-dy*t);};
+  const links=cxLinks(c);
+  for(const [px,py] of P){
+    for(const q of c.secs){if(q===d)continue;if(hyp(q.x-px,q.y-py)<q.r*0.92)return false;}
+    for(const l of links){const A=c.secs[l.i],B=c.secs[l.j];if(segD(px,py,A.x,A.y,B.x,B.y)<LW&&hyp(px-d.x,py-d.y)>d.r*0.6)return false;}
+    if(c.wrap&&hyp(STATION.x-px,STATION.y-py)<DOCK_R+60)return false;
+    for(const R of c._piers||[])if(hyp(R[0]-px,R[1]-py)<R[2])return false;}
+  (c._piers||(c._piers=[])).push([d.x-sa*yl,d.y+ca*yl,Math.max(hw,hh)*0.9]);return true;}
 // position d'un poste dans le monde
 function berthWorld(b,D,B){const bx=B.x-D.L/2,by=B.y-D.H/2,c=Math.cos(b.qa),s2=Math.sin(b.qa);return{x:b.x+bx*c-by*s2,y:b.y+bx*s2+by*c,a:b.qa+(B.dir<0?PI:0)};}
 // un vaisseau (réel) occupe-t-il ce poste ? (vrai aussi chez l'invité, d'après les copies de l'hôte)
 function berthTaken(P,r){for(const L of [allies,enemies])for(const o of L){if(o.dead||o.stc)continue;if(Math.abs(o.x-P.x)<r&&Math.abs(o.y-P.y)<r&&hyp(o.x-P.x,o.y-P.y)<r)return o;}return null;}
-function moorId(d,B,k,fac){const c=d.cx,s2=sdOf(d.id)+k*131;if(hash2(s2,3,5)<0.12)return null;
+function moorId(d,B,k,fac){if(B.id)return B.id;const c=d.cx,s2=sdOf(d.id)+k*131;if(hash2(s2,3,5)<0.12)return null;
   const set=B.gen?(DEF_SET[fac]||[]):fac==='humain'?(MOOR_SET[c.kind]||MOOR_SET.port):MOOR_SET[fac]||[];return set.length?pickFit(set,B.L/SHIP_K,B.gen?1.25:1.8,s2):null;}
 // menace autour d'un complexe : pour une station amie, des ennemis armés ; pour une station hostile, toi ou tes alliés,
 // si elle est en alerte
