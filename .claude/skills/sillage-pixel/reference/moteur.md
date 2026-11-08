@@ -328,3 +328,20 @@ Le bruit déterministe vient de `hash2`, `hash3`, `vnoise3`, `fbm3`, et de `pnoi
 - les étoiles `stars1` et `stars2` en parallaxe (`drawTiled`) ;
 - `drawTwinkles` ;
 - les relais `drawStation`.
+
+## 7. Intérieurs des vaisseaux humains (`inBuild`, `inTile`, `inSprite`)
+
+Vue de dessus de trois quarts, au pixel de coque (1 px = 2/3 m), proue à droite, bâbord en haut, comme le plan rayons X.
+- Données : `xrBuild` (composants, emprises x/y/z, réseaux, cloisons étanches), `buildInterior` (salles, coursives,
+  portes du jeu), `CREW_N` et le rôle du plan (équipage), `st.fighters` / `loadoutOf` (porte-flottes). Construire le
+  gabarit (`xrTpl`) avant `xrBuild`, sinon le plan relâche un grand gabarit et tout est recalculé.
+- Grille : `walk` (1 debout, 2 accroupi, 3 à quatre pattes selon la hauteur du volume), `area`, `doorAt`, `block`
+  (équipement qui bloque, seulement dans les salles, avec une allée le long des cloisons), `wall` (blanc, face sud en
+  relief). `inConnect` relie toute poche isolée par un passage et le note dans `M.hyp`.
+- Tuiles de 256 px rendues à la demande (`inTile`), équipements dessinés par type à leur emprise (`inEq`), réseaux
+  masqués sous les sols (25 %), nets dans les espaces techniques.
+- Personnages : `inSprite(look, pose, dir, frame)`, 18 × 30 px, pieds en (9, 28) ; tenues `std` (grade 0 à 11 :
+  or, vareuse longue dès commandant, cape blanche dès général, casquette blanche du commandant en chef), `espace`,
+  `combat`, `abordage` ; poses `stand`, `walk`, `run`, `sit`, `crouch`, `crawl`, `sleep`, `work`.
+- Vérifier avec un balayage de tous les vaisseaux humains : équipements du plan présents, portes du plan posées,
+  zones atteignables depuis la passerelle ou le poste, places des porte-flottes égales à la capacité.

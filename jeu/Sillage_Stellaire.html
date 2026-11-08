@@ -18631,7 +18631,10 @@ function inBuildLarge(M){
   // chacun devient une salle à son emplacement, reliée à la coursive la plus proche par un passage et une porte
   const VOLT=new Set(['bridge','cic','abridge','dcs','med','galley','armory','shop','quarters','hold','dbay']);
   const corr=new Uint8Array(M.N);for(let i=0;i<M.N;i++){const A=M.areas[M.area[i]];if(M.walk[i]&&A&&A.kind==='corr')corr[i]=1;}
-  for(const o of M.eq){if(o.kind!=='v'||!VOLT.has(o.type))continue;const cx=Math.floor((o.x0+o.x1)/2),cy=Math.floor((o.y0+o.y1)/2);if(M.inHull(cx,cy)&&M.walk[cy*w+cx])continue;
+  for(const o of M.eq){if(o.kind!=='v'||!VOLT.has(o.type))continue;
+    // déjà une salle du plan intérieur (au moins la moitié du volume) : rien à ajouter
+    let tot=0,inR=0;for(let y=Math.floor(o.y0);y<Math.ceil(o.y1);y++)for(let x=Math.floor(o.x0);x<Math.ceil(o.x1);x++){if(!M.inHull(x,y))continue;tot++;const A0=M.areas[M.area[y*w+x]];if(M.walk[y*w+x]&&A0&&A0.kind==='room')inR++;}
+    if(!tot||inR>tot*0.5)continue;
     const A=inArea(M,{kind:'room',code:'',name:XRT[o.type][0],press:true,box:inBox(o),xr:o,cx:(o.x0+o.x1)/2,cy:(o.y0+o.y1)/2});let n=0;
     for(let y=Math.floor(o.y0)+1;y<Math.ceil(o.y1)-1;y++)for(let x=Math.floor(o.x0)+1;x<Math.ceil(o.x1)-1;x++){if(!M.inHull(x,y))continue;const i=y*w+x;if(M.walk[i]||M.block[i])continue;
       let edge=false;for(const [dx,dy] of DIR4){const j=(y+dy)*w+x+dx;if(!M.inHull(x+dx,y+dy)||(M.walk[j]&&M.area[j]!==A.id)){edge=true;break;}}if(edge)continue;M.walk[i]=1;M.area[i]=A.id;n++;}
@@ -19162,7 +19165,7 @@ function inUse(M){const p=IN.pl;if(!p)return;
   // place d'appareil ou hangar : stock
   if(M.slots.length&&M.slots.some(s=>Math.hypot(s.x-p.x,s.y-p.y)<Math.max(s.w,s.h)*0.7)){inPanel('stock');return;}
   // équipement le plus proche : fiche du plan rayons X
-  let eq=null,ed=2.2;for(const o of M.eq){if(o.kind==='k')continue;const dx=Math.max(o.x0-p.x,0,p.x-o.x1),dy=Math.max(o.y0-p.y,0,p.y-o.y1),d=Math.hypot(dx,dy);if(d<ed){ed=d;eq=o;}}
+  let eq=null,ed=2.2;for(const o of M.eq){if(o.kind==='k'||o.kind==='v')continue;const dx=Math.max(o.x0-p.x,0,p.x-o.x1),dy=Math.max(o.y0-p.y,0,p.y-o.y1),d=Math.hypot(dx,dy);if(d<ed){ed=d;eq=o;}}
   if(eq){IN.sel=eq;inPanel('eq');return;}
   inMsg('Rien à utiliser ici.');}
 /* ---------- interface : ouverture, rendu de chaque image, panneaux, commandes ---------- */
@@ -19271,7 +19274,7 @@ function inHover(M,g,S){const p=IN.pl;if(!p)return;let txt='';
   else{for(const s of M.seats)if(!s.occ&&Math.hypot(s.x-p.x,s.y-p.y)<1.6){txt='E : s’asseoir';break;}
     if(!txt)for(const D of M.doors)if(Math.hypot(D.x-p.x,D.y-p.y)<2.6&&(D.lock||!D.auto)){txt=D.lock?'Porte verrouillée':'E : porte';break;}
     if(!txt&&M.slots.some(s=>Math.hypot(s.x-p.x,s.y-p.y)<Math.max(s.w,s.h)*0.7))txt='E : stock des appareils';
-    if(!txt){let eq=null,ed=2.2;for(const o of M.eq){if(o.kind==='k')continue;const dx=Math.max(o.x0-p.x,0,p.x-o.x1),dy=Math.max(o.y0-p.y,0,p.y-o.y1),d=Math.hypot(dx,dy);if(d<ed){ed=d;eq=o;}}
+    if(!txt){let eq=null,ed=2.2;for(const o of M.eq){if(o.kind==='k'||o.kind==='v')continue;const dx=Math.max(o.x0-p.x,0,p.x-o.x1),dy=Math.max(o.y0-p.y,0,p.y-o.y1),d=Math.hypot(dx,dy);if(d<ed){ed=d;eq=o;}}
       if(eq){const [x,y]=S(eq.x0,eq.y0);g.strokeStyle='#a6f6ff';g.lineWidth=1;g.strokeRect(x-1.5,y-1.5,(eq.x1-eq.x0)*IN.Z+3,(eq.y1-eq.y0)*IN.Z+3);txt='E : '+XRT[eq.type][0];}}}
   $('inHint').textContent=txt;}
 function inHud(M){const p=IN.pl,A=p&&inAreaAt(M,p.x,p.y),pr=A?inPress(M,A):1,post=p?inPostAt(M,p.x,p.y):1;
