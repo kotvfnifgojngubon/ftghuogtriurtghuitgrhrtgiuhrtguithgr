@@ -175,6 +175,25 @@ les pièces surélevées vers le bas de l'écran, donc une pièce métallique po
 déborde côté tribord — la reculer de deux unités ; `buildUnique` retire désormais toute miette de coque détachée
 (moins de 4 % des pixels), ce qui évite les débris dès la première image.
 
+Xal'thar, version anguleuse (corvettes à porte-flottes) : `xWar(L,H,o)` assemble une coque à partir d'un profil
+(`o.P`), de nacelles anguleuses (`xNacA`), d'étais droits (`xStrut`), de sponsons à tranchée (`xSponA`), d'affûts
+hexagonaux (`xMount`) et de plaques étagées (`xDetail`). Plus de boules ni de demi-arcs : tout est pan coupé.
+Calibres : `C` (petite batterie), `K` (moyenne), `k` (capitale) ; réacteurs `R`, `ρ` (moyen), `r` (capital), `Ρ` (titan).
+
+### Plateformes d'amarrage (`dockDef`)
+
+Une plateforme est un secteur de station construit par `dockDef(clé, faction, o)` : une épine centrale (`o.ys`,
+`o.sw`), un moyeu côté station (`o.hub = [longueur, au-dessus, au-dessous]`) et des darses `[x0, longueur, largeur,
+côté, classe]` ouvertes vers l'extérieur (pont `dark` à grille, rails de guidage, berceaux, môles à chaque bout, sas
+`I`, feux de lèvre et d'axe, équerres peintes). Classes : `M` (corvettes, cargos moyens), `L` (frégates, gros cargos),
+`C` (capitaux) ; le vaisseau amarré est tiré de `DOCK_SHIPS` à la taille de la darse (`dockPick`). Une plateforme
+asymétrique (darse capitale d'un seul côté) doit garder `asym:true` (sinon les modules sont doublés en miroir) et
+`edge:false` ; pas de livrée ni de bandes corsaires (`liv=null`, `noHaz`). Au placement dans `CPLX`, mettre le bout
+du moyeu contre le noyau (centre = rayon du noyau + longueur/2) et décaler perpendiculairement de l'écart de l'épine
+pour qu'elle reste dans l'axe. Sur une plateforme tournée vers l'ouest, `berthFace` retourne le vaisseau amarré
+pour qu'il ne soit jamais la tête en bas. Les bras de serrage, la passerelle et les conduites sont dessinés en jeu
+(`drawBayMoor`).
+
 ## 4. Les vaisseaux modulaires (ancien chantier)
 
 `buildShip(rows, pal)` assemble des modules de 10 × 10 pixels (`MS`), écrits comme une grille de lettres (`PRESETS`, `ENEMY_DESIGNS`).

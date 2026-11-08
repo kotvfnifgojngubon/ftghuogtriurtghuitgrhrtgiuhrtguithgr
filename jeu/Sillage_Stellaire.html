@@ -4913,6 +4913,125 @@ function facCls(fac,t){
   for(const tt of [t,t==='s'?'m':t==='m'?'s':'m','l']){const K=L.filter(c=>c.tier===tt);if(K.length)return K[(Math.random()*K.length)|0];}
   return L[0];
 }
+/* ---------- formations de combat ----------
+   Chaque faction vole en formations nommées (patrouilles, trios de chasse, interceptions, escortes, bombardements,
+   lignes de bataille, embuscades…). Un vol apparaît d'un bloc ; chaque ailier tient son poste (un décalage dans le
+   repère du chef, à l'échelle du plus gros appareil du vol) jusqu'au contact, puis rompt pour engager ; la menace
+   passée, il rejoint son poste. Les formations « tenues » (lignes, murs, écrans de gros vaisseaux) gardent leur poste
+   même au combat : elles présentent le flanc ensemble et tirent par le travers.
+   Postes : c chasseur, i intercepteur, x chasseur-bombardier, b bombardier, f furtif, k corvette, g frégate, C capital
+   (le premier est le chef). Formes : ligne, colonne, V, échelons, losange, boîte, trident, coin, pince, croissant,
+   éventail, anneau, mur, double colonne, escorte, écran, nuée. */
+function formShape(sh,n){const P=[[0,0]];
+  for(let i=1;i<n;i++){const k=Math.ceil(i/2),g=i%2?1:-1;let p;
+    switch(sh){
+      case 'ligne':p=[0,g*k];break;
+      case 'colonne':p=[-i,0];break;
+      case 'V':p=[-k,g*k];break;
+      case 'echG':p=[-i,-i];break;
+      case 'echD':p=[-i,i];break;
+      case 'losange':p=[[-1,-1],[-1,1],[-2,0],[-2,-2],[-2,2],[-3,-1],[-3,1],[-4,0]][i-1]||[-i,0];break;
+      case 'boite':p=[[0,1.1],[-1.1,0],[-1.1,1.1],[0,-1.1],[-1.1,-1.1],[-2.2,0],[-2.2,1.1],[-2.2,-1.1]][i-1]||[-i,0];break;
+      case 'trident':p=[[-1,-1.6],[-1,1.6],[-1.8,0],[-2.4,-1.6],[-2.4,1.6],[-3,0],[-3.6,-1.6],[-3.6,1.6]][i-1]||[-i,0];break;
+      case 'coin':{let row=1,c=i;while(c>row+1){c-=row+1;row++;}p=[-row*1.1,(c-1-row/2)*1.2];}break;
+      case 'pince':p=[0.9-0.8*(k-1),g*(1.8+0.55*(k-1))];break;
+      case 'croissant':p=[-1.6+0.55*k,g*1.25*k];break;
+      case 'eventail':p=[-1-0.35*k,g*k*0.95];break;
+      case 'anneau':{const a=(i-1)/(n-1)*TAU;p=[Math.cos(a)*1.7,Math.sin(a)*1.7];}break;
+      case 'mur':p=[-((k+1)%2)*1.1,g*Math.ceil(k/1)*0.9];break;
+      case 'dcol':p=[-Math.floor(i/2)*1.2,i%2?1.1:0];break;
+      case 'escorte':p=[[1,-1.1],[1,1.1],[-1,-1.1],[-1,1.1],[0,-1.8],[0,1.8],[1.9,0],[-1.9,0]][i-1]||[-i,0];break;
+      case 'ecran':p=[1.9,(i-n/2)*1.05];break;
+      case 'nuee':p=[-0.3-1.8*hash2(i,n,7),(hash2(i,n,11)-0.5)*3.4];break;
+      default:p=[-i,0];}
+    P.push(p);}
+  return P;}
+// [nom, type, forme, postes, tenue]
+const FORMS={
+  humain:[
+    ['Trio de chasse','chasse','V','ccc'],['Paire de patrouille','patrouille','echD','cc'],['Patrouille légère','patrouille','ligne','cic'],['Section d’interception','interception','losange','iiii'],
+    ['Flèche d’interception','interception','V','iiiii'],['Escadrille de chasse','chasse','V','cccccc'],['Échelon gauche','combat','echG','cccc'],['Échelon droit','combat','echD','cccc'],
+    ['Losange de chasse','chasse','losange','cccc'],['Boîte de combat','combat','boite','cccc'],['Colonne de patrouille','patrouille','colonne','ccc'],['Ligne de front','combat','ligne','ccccc'],
+    ['Escorte de bombardier','escorte','escorte','bcccc'],['Raid de chasseurs-bombardiers','bombardement','V','xxx'],['Vague d’assaut','bombardement','ligne','xxxx'],['Bombardement lourd','bombardement','boite','bbcc'],
+    ['Couverture haute','escorte','trident','xccc'],['Paire furtive','embuscade','echD','ff'],['Rideau furtif','reconnaissance','ligne','fff'],['Reconnaissance armée','reconnaissance','V','fcc'],
+    ['Patrouille de corvette','patrouille','escorte','kcc'],['Corvette et intercepteurs','interception','trident','kiii'],['Groupe de corvettes','combat','echD','kkk'],['Ligne de corvettes','ligne','ligne','kkk',1],
+    ['Patrouille de frégate','patrouille','escorte','gcc'],['Frégate d’escorte','escorte','escorte','gkk'],['Division de frégates','ligne','colonne','gg',1],['Ligne de bataille','ligne','ligne','ggg',1],
+    ['Groupe d’action','combat','coin','gkkcc'],['Écran de chasse','escorte','ecran','gcccc'],['Pince','combat','pince','cccccc'],['Croissant','combat','croissant','cccccc'],
+    ['Éventail d’interception','interception','eventail','iiiiii'],['Anneau défensif','escorte','anneau','gcccc'],['Coin d’assaut','combat','coin','cccccc'],['Mur de chasse','combat','mur','cccccccc'],
+    ['Double colonne','patrouille','dcol','cccc'],['Escadron mixte','combat','V','cxcxc'],['Flèche lourde','bombardement','V','bxx'],['Patrouille des confins','patrouille','losange','kcic'],
+    ['Interception rapide','interception','echG','iii'],['Chasse libre','chasse','nuee','cccc'],['Nuée d’intercepteurs','interception','nuee','iiiiii'],['Escorte de convoi','escorte','escorte','kiiii'],
+    ['Groupe de frappe','bombardement','trident','gxxx'],['Flottille','combat','escorte','kkcc'],['Escadre capitale','ligne','ecran','Cgg',1],['Groupe de combat capital','combat','escorte','Cggkk'],
+    ['Rideau de piquet','reconnaissance','ligne','kkkk'],['Essaim de défense','escorte','anneau','gcccccc']],
+  anciens:[
+    ['Engrenage','chasse','V','ccc'],['Rouage double','patrouille','echD','cc'],['Cadran','interception','losange','iiii'],['Aiguilles','interception','V','iii'],
+    ['Balancier','combat','ligne','ccccc'],['Échappement','chasse','echG','cccc'],['Sonnerie','chasse','V','cccccc'],['Remontoir','patrouille','colonne','ccc'],
+    ['Spiral','chasse','nuee','ccccc'],['Quantième','combat','boite','cccc'],['Complication','combat','coin','cccccc'],['Carillon','bombardement','ligne','xxxx'],
+    ['Marteau de cloche','bombardement','V','xxx'],['Beffroi escorté','escorte','escorte','bcccc'],['Volée de cloches','bombardement','boite','bbxx'],['Pendule furtif','embuscade','echD','ff'],
+    ['Ombre de cadran','reconnaissance','V','fii'],['Vernier','patrouille','escorte','kcc'],['Clepsydre','patrouille','trident','kiii'],['Horloge de garde','escorte','escorte','gkk'],
+    ['Chaîne d’horloges','ligne','colonne','gg',1],['Mur des heures','ligne','ligne','ggg',1],['Engrenage lourd','combat','coin','gkkcc'],['Écran de rouages','escorte','ecran','gcccc'],
+    ['Pince d’horloger','combat','pince','cccccc'],['Croissant de lune','combat','croissant','cccccc'],['Éventail d’aiguilles','interception','eventail','iiiiii'],['Couronne','escorte','anneau','gcccc'],
+    ['Mur d’engrenages','combat','mur','cccccccc'],['Double rouage','patrouille','dcol','cccc'],['Mouvement mixte','combat','V','cxcxc'],['Battant','bombardement','V','bxx'],
+    ['Ronde','patrouille','losange','kcic'],['Trotteuse','interception','echG','iii'],['Essaim d’échappements','interception','nuee','iiiiii'],['Convoi gardé','escorte','escorte','kiiii'],
+    ['Frappe des heures','bombardement','trident','gxxx'],['Mécanisme','combat','escorte','kkcc'],['Grande sonnerie','ligne','ecran','Cgg',1],['Horloge monumentale','combat','escorte','Cggkk'],
+    ['Piquet de vernier','reconnaissance','ligne','kkkk'],['Cage d’engrenages','escorte','anneau','gcccccc'],['Corvettes en ligne','ligne','ligne','kkk',1],['Patrouille de frégate','patrouille','escorte','gcc'],
+    ['Cathédrale escortée','combat','escorte','Cgkkcc']],
+  xalthar:[
+    ['Essaim','chasse','nuee','cccc'],['Paire nocturne','patrouille','echD','cc'],['Triade','chasse','V','ccc'],['Pétales','interception','anneau','kiiii'],
+    ['Voile','interception','ligne','iiii'],['Aile de phalène','interception','V','iiiii'],['Croc','combat','coin','cccccc'],['Mâchoire','combat','pince','cccccc'],
+    ['Couronne d’épines','escorte','anneau','gcccc'],['Corolle','combat','croissant','cccccc'],['Spirale','chasse','echG','cccc'],['Dard','bombardement','V','xxx'],
+    ['Pluie d’aiguillons','bombardement','ligne','xxxx'],['Méduse escortée','escorte','escorte','bcccc'],['Nautile','bombardement','boite','bbxx'],['Pénombre','embuscade','echD','ff'],
+    ['Linceul','embuscade','ligne','fff'],['Regard','reconnaissance','V','fii'],['Strige et nuée','patrouille','trident','kiii'],['Luciole','patrouille','escorte','kcc'],
+    ['Banc de corvettes','combat','echD','kkk'],['Lame de corvettes','ligne','ligne','kkk',1],['Sélène escortée','escorte','escorte','gkk'],['Marée','ligne','colonne','gg',1],
+    ['Mur de nacre','ligne','ligne','ggg',1],['Récif','combat','coin','gkkcc'],['Rideau d’ombre','escorte','ecran','gcccc'],['Chœur','combat','mur','cccccccc'],
+    ['Double sillage','patrouille','dcol','cccc'],['Danse mixte','combat','V','cxcxc'],['Harpie','bombardement','V','bxx'],['Ronde nocturne','patrouille','losange','kcic'],
+    ['Éclair violet','interception','echG','iii'],['Nuée de phalènes','interception','nuee','iiiiii'],['Convoi des Nocturnes','escorte','escorte','kiiii'],['Frappe d’Ysoria','bombardement','trident','gxxx'],
+    ['Banc','combat','escorte','kkcc'],['Grande marée','ligne','ecran','Cgg',1],['Léviathe escorté','combat','escorte','Cggkk'],['Veille','reconnaissance','ligne','kkkk']],
+  pirate:[
+    ['Meute','chasse','nuee','cccc'],['Paire de rôdeurs','patrouille','echD','cc'],['Trio de pillards','chasse','V','ccc'],['Curée','combat','pince','ccccc'],
+    ['Hallali','interception','V','ccccc'],['Rabatteurs','interception','eventail','cccc'],['Coupe-gorge','embuscade','croissant','cccccc'],['Abordage','combat','escorte','gcccc'],
+    ['Bordée de bricoleurs','bombardement','ligne','xxx'],['Brûlots','bombardement','V','bxx'],['Ligne de forbans','ligne','ligne','gg',1],['Écorcheur escorté','escorte','escorte','gccc'],
+    ['Charognards','chasse','nuee','cccccc'],['Rideau de fumée','embuscade','ligne','xx'],['Bombardes de course','combat','echD','bbc'],['Coin de pillage','combat','coin','cccccc'],
+    ['Ronde du repaire','patrouille','losange','cxcc'],['Razzia','bombardement','trident','gxxx'],['Flottille corsaire','combat','escorte','ggcc'],['Mur de ferraille','combat','mur','cccccccc']]};
+const FROLE={c:['chasseur'],i:['intercepteur'],x:['chbomb'],b:['bombardier'],f:['furtif'],k:['corvette'],g:['fregate'],C:['capital']},FTIER={c:'s',i:'s',x:'s',b:'m',f:'m',k:'m',g:'l',C:'c'},FCOST={s:1,m:2.5,l:5,c:9};
+const FCLS={};
+// classes d'adversaires d'une faction pour un poste (chasseur, frégate…) ; à défaut, le palier
+function formCls(fac,role){const key=fac+role;let L=FCLS[key];
+  if(!L){const cats=FROLE[role];L=FCLS[key]=Object.values(ECLASS).filter(c=>{const M=c.uid&&MODEL_BY[c.uid];if(!M||!cats.includes(M.cat))return false;
+      return fac==='pirate'?!!c.pirate:fac==='humain'?(!M.fac&&c.key==='m_'+M.id):c.ffac===fac;}).map(c=>fac==='humain'?Object.assign({},c,PIR_ECO[FTIER[role]==='c'?'l':FTIER[role]],{tier:FTIER[role]}):c);}
+  if(L.length)return L[(Math.random()*L.length)|0];const t=FTIER[role]==='c'?'l':FTIER[role];return fac==='pirate'?pirCls(t):facCls(fac,t);}
+// modèles d'une faction pour un poste (patrouilles du trafic)
+function formIds(fac,role){const cats=FROLE[role];return MODELS.filter(M=>cats.includes(M.cat)&&(fac==='humain'?!M.fac:M.fac===fac)).map(M=>M.id);}
+const formCost=F=>[...F[3]].reduce((s,r)=>s+FCOST[FTIER[r]],0);
+// une formation pour ce budget et ce danger (pas de frégates sous 0,45, pas de capitaux sous 0,8)
+function formPick(fac,budget,danger,o){const L=(FORMS[fac]||FORMS.pirate).filter(F=>{const r=F[3];if(o&&o.patrol&&(r.length>5||/[gC]/.test(r)&&r.length>3))return false;
+    if(/C/.test(r)&&danger<0.8)return false;if(/g/.test(r)&&danger<0.45)return false;if(/[kbf]/.test(r)&&danger<0.15)return false;return formCost(F)<=budget;});
+  return L.length?L[(Math.random()*L.length)|0]:null;}
+// pas des postes : selon le plus gros appareil du vol
+function formUnit(ships){let r=0;for(const s of ships)r=Math.max(r,s.rad||30);return 2.1*r+46;}
+// un vol ennemi : apparaît hors de vue, cap sur le joueur, chaque ailier à son poste
+function formSpawn(fac,F,danger){const n=F[3].length,P=formShape(F[2],n),a=Math.random()*TAU,ships=[];
+  for(let i=0;i<n;i++){const e=spawnEnemy(formCls(fac,F[3][i]),danger);ships.push(e);}
+  const L=ships[0],u=formUnit(ships),d=Math.max(W,H)*0.75+L.rad+u*2,bx=player.x+Math.cos(a)*d,by=player.y+Math.sin(a)*d,ang=a+PI,c=Math.cos(ang),s=Math.sin(ang);
+  ships.forEach((e,i)=>{const [ux,uy]=P[i],ox=ux*u,oy=uy*u;e.x=bx+c*ox-s*oy;e.y=by+s*ox+c*oy;e.a=ang;e.setAngle();for(const m of e.mods)m.ang=ang;e.vx=e.vy=0;
+    if(i)e.form={lead:L,off:[ox,oy],hold:!!F[4]};});
+  L.formF=F;L.label=stx(F[0]).toUpperCase();
+  if(n>=4&&(!formSpawn.told||now-formSpawn.told>45)){formSpawn.told=now;toast('Formation en approche',F[0]+' · '+n+' appareils ('+F[1]+').','danger');}
+  return ships;}
+// patrouille du trafic : même formation, avec les décalages des suiveurs
+function formPatrol(fac,sx,sy,ang,route){const F=formPick(fac,9,1,{patrol:1});if(!F)return false;const n=F[3].length,P=formShape(F[2],n),ids=[];
+  for(const r of F[3]){const L=formIds(fac,r);if(!L.length)return false;ids.push(L[(Math.random()*L.length)|0]);}
+  let u=0;for(const id of ids){const [w,h]=hullWH(id);u=Math.max(u,Math.hypot(w,h)*0.5*0.75);}u=2.1*u+46;
+  const lab='PATROUILLE · '+stx(F[0]).toUpperCase(),c=Math.cos(ang),s=Math.sin(ang);
+  const lead=trSpawnBody(ids[0],fac,sx,sy,ang,{route,ri:0,sp:0.62,patrol:true,label:lab});
+  for(let i=1;i<n;i++){const off=[P[i][0]*u,P[i][1]*u];trSpawnBody(ids[i],fac,sx+c*off[0]-s*off[1],sy+s*off[0]+c*off[1],ang,{follow:lead,off,patrol:true,label:'PATROUILLE'});}
+  return true;}
+// tenue de poste d'un ailier ennemi : renvoie null s'il est libre d'engager, sinon le cap et la poussée
+function formSteer(e,T,dt){const fo=e.form,L=fo.lead;if(!L||L.dead||L.dying||L.traffic){e.form=null;return null;}
+  if(!fo.hold&&(L.formEng||(T&&hyp(T.x-e.x,T.y-e.y)<850+e.rad)))return null;
+  const c=Math.cos(L.a),s=Math.sin(L.a),sx=L.x+c*fo.off[0]-s*fo.off[1],sy=L.y+s*fo.off[0]+c*fo.off[1],dx=sx-e.x,dy=sy-e.y,d=hyp(dx,dy);
+  // accord des vitesses : l'ailier épouse la vitesse du chef, corrigée vers son poste
+  const k=Math.min(1,dt*0.9);e.vx+=(L.vx+dx*0.5-e.vx)*k;e.vy+=(L.vy+dy*0.5-e.vy)*k;
+  return{des:d>160?Math.atan2(dy+L.vy*0.6,dx+L.vx*0.6):L.a,thr:clamp(d/450,0.1,1),far:d>220};}
 // territoires : les humains tiennent Halcyon, Cyane et Thulé ; les Machines Ophir, Aube et Nadir ; les corsaires Vespera ;
 // les Xal'thar toute la galaxie d'Ysoria. Chez les humains (ou chez sa propre faction), ce sont les corsaires qui rôdent
 const TERR={halcyon:'humain',cyane:'humain',thule:'humain',ophir:'anciens',aube:'anciens',nadir:'anciens',vespera:'pirate'};
@@ -6290,8 +6409,8 @@ function trTick(dt){
     // patrouille de la faction qui tient le système, en boucle autour de ses complexes et relais
     const P=sysLoops(SYS);if(!P.length)return;const near=P.filter(q=>hyp(q.x-px,q.y-py)<14000);if(!near.length)return;const ids=TR_PATROL[fac]||TR_PATROL.humain;
     const a0=Math.random()*TAU,sx=px+Math.cos(a0)*2600,sy=py+Math.sin(a0)*2600,route=near.sort(()=>Math.random()-0.5).slice(0,3).map(q=>({x:q.x+rnd(-1500,1500),y:q.y+rnd(-1500,1500)}));
-    const lead=trSpawnBody(ids[(Math.random()*ids.length)|0],fac,sx,sy,a0+PI,{route,ri:0,sp:0.7,patrol:true,label:'PATROUILLE'});
-    trSpawnBody(ids[(Math.random()*ids.length)|0],fac,sx+120,sy+120,a0+PI,{follow:lead,off:[-200,160],patrol:true,label:'PATROUILLE'});
+    if(!formPatrol(fac,sx,sy,a0+PI,route)){const lead=trSpawnBody(ids[(Math.random()*ids.length)|0],fac,sx,sy,a0+PI,{route,ri:0,sp:0.7,patrol:true,label:'PATROUILLE'});
+    trSpawnBody(ids[(Math.random()*ids.length)|0],fac,sx+120,sy+120,a0+PI,{follow:lead,off:[-200,160],patrol:true,label:'PATROUILLE'});}
   }
 }
 function trHostileNear(b,r){const L=b.kind==='enemy'?[player,...allies]:enemies;for(const o of L){if(!o||o.dead||o.dying||o.stc||(o.traffic&&o.traffic.cargo))continue;if(o!==player&&b.kind==='enemy'&&!(o.combat||o.remote||o.traffic))continue;if(hyp(o.x-b.x,o.y-b.y)<r)return o;}return null;}
@@ -12581,7 +12700,10 @@ function updateEnemies(dt){
       let cls=facCls(fac,'s');
       if(danger>0.6&&r<0.14&&!alive.some(e=>e.cls.tier==='l'))cls=facCls(fac,'l');
       else if(danger>0.22&&r<0.42)cls=facCls(fac,'m');
-      if(used+cls.cost<=budget){const xn=e=>{if(fac==='xalthar'&&stPassive('xalthar')){e.neutral=true;e.traffic={route:sysLoops(SYS).slice(0,3).map(q=>({x:q.x+rnd(-1500,1500),y:q.y+rnd(-1500,1500)})),ri:0,sp:0.6,patrol:true,label:'PATROUILLE'};}};xn(spawnEnemy(cls,danger));if(cls.tier==='s'&&Math.random()<0.4+danger*0.3&&used+2<=budget)xn(spawnEnemy(facCls(fac,'s'),danger));}
+      const xn=e=>{if(fac==='xalthar'&&stPassive('xalthar')){e.neutral=true;e.traffic={route:sysLoops(SYS).slice(0,3).map(q=>({x:q.x+rnd(-1500,1500),y:q.y+rnd(-1500,1500)})),ri:0,sp:0.6,patrol:true,label:'PATROUILLE'};}};
+      const F=Math.random()<0.75?formPick(fac,budget-used+0.5,danger):null;
+      if(F){const V=formSpawn(fac,F,danger);xn(V[0]);if(V[0].traffic)for(const e of V.slice(1)){e.neutral=true;e.traffic={follow:V[0],off:e.form.off,patrol:true,label:'PATROUILLE'};e.form=null;}}
+      else if(used+cls.cost<=budget){xn(spawnEnemy(cls,danger));if(cls.tier==='s'&&Math.random()<0.4+danger*0.3&&used+2<=budget)xn(spawnEnemy(facCls(fac,'s'),danger));}
     }
   }
   for(let i=enemies.length-1;i>=0;i--){
@@ -12627,8 +12749,11 @@ function updateEnemies(dt){
           // ligne de bataille : par le travers de la cible, à distance de tir, cap parallèle au sien, vitesse accordée
           const rngE=620+e.rad*0.5+tr*0.3+(e.giant&&T.giant?300:0),L=lineSteer(e,T,Math.max((e.rad+tr)*0.5+120,Math.min(rngE*0.75,Math.max(orb,tr*0.5+e.rad*0.5+220))));des=L.des;thr=L.thr;e.inLine=1;}}
     }
+    // formation : l'ailier tient son poste (voir formSteer) ; le chef modère sa poussée tant que son vol n'a pas engagé
+    const fS=e.form?formSteer(e,T,dt):null;if(fS){des=fS.des;thr=fS.thr;latX=latY=0;e.inLine=0;}
+    if(e.formF){e.formEng=!!(T&&hyp(T.x-e.x,T.y-e.y)<1500+e.rad);if(!e.formEng)thr=Math.min(thr,0.72);}
     // un géant au contact ralentit et présente le flanc : il échange des bordées au lieu de tourner en rond
-    let slow=1;if(e.giant&&T&&mode==='fight'&&!e.inLine&&hyp(T.x-e.x,T.y-e.y)<1700){thr*=0.3;slow=0.45;}
+    let slow=1;if(e.giant&&T&&mode==='fight'&&!e.inLine&&!fS&&hyp(T.x-e.x,T.y-e.y)<1700){thr*=0.3;slow=0.45;}if(fS&&fS.far)slow*=1.3;
     // harponné par une passerelle d'abordage : il ne peut presque plus manœuvrer
     const grp=e.boardedBy&&e.boardedBy.phase!=='retract'&&!e.boardedBy.broken?0.2:1;thr*=grp;
     const ef=(e.engEff||1)*e.pw.en,prevA=e.a,etr=st.turn*grp*(e.dmTurn||1);e.a+=clamp(angDiff(des,e.a),-etr*dt,etr*dt);e.va=(e.a-prevA)/dt;e.setAngle();
