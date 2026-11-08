@@ -7466,8 +7466,10 @@ function later(d,fn){if(laters.length<240)laters.push({t:d,fn});}
 const puffMax=()=>Math.round(PMAX/22);
 // bouffée de feu (fire) ou de fumée ; o.smk : le feu laisse en mourant une fumée de cette durée relative,
 // o.delay : apparaît plus tard, o.drag : freinage, o.warm : fumée encore éclairée par le feu au départ
-function addPuff(x,y,vx,vy,life,r,fire,o){if(puffs.length>=puffMax())return;o=o||{};
-  puffs.push({x,y,vx,vy,life,max:life,r,f:fire?1:0,drag:o.drag||2.6,smk:o.smk||0,delay:o.delay||0,sd:Math.random(),warm:o.warm||0});}
+// plus de fumée grise ou noire : seules les bouffées de feu restent, et elles s'éteignent sans laisser de fumée
+const NO_SMOKE=true;
+function addPuff(x,y,vx,vy,life,r,fire,o){if(puffs.length>=puffMax())return;if(!fire&&NO_SMOKE)return;o=o||{};
+  puffs.push({x,y,vx,vy,life,max:life,r,f:fire?1:0,drag:o.drag||2.6,smk:NO_SMOKE?0:(o.smk||0),delay:o.delay||0,sd:Math.random(),warm:o.warm||0});}
 // anneau (col) ou éclair (col nul) : rayon de r0 à r1 en sortie cubique, épaisseur th qui fond avec lui
 function addRing(x,y,vx,vy,r0,r1,life,th,col){if(xrings.length<48)xrings.push({x,y,vx,vy,r0,r1,life,max:life,th,col});}
 // disque et couronne de pixels pleins, ligne par ligne, dans la couleur et l'opacité courantes du contexte
@@ -7527,7 +7529,7 @@ function updateChunks(dt){
     const heat=c.hot*Math.max(0,1-(1-c.life/c.max)*1.2);
     // sillage : un trait serré de particules fines (feu tant qu'il est chaud, puis fumée), pas des bouffées : il ne
     // prend pas la place de la fumée de l'explosion
-    if(c.trail&&heat>0.12){c.tT-=dt;while(c.tT<=0){c.tT+=rnd(0.018,0.032);
+    if(c.trail&&heat>(NO_SMOKE?0.45:0.12)){c.tT-=dt;while(c.tT<=0){c.tT+=rnd(0.018,0.032);
       addP(c.x+rnd(-0.6,0.6),c.y+rnd(-0.6,0.6),c.vx*0.08+rnd(-6,6),c.vy*0.08+rnd(-6,6),rnd(0.35,0.8),heat>0.45?5:10,null,1.6,heat>0.7?2:1);
       if(Math.random()<0.15)addP(c.x,c.y,c.vx*0.2+rnd(-25,25),c.vy*0.2+rnd(-25,25),rnd(0.2,0.45),1,null,3);}}}
 }
@@ -12843,19 +12845,65 @@ function updateParticles(dt){
    Génération progressive
    ========================================================= */
 let gasFar=null,gasTeal=null,gasViolet=null,gasDust=null,stars1=null,stars2=null,genStep=0,sndDone=false;
+/* ---------- ciel profond : bande galactique, nébuleuses d'émission, étoiles brillantes, galaxies lointaines ----------
+   Textures périodiques (elles se répètent sans couture), tramées comme le reste du ciel, dessinées à texels doublés */
+let skyDeep=null,skyDeepGal=null,skyNeb=null,skyBright=null;
+// bande galactique : un fleuve d'étoiles fines en diagonale, sa lueur et des traînées de poussière sombre ; galaxies et
+// amas lointains semés autour. Bruit calculé à demi-résolution, trame et étoiles au pixel (texels fins, pas de pavés)
+const SKY_S=768;
+function* deepGen(gal){
+  const S=SKY_S,h=S>>1,c=mkCanvas(S,S),g=c.getContext('2d'),im=g.createImageData(S,S),d=im.data,GA=galById(gal)||GALAXIES[0],hc=hex(GA.col),r=mulberry(gal.length*977+13);
+  const V=new Float32Array(h*h),LN=new Uint8Array(h*h);
+  for(let y=0;y<h;y++){for(let x=0;x<h;x++){const X=x*2,Y=y*2,u=(X+Y)/S,band=Math.pow(0.5+0.5*Math.cos((u-0.5)*TAU),5),n=pfbm2(X/128,Y/128,6,701+gal.length,5),m=pfbm2(X/32,Y/32,24,733,3);
+      const ln=Math.abs(pfbm2(X/96+3,Y/96,8,777,3)-0.5)<0.035+0.035*band&&band>0.3;LN[y*h+x]=ln?1:0;V[y*h+x]=(band*(0.5+0.9*(n-0.5))+(m-0.5)*0.22)*(ln?0.3:1);}
+    if((y&15)===15)yield;}
+  const glow=[[16,12,34],[30,22,60],[Math.min(255,hc[0]*0.38+20),Math.min(255,hc[1]*0.36+14),Math.min(255,hc[2]*0.42+30)]];
+  for(let y=0;y<S;y++){for(let x=0;x<S;x++){const o=(y*S+x)*4,k=(y>>1)*h+(x>>1),v=V[k],u=(x+y)/S,band=Math.pow(0.5+0.5*Math.cos((u-0.5)*TAU),5),bz=bay(x,y);
+      if(v>0.16&&bz<Math.min(1,(v-0.1)*1.7)){const C=glow[v>0.6?2:v>0.36?1:0];d[o]=C[0];d[o+1]=C[1];d[o+2]=C[2];d[o+3]=150;}
+      else if(LN[k]&&band>0.4&&bz<0.6){d[o]=4;d[o+1]=3;d[o+2]=9;d[o+3]=140;}
+      if(r()<0.0018+band*0.022*(LN[k]?0.15:1)){const q=r();d[o]=q<0.4?210:q<0.8?245:255;d[o+1]=q<0.4?222:q<0.8?240:225;d[o+2]=q<0.4?255:q<0.8?250:200;d[o+3]=70+band*130+q*40;}}
+    if((y&31)===31)yield;}
+  g.putImageData(im,0,0);
+  // galaxies lointaines (spirales et elliptiques) et amas globulaires
+  for(let i=0;i<6;i++){const x=r()*S,y=r()*S,rad=4+r()*8,an=r()*PI,sp=r()<0.6,col=[[180,160,255],[255,205,170],[160,230,255]][(r()*3)|0];
+    for(let yy=-rad*2;yy<=rad*2;yy++)for(let xx=-rad*2;xx<=rad*2;xx++){const uu=(xx*Math.cos(an)+yy*Math.sin(an))/rad,vv=(-xx*Math.sin(an)+yy*Math.cos(an))/(rad*(sp?0.42:0.6)),q=Math.hypot(uu,vv);if(q>1)continue;
+      const arm=sp?0.5+0.5*Math.cos(2*Math.atan2(vv,uu)-q*6):1,v=(1-q)*(0.45+0.55*arm)+(q<0.18?0.6:0);if(bay((xx+64)&63,(yy+64)&63)>v*0.85)continue;
+      g.fillStyle=`rgba(${col[0]},${col[1]},${col[2]},${Math.min(0.75,0.2+v*0.55)})`;g.fillRect(((Math.round(x+xx)%S)+S)%S,((Math.round(y+yy)%S)+S)%S,1,1);}}
+  for(let i=0;i<5;i++){const x=r()*S,y=r()*S,rad=3+r()*4;for(let k=0;k<70;k++){const a=r()*TAU,dd=Math.pow(r(),1.8)*rad*2.2;g.fillStyle=r()<0.5?'#fff2d8':'#e8f0ff';g.globalAlpha=0.35+r()*0.5;g.fillRect(((Math.round(x+Math.cos(a)*dd)%S)+S)%S,((Math.round(y+Math.sin(a)*dd)%S)+S)%S,1,1);}g.globalAlpha=1;}
+  return c;}
+// nébuleuse d'émission du système : palette choisie selon l'étoile (deux gaz qui se mêlent), cœurs lumineux, filaments
+const NEB_PAL={jaune:['#ff8a5a','#ff4f9a'],orange:['#ff7a4a','#c050ff'],rouge:['#ff4a5a','#7a5aff'],bleue:['#4ab8ff','#c060ff'],blanche:['#9ad0ff','#ff7ac8'],
+  violette:['#b060ff','#ff5aa0'],rose:['#ff6ab8','#6a8aff'],emeraude:['#3affc0','#4a8aff'],naine:['#cfe8ff','#9a6aff']};
+function* nebGen(sy){
+  const S=SKY_S,h=S>>1,c=mkCanvas(S,S),g=c.getContext('2d'),im=g.createImageData(S,S),d=im.data,sd=((sy.gx*31+sy.gy*17)|0)+911,P=(NEB_PAL[sy.star]||NEB_PAL.jaune).map(hex);
+  const V=new Float32Array(h*h),Mx=new Float32Array(h*h);
+  for(let y=0;y<h;y++){for(let x=0;x<h;x++){const X=x*2,Y=y*2,wx=pfbm2(X/192+1,Y/192,4,sd+3,3),wy=pfbm2(X/192+5,Y/192+2,4,sd+7,3);
+      const n=pfbm2(X/192+(wx-0.5)*1.3,Y/192+(wy-0.5)*1.3,4,sd,5),f=Math.abs(pfbm2(X/64,Y/64,12,sd+19,4)-0.5);
+      V[y*h+x]=(n-0.55)*3.2+(0.1-f)*1.3*(n>0.5?1:0);Mx[y*h+x]=pfbm2(X/256,Y/256,3,sd+41,2);}
+    if((y&15)===15)yield;}
+  for(let y=0;y<S;y++){for(let x=0;x<S;x++){const o=(y*S+x)*4,k=(y>>1)*h+(x>>1),v=V[k];if(v<=0||bay(x,y)>Math.min(1,v*1.4))continue;
+      const m=clamp((Mx[k]-0.35)*3,0,1),C0=P[0],C1=P[1],L=Math.min(1,0.28+v*0.8),cr=(C0[0]+(C1[0]-C0[0])*m)*L,cg=(C0[1]+(C1[1]-C0[1])*m)*L,cb=(C0[2]+(C1[2]-C0[2])*m)*L;
+      d[o]=cr;d[o+1]=cg;d[o+2]=cb;d[o+3]=Math.min(120,40+v*90);}
+    if((y&31)===31)yield;}
+  g.putImageData(im,0,0);return c;}
+// étoiles brillantes : couleur selon leur type, aigrettes en croix, halo tramé
+function makeBright(S,seed){const c=mkCanvas(S,S),g=c.getContext('2d'),r=mulberry(seed),C=['#cfe0ff','#ffffff','#fff2c8','#ffd2a0','#ffb0a0','#a8d8ff'];
+  for(let i=0;i<14;i++){const x=(r()*(S-16)+8)|0,y=(r()*(S-16)+8)|0,col=C[(r()*C.length)|0],big=r()<0.35,L=big?4:2;g.globalAlpha=0.22;g.fillStyle=col;g.fillRect(x-1,y-1,3,3);
+    g.globalAlpha=0.55;for(let k=1;k<=L;k++){g.globalAlpha=0.55*(1-k/(L+1));g.fillRect(x-k,y,1,1);g.fillRect(x+k,y,1,1);g.fillRect(x,y-k,1,1);g.fillRect(x,y+k,1,1);}g.globalAlpha=1;g.fillStyle='#ffffff';g.fillRect(x,y,1,1);}
+  return c;}
 // au chargement, seule la planète de l'écran titre est préparée ; les autres suivent en tâche de fond (bgWork)
 const GEN_STEPS=8;
 const titlePlanet=()=>PLANETS.find(p=>p.id===SYS.title)||PLANETS[0];
 function runFor(g,ms){const t0=performance.now();let r;do r=g.next();while(!r.done&&performance.now()-t0<ms);return r;}
 // ciel du système : deux couches de gaz aux couleurs de son étoile
 const skyGen=(s,k)=>makeGasGen(512,SKIES[s.id][k],((k?23:11)+s.gx*7+s.gy*13)|0,{t0:0.44,t1:0.95,pow:k?1.2:1.25,amax:0.85});
-function* skyJob(s){const a=yield* skyGen(s,0),b=yield* skyGen(s,1);gasTeal=a;gasViolet=b;}
+function* skyJob(s){const a=yield* skyGen(s,0),b=yield* skyGen(s,1);gasTeal=a;gasViolet=b;skyNeb=yield* nebGen(s);if(skyDeepGal!==s.gal){skyDeep=yield* deepGen(s.gal);skyDeepGal=s.gal;}}
 // nébuleuses : quatre couches de gaz tramé en parallaxe, sur un vide presque noir
 const GAS_FAR=['#070a18','#0a0f26','#0f1634','#151d44'];
 function genNext(){
-  if(genStep===0){gasFar=makeGas(512,GAS_FAR,31,{t0:0.32,t1:0.86,amax:0.9});stars1=makeStars(512,260,5,0.45);stars2=makeStars(512,110,9,0.9);}
+  if(genStep===0){gasFar=makeGas(512,GAS_FAR,31,{t0:0.32,t1:0.86,amax:0.9});stars1=makeStars(512,260,5,0.45);stars2=makeStars(512,110,9,0.9);skyBright=makeBright(512,77);skyDeep=runFor(deepGen(SYS.gal),1e9).value;skyDeepGal=SYS.gal;}
   else if(genStep===1){gasTeal=runFor(skyGen(SYS,0),1e9).value;}
-  else if(genStep===2){gasViolet=runFor(skyGen(SYS,1),1e9).value;}
+  else if(genStep===2){gasViolet=runFor(skyGen(SYS,1),1e9).value;skyNeb=runFor(nebGen(SYS),1e9).value;}
   else if(genStep===3){gasDust=makeGas(512,['#010208','#02030a'],47,{t0:0.56,t1:0.8,amax:0.7});resetSun();prepSun();}
   else if(genStep===4){sndDone=renderSounds(240);if(!sndDone)return;}
   else if(genStep===5){
@@ -14117,12 +14165,15 @@ function render(){
   if(VZ<1){const hw=Math.ceil(W/2),hh=Math.ceil(H/2);if(!bgHalf||bgHalf.width!==hw||bgHalf.height!==hh){bgHalf=mkCanvas(hw,hh);bgHalfG=bgHalf.getContext('2d',{alpha:false});}
     bgHalfG.imageSmoothingEnabled=false;bg=bgHalfG;bk=0.5;W=hw;H=hh;}
   bg.fillStyle='#03050c';bg.fillRect(0,0,W,H);
-  if(gasFar)drawTiled(gasFar,0.04*bk,gk*bk,bg);
+  if(skyDeep)drawTiled(skyDeep,0.015*bk,bk,bg);
+  if(gasFar){bg.globalAlpha=0.85;drawTiled(gasFar,0.04*bk,gk*bk,bg);bg.globalAlpha=1;}
   if(stars1)drawTiled(stars1,0.07*bk,bk,bg);
+  if(skyNeb)drawTiled(skyNeb,0.055*bk,bk,bg);
   if(gasTeal){const vt=arena.on?1:smooth(WORLD_R*0.22,WORLD_R*0.48,hyp(cam.x,cam.y));bg.globalAlpha=1-vt*0.65;drawTiled(gasTeal,0.12*bk,gk*bk,bg);bg.globalAlpha=1;if(gasViolet&&vt>0.01){bg.globalAlpha=vt;drawTiled(gasViolet,0.16*bk,gk*bk,bg);bg.globalAlpha=1;}}
   if(gasDust)drawTiled(gasDust,0.22*bk,gk*bk,bg);
   W=SW;H=SH;if(bg!==ctx)ctx.drawImage(bgHalf,0,0,bgHalf.width*2,bgHalf.height*2);
   if(stars2)drawTiled(stars2,0.3);
+  if(skyBright)drawTiled(skyBright,0.12);
   drawTwinkles(now);
   screenSpace(false);
   const shx=shake>0?rnd(-shake,shake):0,shy=shake>0?rnd(-shake,shake):0;
