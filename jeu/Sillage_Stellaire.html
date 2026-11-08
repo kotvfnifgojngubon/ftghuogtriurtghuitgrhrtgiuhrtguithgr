@@ -494,6 +494,21 @@ body.touch .hud-bottom{padding-bottom:276px}
 .price b{font-size:16px;color:var(--amber)}
 .price.own b{color:var(--teal)}
 .price span{font-family:var(--f-label);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+/* intérieur des vaisseaux humains */
+.in-ov{position:fixed;inset:0;z-index:60;background:#05070d}
+.in-ov[hidden]{display:none}
+.in-ov canvas#inCv{position:absolute;inset:0;image-rendering:pixelated;image-rendering:crisp-edges}
+.in-top{position:absolute;left:14px;top:10px;max-width:min(760px,70vw);background:rgba(5,8,14,.72);border:2px solid var(--line-hi);padding:8px 12px;display:grid;gap:2px}
+.in-top h2{margin:0;font-size:20px}.in-top p{margin:0}
+.in-mini{position:absolute;right:14px;top:10px;border:2px solid var(--line-hi);background:#05070d;image-rendering:pixelated}
+.in-hint{position:absolute;left:50%;bottom:64px;transform:translateX(-50%);margin:0;padding:4px 10px;background:rgba(5,8,14,.75);border:1px solid var(--line-hi);font-family:var(--f-label);font-size:12px;color:#a6f6ff}
+.in-hint:empty{display:none}
+.in-msg{position:absolute;left:50%;top:22%;transform:translateX(-50%);margin:0;padding:6px 12px;background:rgba(5,8,14,.8);border:1px solid var(--line-hi);color:var(--ink);transition:opacity .3s;pointer-events:none;max-width:70vw;text-align:center}
+.in-panel{position:absolute;right:14px;top:120px;width:min(380px,90vw);max-height:70vh;overflow:auto;background:rgba(8,11,20,.94);border:2px solid var(--line-hi);padding:12px;display:grid;gap:6px;font-size:13px}
+.in-panel h3{margin:0}.in-panel p{margin:0}
+.in-foot{position:absolute;left:14px;right:14px;bottom:10px;display:flex;gap:12px;align-items:center;justify-content:space-between;background:rgba(5,8,14,.72);border:2px solid var(--line-hi);padding:6px 10px}
+.in-foot p{margin:0}
+@media (max-width:700px){.in-mini{display:none}.in-top{max-width:calc(100vw - 28px)}}
 /* plans techniques en rayons X */
 .panel.xr-panel{width:min(1640px,100%)}
 .xr-pick label{display:flex;gap:8px;align-items:center;font-family:var(--f-label);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
@@ -869,7 +884,7 @@ body.touch .hud-bottom{padding-bottom:276px}
     </header>
     <div class="hangar-body" id="hangarBody"></div>
     <div class="trial-pick" id="trialPick" hidden></div>
-    <footer class="panel-foot"><p class="cap" id="hangarNote"></p><button id="btnHangarBack" class="btn" type="button">Retour</button><button id="btnHangarXray" class="btn" type="button" hidden>Plans rayons X</button><button id="btnHangarTrial" class="btn" type="button" hidden>Essai : anciens capitaux</button><button id="btnHangarOk" class="btn primary" type="button">Continuer</button></footer>
+    <footer class="panel-foot"><p class="cap" id="hangarNote"></p><button id="btnHangarBack" class="btn" type="button">Retour</button><button id="btnHangarXray" class="btn" type="button" hidden>Plans rayons X</button><button id="btnHangarInt" class="btn" type="button" hidden>Intérieur</button><button id="btnHangarTrial" class="btn" type="button" hidden>Essai : anciens capitaux</button><button id="btnHangarOk" class="btn primary" type="button">Continuer</button></footer>
   </div>
 </section>
 
@@ -912,8 +927,18 @@ body.touch .hud-bottom{padding-bottom:276px}
     </header>
     <nav class="xr-tabs" id="xrTabs" aria-label="Vues du plan"></nav>
     <div class="xr-body" id="xrBody"></div>
-    <footer class="panel-foot"><p class="cap" id="xrNote"></p><button id="xrExport" class="btn small" type="button">Exporter les données (JSON)</button><button id="xrClose" class="btn primary" type="button">Fermer</button></footer>
+    <footer class="panel-foot"><p class="cap" id="xrNote"></p><button id="xrInt" class="btn small" type="button">Visiter l’intérieur</button><button id="xrExport" class="btn small" type="button">Exporter les données (JSON)</button><button id="xrClose" class="btn primary" type="button">Fermer</button></footer>
   </div>
+</section>
+
+<section id="interior" class="in-ov" hidden aria-label="Intérieur du vaisseau">
+  <canvas id="inCv"></canvas>
+  <div class="in-top"><p class="eyebrow" id="inEyebrow"></p><h2 id="inName"></h2><p id="inWhere"></p><p id="inCrew" class="cap"></p></div>
+  <canvas id="inMini" class="in-mini"></canvas>
+  <p class="in-hint" id="inHint"></p>
+  <p class="in-msg" id="inMsg"></p>
+  <div class="in-panel" id="inPanel" hidden></div>
+  <div class="in-foot"><p id="inHelp" class="cap"></p><button id="inExit" class="btn primary" type="button">Sortir</button></div>
 </section>
 
 <section id="complete" class="overlay" hidden aria-labelledby="doneName">
@@ -15652,7 +15677,7 @@ function renderHangar(){
       grid.appendChild(b);}
     body.appendChild(grid);
     $('hangarNote').textContent='Quatre factions : l’Armée Spatiale Humaine ; les corsaires et leurs coques humaines volées, repeintes et armées à l’atelier du clan ; les Xal’thar, chasseurs et bombardiers à plasma autour de leur vaisseau mère ; les Machines, cadres de bronze millénaires réparés en vol par leurs drones et protégés par leur bouclier orbital.';
-    ok.textContent='Continuer';ok.disabled=!hangar.fac;$('btnHangarBack').textContent='Retour';$('btnHangarTrial').hidden=true;$('btnHangarXray').hidden=true;
+    ok.textContent='Continuer';ok.disabled=!hangar.fac;$('btnHangarBack').textContent='Retour';$('btnHangarTrial').hidden=true;$('btnHangarXray').hidden=true;$('btnHangarInt').hidden=true;
     return;
   }
   const F=FACTIONS.find(f=>f.id===hangar.fac)||FACTIONS[0];
@@ -15691,7 +15716,7 @@ function renderHangar(){
   body.appendChild(loadoutPanel(M));
   $('hangarNote').textContent=FREE_MODE?'Mode libre : les vaisseaux des quatre factions sont tous à toi et les crédits sont illimités. Les onglets du haut changent de faction ; piloter un vaisseau d’une autre faction ne change pas ton camp.':hangar.firstRun?'Budget de départ : '+fmt(startBudget(F.id))+' cr. Choisis l’un de ces trois appareils ; la monnaie te reste. Les vaisseaux plus grands s’achètent ensuite au hangar d’un relais, avec l’argent des missions. L’essai en arène ne coûte rien.'
     :cr+(own?'Les vaisseaux de ta flotte s’échangent gratuitement.':game.credits>=M.price?'Ce modèle coûte '+fmt(M.price)+' cr ; il rejoint ta flotte pour de bon.':'Il te manque '+fmt(M.price-game.credits)+' cr pour ce modèle. L’essai en arène reste gratuit.');
-  $('btnHangarTrial').hidden=false;$('btnHangarTrial').textContent='Essai en arène : '+M.n;$('btnHangarXray').hidden=false;
+  $('btnHangarTrial').hidden=false;$('btnHangarTrial').textContent='Essai en arène : '+M.n;$('btnHangarXray').hidden=false;$('btnHangarInt').hidden=!(!M.fac||M.fac==='humain');
   if(hangar.firstRun){ok.textContent=FREE_MODE?'Décoller · '+M.n:'Acheter et décoller · '+M.n+' · '+fmt(M.price)+' cr';ok.disabled=false;}
   else if(game.ship===M.id){const same=!player||!player.tpl||player.tpl.key===shipKey(M.id);ok.textContent=same?'Vaisseau actuel':'Appliquer l’emport';ok.disabled=same;}
   else if(own){ok.textContent='Piloter · '+M.n;ok.disabled=false;}
@@ -17067,6 +17092,8 @@ $('xrExport').addEventListener('click',()=>{const P=XR.cache.get(xrUI.sid);if(P)
 const XR_REF={"m:fulgur":"27fb5082","m:pique":"716d7eaf","m:vigie":"8a1334b4","m:epervier":"8cba8d93","m:lame":"b5b707cd","m:cuirasse":"5a52ba2d","m:harfang":"9fa3f823","m:busard":"15b4618b","m:rapace":"117c497d","m:massue":"cca03d0d","m:b120":"36a238a4","m:enclume":"3da660e3","m:gorgone":"5d99f016","m:foudre":"4504e2dd","m:ombre7":"6ad02518","m:eclipse":"5666fcea","m:nyx":"941addb9","m:eclaireur":"09f7fc65","m:vedette":"8a60ea6a","m:murmure":"afb7938a","m:gardienne":"491e0abb","m:sabre":"b47c92c0","m:rempart":"73c97bb9","m:sentinelle":"69392b35","m:bastion":"3f1dbea5","m:monolithe":"153c538e","m:souverain":"016193d4","m:meteore":"45d66b6f","m:ash2500":"43f916a8","m:citadelle":"7d577df7","m:nidaigle":"adb9bec7","m:faucheur":"0ec1ff08","m:convoyeur":"105b3e2a","m:pioche":"3dd26c0c","m:pelle":"6924d61f","m:arpenteur":"54859ec9","m:mulet":"6f860b52","m:boeuf":"e1d52633","m:longcourrier":"3baa6e82","m:messager":"08591eec","h:chasseur":"4c52c517","h:bombardier":"cfe75aa9","h:bombardeur":"0684253c","h:fregate":"676e1b75","h:croiseur":"76791cfa","h:capital":"b83aff63","h:intercepteur":"04ef2531","h:corvette":"11bcf51b","h:furtif":"1021a140","h:minier":"a55d0535","h:cargo":"c84af3bb","c:raider":"920e747a","c:frigate":"d35a49d8","c:cruiser":"432fb34f","c:leviathan":"15be90aa","c:hunter":"66da1165","c:hunterHeavy":"f2b1896c","c:freighter":"11d1aee1","k:dread":"1c1adbc6","k:carrier":"4a55d766","k:bastion":"e9a9daad"};
 $('btnXray').addEventListener('click',()=>{sfx.click();xrOpen('m:'+(MODEL_BY[game.ship]?game.ship:'epervier'));});
 $('btnHangarXray').addEventListener('click',()=>{sfx.click();xrOpen('m:'+(MODEL_BY[hangar.sel]?hangar.sel:'epervier'));});
+$('btnHangarInt').addEventListener('click',()=>{sfx.click();inOpen('m:'+(MODEL_BY[hangar.sel]?hangar.sel:'epervier'));});
+$('xrInt').addEventListener('click',()=>{if(!inHumanSrc(xrSrc(xrUI.sid))){$('xrNote').textContent='Intérieur visitable : vaisseaux de la faction humaine seulement.';return;}inOpen(xrUI.sid);});
 
 /* =========================================================
    Avaries : dégâts internes d'après les plans en rayons X
@@ -18508,11 +18535,772 @@ function drawSpecials(t){misDraw(t);drawCMLures(t);drawDomes(t);drawWells(t);dra
 function clearSpecials(){DECOYS.length=0;WELLS.length=0;TETHERS.length=0;RDRONES.length=0;DOMES=[];}
 
 /* =========================================================
+   Intérieurs jouables des vaisseaux humains
+   Tout part des données du jeu : le plan rayons X (xrBuild : composants, emprises, hauteurs, réseaux, cloisons,
+   compartiments), le plan intérieur (buildInterior : salles, coursives, portes, déjà utilisé pour la pression et
+   l'abordage), l'équipage (CREW_N, rôle du plan) et les règles d'emport des porte-flottes (st.fighters).
+   Repère : celui du gabarit, en pixels de coque (1 px = 2/3 m), proue à droite, bâbord en haut, comme le plan X.
+   Grille de déplacement au pixel de coque : 0 rien, 1 debout, 2 accroupi, 3 à quatre pattes (selon la hauteur sous
+   plafond du volume). Les factions non humaines n'ont pas d'intérieur visitable.
+   ========================================================= */
+const IN={open:false,M:null,cache:new Map(),Z:9,cam:{x:0,y:0},keys:{},pl:null,crew:[],tiles:new Map(),tq:[],t:0,sel:null,panel:null,hover:null,msg:'',msgT:0,live:null,back:null};
+const IN_SPD={walk:3.3,run:9,crouch:2.2,crawl:1.7};               // pixels de coque par seconde (≈ 2,2 / 6 / 1,5 / 1,1 m/s)
+const IN_POST={stand:1.85,crouch:1.2};                               // hauteurs sous plafond (m) : debout, accroupi, sinon à quatre pattes
+// noms des volumes et des salles
+const IN_VOLN={cockpit:'Poste d’équipage',rest:'Poste de repos',tunnel:'Tunnel de visite',bay:'Soute à bombes',duct:'Gaine de visite (déduite)'};
+// le vaisseau a-t-il un intérieur visitable ? (humains seulement : modèles de l'armée et coques de base de la flotte)
+function inHumanSrc(src){if(!src)return false;if(src.kind==='hull')return true;if(src.kind!=='model')return false;const M=src.M||MODEL_BY[src.key];return !!M&&(!M.fac||M.fac==='humain');}
+function inSidOf(t){if(!t)return null;const sid=xrSidOf(t);const src=sid&&xrSrc(sid);return inHumanSrc(src)?sid:null;}
+// posture selon la hauteur libre (m)
+const inPost=h=>h>=IN_POST.stand?1:h>=IN_POST.crouch?2:3;
+
+/* ---------- construction ---------- */
+function inBuild(sid){
+  if(IN.cache.has(sid))return IN.cache.get(sid);
+  const src=xrSrc(sid);if(!inHumanSrc(src))return null;
+  // le gabarit d'abord : le plan rayons X le garde alors en mémoire (avec son plan intérieur) au lieu de le relâcher
+  const t=xrTpl(src),P=xrBuild(sid);if(!P)return null;
+  const w=t.w,h=t.h,R=P.role,cat=R.cat,N=w*h,k=XR.mpp;
+  const M={sid,src,P,t,w,h,N,cat,R,name:src.n,cls:XR_CLS[cat]||cat,small:R.small,seat:cat==='chasseur'||cat==='intercepteur',
+    walk:new Uint8Array(N),area:new Int16Array(N).fill(-1),doorAt:new Int16Array(N).fill(-1),wall:new Uint8Array(N),block:new Uint8Array(N),
+    areas:[],doors:[],eq:[],nets:P.links||[],hyp:[],hangars:[],slots:[],posts:[],beds:[],seats:[],hullT:t.type};
+  const hull=i=>t.type[i]?1:0;
+  M.inHull=(x,y)=>x>=0&&y>=0&&x<w&&y<h&&t.type[y*w+x]>0;
+  // équipements du plan (sauf la peau et les volumes, qui deviennent des zones)
+  for(const o of P.comps){if(o.data&&o.data.whole)continue;M.eq.push(o);}
+  if(M.seat)inBuildSeat(M);
+  else if(M.small)inBuildSmall(M);
+  else inBuildLarge(M);
+  // murs : pixel de coque non praticable voisin d'un pixel praticable ; peau : bord extérieur de la coque
+  if(!M.seat)for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(!t.type[i]||M.walk[i]||M.block[i])continue;let nb=0;
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const X=x+dx,Y=y+dy;if(X>=0&&Y>=0&&X<w&&Y<h&&M.walk[Y*w+X])nb=1;}
+    if(nb)M.wall[i]=1;}
+  inCrewPlan(M);
+  IN.cache.set(sid,M);return M;
+}
+function inArea(M,o){o.id=M.areas.length;M.areas.push(o);return o;}
+function inBox(o){return{x0:o.x0,y0:o.y0,x1:o.x1,y1:o.y1};}
+
+/* ---------- grands vaisseaux : salles et coursives du plan intérieur ---------- */
+function inBuildLarge(M){
+  const t=M.t,w=M.w,h=M.h,P=M.P,ip=t.ip||(t.ip=buildInterior(t,M.R.giant)),GW=ip.GW,GH=ip.GH;M.ip=ip;
+  const hb=2;                                                        // demi-largeur de la coursive praticable (4 px ≈ 2,7 m)
+  const set=(x,y,ar,v)=>{if(x<0||y<0||x>=w||y>=h)return;const i=y*w+x;if(!t.type[i])return;M.walk[i]=v||1;M.area[i]=ar;};
+  // zones : une par compartiment du plan intérieur (salle ou tronçon de coursive)
+  ip.comps.forEach((c,ci)=>{const room=c.type==='room';const nm=room?(ROOMN[c.code]||'Salle'):'Coursive';
+    inArea(M,{kind:room?'room':'corr',code:c.code,name:nm,press:true,ci,cx:c.cx,cy:c.cy,mods:c.mods});});
+  for(let g=0;g<GW*GH;g++){const ci=ip.cid[g];if(ci<0)continue;const gx=g%GW,gy=(g/GW)|0,X0=ip.X0+gx*10,Y0=ip.Y0+gy*10;
+    if(ip.kind[g]===3){for(let y=0;y<10;y++)for(let x=0;x<10;x++)set(X0+x,Y0+y,ci);}
+    else{ // coursive : bande centrale, prolongée vers chaque case voisine où l'on peut passer
+      const L=ip.link[g];for(let y=5-hb;y<5+hb;y++)for(let x=5-hb;x<5+hb;x++)set(X0+x,Y0+y,ci);
+      for(let kk=0;kk<4;kk++){if(!(L&(1<<kk)))continue;const [dx,dy]=DIR4[kk];
+        if(dx)for(let x=(dx>0?5:0);x<(dx>0?10:5);x++)for(let y=5-hb;y<5+hb;y++)set(X0+x,Y0+y,ci);
+        else for(let y=(dy>0?5:0);y<(dy>0?10:5);y++)for(let x=5-hb;x<5+hb;x++)set(X0+x,Y0+y,ci);}}}
+  // cloisons entre compartiments différents : on retire le pixel de bord de chaque côté (cloison de 1,3 m)
+  const cut=[];for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(!M.walk[i])continue;const a=M.area[i];
+    for(const [dx,dy] of DIR4){const X=x+dx,Y=y+dy;if(X<0||Y<0||X>=w||Y>=h){cut.push(i);break;}const j=Y*w+X;if(!t.type[j]){cut.push(i);break;}if(M.walk[j]&&M.area[j]!==a){cut.push(i);break;}}}
+  for(const i of cut){M.walk[i]=0;}
+  // portes du plan intérieur : ouverture dans la cloison, de la largeur de la coursive (ou 2 px entre deux salles)
+  ip.doors.forEach((d,j)=>{const A=M.areas[d.a],B=M.areas[d.b],corr=A.kind==='corr'||B.kind==='corr',half=corr?hb:1;
+    const xa=d.ga%GW,ya=(d.ga/GW)|0,xb=d.gb%GW,yb=(d.gb/GW)|0,horiz=ya===yb; // horiz : cases côte à côte, cloison verticale
+    const ex=ip.X0+Math.max(xa,xb)*10,ey=ip.Y0+Math.max(ya,yb)*10,cx=Math.round(d.x),cy=Math.round(d.y);
+    const D={id:M.doors.length,kind:'door',a:d.a,b:d.b,ipd:j,vert:horiz,x:horiz?ex:cx,y:horiz?cy:ey,half,open:true,auto:true,anim:1,px:[]};
+    if(horiz){for(let y=cy-half;y<cy+half;y++)for(const x of [ex-1,ex]){if(!M.inHull(x,y))continue;const i=y*w+x;M.walk[i]=1;M.area[i]=x<ex?(xa<xb?d.a:d.b):(xa<xb?d.b:d.a);M.doorAt[i]=D.id;D.px.push(i);}}
+    else{for(let x=cx-half;x<cx+half;x++)for(const y of [ey-1,ey]){if(!M.inHull(x,y))continue;const i=y*w+x;M.walk[i]=1;M.area[i]=y<ey?(ya<yb?d.a:d.b):(ya<yb?d.b:d.a);M.doorAt[i]=D.id;D.px.push(i);}}
+    if(D.px.length)M.doors.push(D);});
+  // cloisons étanches transversales du plan : leurs portes deviennent des portes étanches ; là où une coursive les
+  // traverse sans porte du plan intérieur, une porte étanche est posée dans la coursive
+  for(const b of P.bulk||[]){const x=Math.round(b.x);
+    for(const bd of b.doors){if(bd.gd>=0){const D=M.doors.find(q=>q.ipd===bd.gd);if(D){D.kind='bulk';D.auto=true;D.bulk=b.id;}continue;}
+      const y=Math.round(bd.y),D={id:M.doors.length,kind:'bulk',bulk:b.id,vert:true,x,y,half:hb,open:true,auto:true,anim:1,px:[],a:-1,b:-1};
+      for(let yy=y-hb-1;yy<=y+hb;yy++){if(!M.inHull(x,yy))continue;const i=yy*w+x;if(yy<y-hb||yy>=y+hb){M.walk[i]=0;continue;}if(M.area[i]>=0){M.doorAt[i]=D.id;D.px.push(i);D.a=M.area[i];}}
+      if(D.px.length)M.doors.push(D);}}
+  // sas d'amarrage (module I) : la salle devient un sas, avec une porte extérieure dans la coque, au plus près du bord
+  M.areas.forEach(A=>{if(A.kind!=='room'||A.code!=='I')return;A.kind='airlock';A.name='Sas d’amarrage';
+    let best=null,bd=1e9;for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(M.area[i]!==A.id)continue;for(const [dx,dy] of DIR4){let X=x,Y=y,d=0;while(M.inHull(X+dx,Y+dy)&&!(M.walk[(Y+dy)*w+X+dx]&&M.area[(Y+dy)*w+X+dx]!==A.id)&&d<40){X+=dx;Y+=dy;d++;}
+      if(!M.inHull(X+dx,Y+dy)&&d<bd){bd=d;best={x,y,dx,dy,X,Y};}}}
+    if(best){const D={id:M.doors.length,kind:'outer',a:A.id,b:-1,vert:!!best.dx,x:best.X+(best.dx>0?1:0),y:best.Y+(best.dy>0?1:0),half:1,open:false,auto:false,anim:0,px:[],ex:best};
+      // passage du sas jusqu'à la porte extérieure (praticable, fermé par la porte)
+      let X=best.x,Y=best.y;for(let s=0;s<=bd;s++){for(let q=-1;q<1;q++){const xx=best.dx?X:X+q,yy=best.dy?Y:Y+q;if(M.inHull(xx,yy)){const i=yy*w+xx;M.walk[i]=1;M.area[i]=A.id;}}X+=best.dx;Y+=best.dy;}
+      M.doors.push(D);A.outer=D.id;}});
+  // volumes habitables du plan rayons X placés hors des salles du plan intérieur (passerelle, CIC, infirmerie…) :
+  // chacun devient une salle à son emplacement, reliée à la coursive la plus proche par un passage et une porte
+  const VOLT=new Set(['bridge','cic','abridge','dcs','med','galley','armory','shop','quarters','hold','dbay']);
+  const corr=new Uint8Array(M.N);for(let i=0;i<M.N;i++){const A=M.areas[M.area[i]];if(M.walk[i]&&A&&A.kind==='corr')corr[i]=1;}
+  for(const o of M.eq){if(o.kind!=='v'||!VOLT.has(o.type))continue;const cx=Math.floor((o.x0+o.x1)/2),cy=Math.floor((o.y0+o.y1)/2);if(M.inHull(cx,cy)&&M.walk[cy*w+cx])continue;
+    const A=inArea(M,{kind:'room',code:'',name:XRT[o.type][0],press:true,box:inBox(o),xr:o,cx:(o.x0+o.x1)/2,cy:(o.y0+o.y1)/2});let n=0;
+    for(let y=Math.floor(o.y0)+1;y<Math.ceil(o.y1)-1;y++)for(let x=Math.floor(o.x0)+1;x<Math.ceil(o.x1)-1;x++){if(!M.inHull(x,y))continue;const i=y*w+x;if(M.walk[i]||M.block[i])continue;
+      let edge=false;for(const [dx,dy] of DIR4){const j=(y+dy)*w+x+dx;if(!M.inHull(x+dx,y+dy)||(M.walk[j]&&M.area[j]!==A.id)){edge=true;break;}}if(edge)continue;M.walk[i]=1;M.area[i]=A.id;n++;}
+    if(n<6){A.kind='void';continue;}
+    const path=inNearPath(M,A,corr,160);if(!path){M.hyp.push(A.name+' : pas de coursive à portée, salle isolée.');continue;}
+    inCarve(M,path,A.id,1);const e=path[path.length-1],pr=path[Math.max(0,path.length-3)],vert=Math.abs(e[0]-pr[0])>Math.abs(e[1]-pr[1]);
+    const D={id:M.doors.length,kind:'door',a:A.id,b:-1,vert,x:Math.round(e[0]),y:Math.round(e[1]),half:1,open:true,auto:true,anim:1,px:[]};
+    for(let q=-1;q<1;q++){const X=vert?Math.round(e[0])-1:Math.round(e[0])+q,Y=vert?Math.round(e[1])+q:Math.round(e[1])-1;if(M.inHull(X,Y)){const i=Y*w+X;M.walk[i]=1;M.doorAt[i]=D.id;D.px.push(i);}}
+    if(D.px.length)M.doors.push(D);
+    M.hyp.push(A.name+' : volume du plan rayons X hors des salles du plan intérieur ; un passage (hypothèse) le relie à la coursive la plus proche.');}
+  // hangars des porte-flottes : pont d'envol et places des appareils embarqués (voir inHangars)
+  if(M.t.mods.some(m=>m.code==='V'))inHangars(M);
+  // équipements : ceux qui sont dans une salle bloquent le passage, en laissant une allée le long des cloisons et devant
+  // les portes ; ceux des espaces techniques restent hors d'atteinte (on les voit derrière les cloisons)
+  for(const o of M.eq){if(o.kind!=='s')continue;inBlockEq(M,o,1.5);}
+  inDoorClear(M);
+  M.hyp.push('Une coursive du plan intérieur (case de 6,7 m) est représentée par une allée de 2,7 m au centre de la case ; le reste de la case porte les conduites des réseaux.');
+  M.hyp.push('Plan à un seul niveau : comme la vue de dessus du plan rayons X, il projette tous les ponts sur un même plan.');
+}
+// un équipement solide bloque le passage dans sa salle, en gardant une allée (marge) le long des cloisons
+function inBlockEq(M,o,margin){const w=M.w,x0=Math.floor(o.x0+0.2),x1=Math.ceil(o.x1-0.2),y0=Math.floor(o.y0+0.2),y1=Math.ceil(o.y1-0.2);
+  if((o.x1-o.x0)*(o.y1-o.y0)<0.6)return;
+  for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){if(!M.inHull(x,y))continue;const i=y*w+x;if(!M.walk[i]||M.doorAt[i]>=0)continue;
+    // allée : on ne bloque pas un pixel à moins de « margin » d'un bord de la zone
+    let edge=false;const m=Math.ceil(margin);for(let d=1;d<=m&&!edge;d++)for(const [dx,dy] of DIR4){const X=x+dx*d,Y=y+dy*d;if(!M.inHull(X,Y)||!M.walk[Y*w+X]&&!M.block[Y*w+X]||M.area[Y*w+X]!==M.area[i]){edge=true;break;}}
+    if(edge)continue;M.walk[i]=0;M.block[i]=1;}}
+// devant chaque porte, deux pixels libres de chaque côté
+function inDoorClear(M){const w=M.w;for(const D of M.doors)for(const i of D.px){const x=i%w,y=(i/w)|0;for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const X=x+dx,Y=y+dy;if(!M.inHull(X,Y))continue;const j=Y*w+X;if(M.block[j]){M.block[j]=0;M.walk[j]=1;}}}}
+
+/* ---------- petits appareils à équipage : volumes habitables du plan rayons X ---------- */
+function inBuildSmall(M){
+  const P=M.P,t=M.t,w=M.w,h=M.h,k=XR.mpp,vols=P.comps.filter(o=>o.kind==='v'&&['cockpit','rest','tunnel','bay'].includes(o.type));
+  const put=(x,y,ar,v)=>{if(!M.inHull(x,y))return;const i=y*w+x;if(M.walk[i]&&M.walk[i]<=v&&M.area[i]!==ar&&M.area[i]>=0)return;M.walk[i]=v;M.area[i]=ar;};
+  for(const o of vols){const hm=(o.z1-o.z0)*k,post=inPost(hm),A=inArea(M,{kind:o.type,name:o.type==='bay'?(o.name||IN_VOLN.bay):IN_VOLN[o.type],press:o.type!=='bay',comp:o,hm,box:inBox(o),post});
+    o.areaId=A.id;
+    for(let y=Math.floor(o.y0);y<Math.ceil(o.y1);y++)for(let x=Math.floor(o.x0);x<Math.ceil(o.x1);x++)put(x,y,A.id,post);}
+  // accès du plan (réseau « accès ») : gaine qui suit le tracé, praticable à quatre pattes
+  const ductArea=()=>M.duct||(M.duct=inArea(M,{kind:'duct',name:'Accès de visite',press:true,hm:0.9,post:3}));
+  for(const l of P.links){if(l.type!=='acces'||!l.path)continue;const D=ductArea();
+    for(let s=0;s+1<l.path.length;s++)inDuctSeg(M,l.path[s],l.path[s+1],D.id,put);}
+  // soutes à bombes : le plan ne donne pas d'accès intérieur (portes de soute ventrales). Hypothèse minimale : un trou
+  // d'homme avec sas relie la soute au volume pressurisé le plus proche, par une gaine dans la coque
+  const press=M.areas.filter(a=>a.press&&a.kind!=='duct');
+  for(const A of M.areas){if(A.kind!=='bay')continue;
+    const tgt=new Uint8Array(M.N);let any=0;for(let i=0;i<M.N;i++)if(M.walk[i]&&M.areas[M.area[i]]&&M.areas[M.area[i]].press){tgt[i]=1;any=1;}
+    if(!any)break;
+    const path=inHullPath(M,A.box,tgt);if(!path)continue;const D=ductArea();
+    for(let s=0;s+1<path.length;s++)inDuctSeg(M,path[s],path[s+1],D.id,put);
+    // sas au débouché dans la soute : porte étanche (la soute n'est pas pressurisée)
+    const e=path[0],di={id:M.doors.length,kind:'hatch',a:A.id,b:D.id,vert:false,x:e[0],y:e[1],half:1,open:false,auto:true,anim:0,px:[],sas:true};
+    for(let dy=-1;dy<=0;dy++)for(let dx=-1;dx<=0;dx++){const X=Math.round(e[0])+dx,Y=Math.round(e[1])+dy;if(M.inHull(X,Y)){const i=Y*w+X;M.walk[i]=Math.max(M.walk[i]||3,3);M.doorAt[i]=di.id;di.px.push(i);}}
+    if(di.px.length)M.doors.push(di);
+    M.hyp.push(A.name+' : le plan rayons X ne prévoit que les portes de soute ventrales ; un trou d’homme avec sas (hypothèse) la relie au volume pressurisé le plus proche.');}
+  // volumes isolés (aucun accès au plan) : gaine de visite déduite jusqu'au réseau du poste d'équipage
+  const ckA=M.areas.find(a=>a.kind==='cockpit');
+  if(ckA)for(const A of M.areas.slice()){if(A.kind==='duct'||A===ckA)continue;const cc=inFlood(M);if(cc[A.id]===cc[ckA.id])continue;
+    const tgt=new Uint8Array(M.N);for(let i=0;i<M.N;i++)if(M.walk[i]&&M.area[i]>=0&&cc[M.area[i]]===cc[ckA.id])tgt[i]=1;
+    const path=inHullPath(M,A.box,tgt);if(!path)continue;const D=ductArea();for(let s=0;s+1<path.length;s++)inDuctSeg(M,path[s],path[s+1],D.id,put);
+    M.hyp.push(A.name+' : aucun accès intérieur au plan ; gaine de visite déduite jusqu’au poste d’équipage.');}
+  // équipements solides dans les volumes : couchettes, râteliers, consoles (les sièges restent libres : on s'y assoit)
+  // (le poste d'équipage reste libre : on s'y tient assis, ses commandes ne bloquent pas)
+  for(const o of M.eq){if(o.kind!=='s'||o.type==='seat')continue;const a=M.area[Math.floor((o.y0+o.y1)/2)*w+Math.floor((o.x0+o.x1)/2)];if(a>=0&&M.areas[a].kind==='cockpit')continue;inBlockEq(M,o,0.8);}
+  inDoorClear(M);
+  for(const o of M.eq)if(o.type==='seat')M.seats.push({o,x:(o.x0+o.x1)/2,y:(o.y0+o.y1)/2,occ:null});
+}
+// tronçon de gaine (vue de dessus), largeur 1,3 m
+function inDuctSeg(M,a,b,ar,put){const n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])*2));for(let s=0;s<=n;s++){const x=a[0]+(b[0]-a[0])*s/n,y=a[1]+(b[1]-a[1])*s/n;
+  for(let dy=-1;dy<=0;dy++)for(let dx=-1;dx<=0;dx++){const X=Math.round(x)+dx,Y=Math.round(y)+dy;if(!M.inHull(X,Y))continue;const i=Y*M.w+X;if(!M.walk[i])put(X,Y,ar,3);}}}
+// plus court chemin dans la coque, d'une boîte vers un pixel cible ; évite les équipements solides (sauf impasse)
+function inHullPath(M,box,tgt){const w=M.w,h=M.h,N=M.N,cost=new Float32Array(N).fill(1),sol=new Uint8Array(N);
+  for(const o of M.eq){if(o.kind!=='s')continue;for(let y=Math.floor(o.y0);y<Math.ceil(o.y1);y++)for(let x=Math.floor(o.x0);x<Math.ceil(o.x1);x++)if(M.inHull(x,y))sol[y*w+x]=1;}
+  const dist=new Float32Array(N).fill(1e9),prev=new Int32Array(N).fill(-1),H=[];
+  const push=(d,i)=>{H.push([d,i]);let c=H.length-1;while(c>0){const p=(c-1)>>1;if(H[p][0]<=H[c][0])break;[H[p],H[c]]=[H[c],H[p]];c=p;}};
+  const pop=()=>{const r=H[0],l=H.pop();if(H.length){H[0]=l;let c=0;for(;;){const a=2*c+1,b=a+1;let m=c;if(a<H.length&&H[a][0]<H[m][0])m=a;if(b<H.length&&H[b][0]<H[m][0])m=b;if(m===c)break;[H[m],H[c]]=[H[c],H[m]];c=m;}}return r;};
+  for(let y=Math.floor(box.y0);y<Math.ceil(box.y1);y++)for(let x=Math.floor(box.x0);x<Math.ceil(box.x1);x++)if(M.inHull(x,y)){const i=y*w+x;dist[i]=0;push(0,i);}
+  let end=-1;while(H.length){const [d,i]=pop();if(d>dist[i])continue;if(tgt[i]){end=i;break;}const x=i%w,y=(i/w)|0;
+    for(const [dx,dy] of DIR4){const X=x+dx,Y=y+dy;if(!M.inHull(X,Y))continue;const j=Y*w+X,c=d+(sol[j]?25:1)+(M.walk[j]&&!tgt[j]?3:0);if(c<dist[j]){dist[j]=c;prev[j]=i;push(c,j);}}}
+  if(end<0)return null;const pts=[];let c=end;while(c>=0){pts.push([c%w+0.5,((c/w)|0)+0.5]);c=prev[c];}pts.reverse();
+  // simplification : on garde les coudes
+  const out=[pts[0]];for(let s=1;s<pts.length-1;s++){const a=out[out.length-1],b=pts[s],c2=pts[s+1];if((b[0]-a[0])*(c2[1]-b[1])!==(b[1]-a[1])*(c2[0]-b[0]))out.push(b);}out.push(pts[pts.length-1]);return out;}
+// chemin le plus court (largeur de passage) d'une zone vers un pixel cible, dans une fenêtre bornée ; évite les salles
+// et les équipements solides
+function inNearPath(M,A,tgt,R){const w=M.w,b=A.box,x0=Math.max(0,Math.floor(b.x0-R)),x1=Math.min(w-1,Math.ceil(b.x1+R)),y0=Math.max(0,Math.floor(b.y0-R)),y1=Math.min(M.h-1,Math.ceil(b.y1+R)),W=x1-x0+1,H=y1-y0+1;
+  if(!M.sol){M.sol=new Uint8Array(M.N);for(const o of M.eq){if(o.kind!=='s')continue;for(let y=Math.floor(o.y0);y<Math.ceil(o.y1);y++)for(let x=Math.floor(o.x0);x<Math.ceil(o.x1);x++)if(M.inHull(x,y))M.sol[y*w+x]=1;}}
+  const prev=new Int32Array(W*H).fill(-1),q=[];
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const i=y*w+x;if(M.area[i]===A.id&&M.walk[i]){const k=(y-y0)*W+x-x0;prev[k]=k;q.push(k);}}
+  let end=-1;for(let qi=0;qi<q.length&&end<0;qi++){const k=q[qi],x=k%W,y=(k/W)|0;
+    for(const [dx,dy] of DIR4){const X=x+dx,Y=y+dy;if(X<0||Y<0||X>=W||Y>=H)continue;const kk=Y*W+X;if(prev[kk]>=0)continue;const i=(Y+y0)*w+X+x0;if(!M.hullT[i])continue;
+      if(tgt[i]){prev[kk]=k;end=kk;break;}if(M.walk[i]||M.sol[i]||M.block[i])continue;
+      // un passage de 2 px : le voisin latéral doit être libre aussi
+      const sx=dy?1:0,sy=dx?1:0,j=i+sy*w+sx;if(!M.hullT[j]||M.walk[j]&&!tgt[j]||M.sol[j])continue;prev[kk]=k;q.push(kk);}}
+  if(end<0)return null;const pts=[];let k=end;while(prev[k]!==k){pts.push([k%W+x0+0.5,((k/W)|0)+y0+0.5]);k=prev[k];}pts.push([k%W+x0+0.5,((k/W)|0)+y0+0.5]);return pts.reverse();}
+// creuse un passage de 2 px le long d'un chemin
+function inCarve(M,path,ar,post){for(const [x,y] of path){for(let dy=-1;dy<=0;dy++)for(let dx=-1;dx<=0;dx++){const X=Math.floor(x)+dx,Y=Math.floor(y)+dy;if(!M.inHull(X,Y))continue;const i=Y*M.w+X;if(M.walk[i]&&M.area[i]!==ar)continue;M.walk[i]=post||1;M.area[i]=ar;}}}
+// composantes connexes des zones (par la grille de déplacement)
+function inFlood(M){const w=M.w,lab=new Int32Array(M.N).fill(-1);let n=0;const q=[];
+  for(let s=0;s<M.N;s++){if(!M.walk[s]||lab[s]>=0)continue;lab[s]=n;q.length=0;q.push(s);for(let qi=0;qi<q.length;qi++){const i=q[qi],x=i%w,y=(i/w)|0;for(const [dx,dy] of DIR4){const X=x+dx,Y=y+dy;if(!M.inHull(X,Y))continue;const j=Y*w+X;if(M.walk[j]&&lab[j]<0){lab[j]=n;q.push(j);}}}n++;}
+  const byArea={};for(let i=0;i<M.N;i++)if(lab[i]>=0&&M.area[i]>=0&&byArea[M.area[i]]===undefined)byArea[M.area[i]]=lab[i];return byArea;}
+
+/* ---------- chasseurs et intercepteurs : le poste de pilotage seul (on y reste assis) ---------- */
+function inBuildSeat(M){
+  const P=M.P,ck=P.comps.filter(o=>o.type==='cockpit');M.cockpits=ck;
+  for(const o of ck){const A=inArea(M,{kind:'cockpit',name:'Cockpit pressurisé',press:true,comp:o,hm:(o.z1-o.z0)*XR.mpp,box:inBox(o),post:2});o.areaId=A.id;
+    for(let y=Math.floor(o.y0);y<Math.ceil(o.y1);y++)for(let x=Math.floor(o.x0);x<Math.ceil(o.x1);x++)if(M.inHull(x,y)){const i=y*M.w+x;M.walk[i]=2;M.area[i]=A.id;}}
+  for(const o of M.eq)if(o.type==='seat')M.seats.push({o,x:(o.x0+o.x1)/2,y:(o.y0+o.y1)/2,occ:null});
+  // tout ce qui touche le poste : commandes, siège, verrière, pressurisation, avionique, trappes, baignoire blindée
+  const c=ck[0];if(c){const m=1.6/XR.mpp;M.pit={x0:c.x0-m,x1:c.x1+m,y0:c.y0-m,y1:c.y1+m};M.pitEq=M.eq.filter(o=>o.x1>M.pit.x0&&o.x0<M.pit.x1&&o.y1>M.pit.y0&&o.y0<M.pit.y1);}
+}
+/* ---------- porte-flottes : hangars, zones de lancement et places des appareils embarqués ----------
+   Capacité : la règle du jeu (updateHangars) — st.fighters, sinon deux appareils par tranche de trois hangars, au plus
+   huit ; une place par appareil, jamais plus. Appareil : l'emport choisi pour ce modèle (loadoutOf), sinon celui du
+   modèle, sinon celui de la marque (comme bayLaunch). Les modules de hangar du plan rayons X (une case de 6,7 m) sont
+   trop petits pour un appareil de 25 m : hypothèse minimale, le pont du hangar s'étend autour de son module sur des
+   cases de coque sans équipement ni salle, juste ce qu'il faut pour ses places. */
+function inHangars(M){
+  const t=M.t,w=M.w,h=M.h,Mo=M.src.M||MODEL_BY[M.src.key],V=t.mods.filter(m=>m.code==='V');if(!V.length)return;
+  const cap=(t.spec&&t.spec.fighters)||Math.min(8,Math.ceil(V.length/3)*2);
+  let fid='';try{fid=Mo?loadoutOf(Mo.id):'';}catch(e){}
+  if(!fid||!(MODEL_BY[fid]||HUMAN_SHIPS.some(d=>d.id===fid)))fid=(Mo&&Mo.fighter)||BRAND_FIGHTER[Mo?Mo.b:'']||'chasseur';
+  const [fw0,fh0]=hullWH(fid),fw=Math.ceil(fw0)+6,fh=Math.ceil(fh0)+8;
+  M.cap=cap;M.fid=fid;M.fname=(MODEL_BY[fid]?MODEL_BY[fid].n:(HUMAN_SHIPS.find(d=>d.id===fid)||{info:{name:fid}}).info.name);
+  // pixels interdits pour un pont : hors coque, équipement du plan (sauf ceux d'un hangar), salle ou coursive
+  const okEq=new Set(['hangar','catapult','elev']),bad=new Uint8Array(M.N);
+  for(let i=0;i<M.N;i++)if(!M.hullT[i]||M.walk[i]||M.block[i])bad[i]=1;
+  for(const o of M.eq){if(o.kind==='k'||okEq.has(o.type))continue;for(let y=Math.floor(o.y0);y<Math.ceil(o.y1);y++)for(let x=Math.floor(o.x0);x<Math.ceil(o.x1);x++)if(M.inHull(x,y))bad[y*w+x]=1;}
+  const W1=w+1,SAT=new Int32Array(W1*(h+1));for(let y=0;y<h;y++){let row=0;for(let x=0;x<w;x++){row+=bad[y*w+x];SAT[(y+1)*W1+x+1]=SAT[y*W1+x+1]+row;}}
+  const rectBad=(x0,y0,W,H)=>x0<0||y0<0||x0+W>w||y0+H>h?1:SAT[(y0+H)*W1+x0+W]-SAT[y0*W1+x0+W]-SAT[(y0+H)*W1+x0]+SAT[y0*W1+x0];
+  const decks=[],over=(a,b)=>a.x0<b.x0+b.W+3&&b.x0<a.x0+a.W+3&&a.y0<b.y0+b.H+3&&b.y0<a.y0+a.H+3;
+  // répartition des places : une par hangar d'abord (la catapulte : zone de lancement), puis le reste en rangement
+  const Hs=V.slice().sort((a,b)=>b.lx-a.lx||a.ly-b.ly),n=Hs.map(()=>0);for(let k=0;k<cap;k++)n[k%Hs.length]++;
+  let placed=0,hn=0;
+  Hs.forEach((m,i)=>{const ai=M.area[Math.floor(m.ly)*w+Math.floor(m.lx)];if(ai<0)return;const A=M.areas[ai];A.kind='hangar';hn++;A.name='Hangar '+hn;A.hn=hn;
+    let want=n[i];
+    // pont : un rectangle de coque libre (ni salle, ni équipement du plan) au plus près du module, relié au hangar
+    let deck=null;const Rr=90;
+    for(;want>0&&!deck;want--){const W=want*fw+6,H=fh+4;let best=null,bs=1e9;
+      for(let y0=Math.round(m.ly-Rr-H);y0<=Math.round(m.ly+Rr);y0+=2)for(let x0=Math.round(m.lx-Rr-W);x0<=Math.round(m.lx+Rr);x0+=2){
+        const dx=Math.max(x0-m.lx,0,m.lx-(x0+W)),dy=Math.max(y0-m.ly,0,m.ly-(y0+H)),s=dx+dy;if(s>=bs)continue;if(rectBad(x0,y0,W,H))continue;const c={x0,y0,W,H};if(decks.some(q=>over(q,c)))continue;bs=s;best=c;}
+      if(best){deck=best;deck.n=want;}}
+    if(!deck){A.deck=null;return;}
+    decks.push(deck);
+    for(let y=deck.y0;y<deck.y0+deck.H;y++)for(let x=deck.x0;x<deck.x0+deck.W;x++){const j=y*w+x;M.walk[j]=1;M.area[j]=ai;}
+    A.deck=deck;
+    // passage du hangar (module du plan) jusqu'au pont, s'ils ne se touchent pas
+    {const tg=new Uint8Array(M.N);let touch=false;for(let y=deck.y0;y<deck.y0+deck.H;y++)for(let x=deck.x0;x<deck.x0+deck.W;x++)tg[y*w+x]=1;
+      const B={box:{x0:m.lx-5,x1:m.lx+5,y0:m.ly-5,y1:m.ly+5},id:ai};for(let y=Math.floor(m.ly-6);y<m.ly+6;y++)for(let x=Math.floor(m.lx-6);x<m.lx+6;x++)if(M.inHull(x,y)&&tg[y*w+x])touch=true;
+      if(!touch){const p=inNearPath(M,B,tg,Rr+20);if(p)inCarve(M,p,ai,1);}}
+    // catapulte du plan dans ce hangar : la première place est la zone de lancement
+    const cat=M.eq.find(o=>o.type==='catapult'&&Math.abs((o.x0+o.x1)/2-m.lx)<8&&Math.abs((o.y0+o.y1)/2-m.ly)<8);
+    for(let k=0;k<deck.n;k++){const x=deck.x0+3+fw*(deck.n-1-k)+fw/2,y=deck.y0+2+fh/2;
+      M.slots.push({id:M.slots.length,x,y,w:fw0,h:fh0,area:ai,zone:k===0?'lancement':'hangar',cat:k===0?cat:null,hangar:hn,present:true});placed++;}
+    M.hangars.push({area:ai,deck,m,n:deck.n,hn});});
+  // places qui n'ont pas trouvé de pont : rangement dans une soute (module O) si elle peut les contenir
+  let rest=cap-placed;
+  if(rest>0){for(const A of M.areas){if(rest<=0)break;if(A.kind!=='room'||A.code!=='O')continue;let x0=1e9,y0=1e9,x1=-1,y1=-1;
+      for(let i=0;i<M.N;i++)if(M.area[i]===A.id&&M.walk[i]){const x=i%w,y=(i/w)|0;x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}
+      const per=Math.max(0,Math.floor((x1-x0+1)/fw))*Math.max(0,Math.floor((y1-y0+1)/fh));if(!per)continue;A.kind='store';A.name='Stockage des appareils';
+      for(let k=0;k<Math.min(per,rest);k++){const cx=k%Math.max(1,Math.floor((x1-x0+1)/fw)),cy=Math.floor(k/Math.max(1,Math.floor((x1-x0+1)/fw)));
+        M.slots.push({id:M.slots.length,x:x0+fw*cx+fw/2,y:y0+fh*cy+fh/2,w:fw0,h:fh0,area:A.id,zone:'stockage',hangar:0,present:true});placed++;}
+      rest=cap-placed;}}
+  M.capPlaced=placed;
+  // cloison autour du pont étendu : on ne passe dans les salles voisines que par les portes du plan
+  const cut=[];for(const H of M.hangars){const d=H.deck;for(let y=d.y0;y<d.y0+d.H;y++)for(let x=d.x0;x<d.x0+d.W;x++){const i=y*w+x;
+    for(const [dx,dy] of DIR4){const X=x+dx,Y=y+dy;if(!M.inHull(X,Y)){cut.push(i);break;}const j=Y*w+X;if(M.walk[j]&&M.area[j]!==H.area&&M.doorAt[j]<0&&M.doorAt[i]<0){cut.push(i);break;}}}}
+  for(const i of cut)M.walk[i]=0;
+  M.hyp.push('Hangars : le module de hangar du plan (6,7 m) ne peut pas abriter un '+M.fname+' de '+Math.round(fw0*XR.mpp)+' m ; son pont s’étend sur la coque libre qui l’entoure, sans empiéter sur une salle ni sur un équipement du plan.');
+  if(placed<cap)M.hyp.push('Places : '+placed+' sur '+cap+' ont trouvé de la place à bord de ce plan ; les autres ne sont pas représentées.');
+}
+
+/* ---------- équipage : effectif, rôles et postes ----------
+   Effectif : CREW_N (fiche du modèle), sinon l'équipage du plan. Les rôles particuliers viennent du même texte
+   (« dont 30 servants… », « dont 360 pilotes et équipes de pont »…). Les postes viennent des équipements du plan. */
+const IN_ROLE=[[/pilote/,'pilot'],[/servant|mitrailleur/,'gunner'],[/technicien|opérateur|mécanicien/,'tech'],[/analyste/,'analyst'],[/inspecteur/,'inspector'],[/officier/,'officer'],[/manutention/,'hand'],[/infiltration|fusilier|abordage/,'marine'],[/bombardier/,'bomber']];
+function inCrewPlan(M){
+  const key=M.src.key,cn=CREW_N[key],desc=cn?cn[1]:'';let total=cn?cn[0]:M.R.crew;
+  if(M.small||M.seat)total=Math.max(1,M.R.crew||1);
+  M.crewTotal=total;M.crewDesc=desc;M.roleN={};
+  const m=desc.match(/dont\s+([\d\s  ]+)\s+(.+)$/);if(m){const n=parseInt(m[1].replace(/\D/g,''),10);for(const [re,r] of IN_ROLE)if(re.test(m[2])){M.roleN[r]=n;break;}}
+  const P=M.posts,w=M.w;
+  const near=(x,y,ar,r)=>{x=Math.round(x);y=Math.round(y);for(let d=0;d<(r||8);d++)for(let dy=-d;dy<=d;dy++)for(let dx=-d;dx<=d;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==d)continue;const X=x+dx,Y=y+dy;if(!M.inHull(X,Y))continue;const i=Y*w+X;if(M.walk[i]===1&&(ar===undefined||M.area[i]===ar)&&M.doorAt[i]<0)return[X+0.5,Y+0.5];}return null;};
+  const post=(o,act,role,n,face)=>{const cx=(o.x0+o.x1)/2,cy=(o.y0+o.y1)/2,ar=M.area[Math.floor(cy)*w+Math.floor(cx)];
+    for(let k=0;k<(n||1);k++){const a=k/(n||1)*TAU,rx=(o.x1-o.x0)/2+1.2,ry=(o.y1-o.y0)/2+1.2,p=near(cx+Math.cos(a)*rx*(n>1?1:0)-(n>1?0:rx),cy+Math.sin(a)*ry*(n>1?1:0),ar>=0?ar:undefined,10);
+      if(p)P.push({x:p[0],y:p[1],act,role,o,face:face||[cx-p[0],cy-p[1]],busy:null});}};
+  if(M.small||M.seat){for(const s of M.seats)P.push({x:s.x,y:s.y,act:'seat',role:'pilot',o:s.o,face:[1,0],busy:null,seat:s});
+    for(const o of M.eq){if(o.type==='bunk')P.push({x:(o.x0+o.x1)/2,y:(o.y0+o.y1)/2,act:'sleep',role:'any',o,face:[1,0],busy:null});if(o.type==='rack')post(o,'work','bomber',1);}
+    return;}
+  // grands vaisseaux : postes de conduite, armes, machines, vie à bord
+  const BY={bridge:['console','officer',6],cic:['console','officer',5],abridge:['console','officer',3],dcs:['console','tech',2],nav:['console','officer',1],core:['console','analyst',2],sensor:['console','analyst',2],
+    turret:['work','gunner',2],plasma:['work','gunner',2],launcher:['work','gunner',1],spinal:['work','gunner',3],pd:['work','gunner',1],mag:['work','gunner',1],mmag:['work','gunner',1],
+    reactor:['work','tech',3],engine:['work','tech',2],shield:['work','tech',1],life:['work','tech',1],hyd:['work','tech',1],trc:['work','tech',1],egen:['work','tech',1],sub:['work','tech',1],
+    shop:['work','tech',3],med:['heal','any',2],armory:['guard','marine',2],airlock:['guard','inspector',1],hold:['work','hand',2],firest:['work','tech',1],galley:['eat','any',6],
+    hangar:['work','pilot',2],catapult:['work','pilot',1],elev:['work','hand',1],avammo:['work','gunner',1],avfuel:['work','hand',1],refinery:['work','tech',2],grav:['work','tech',1],tractor:['work','tech',1]};
+  for(const o of M.eq){const b=BY[o.type];if(!b)continue;
+    // salles du plan (passerelle, CIC, contrôle des avaries) : un poste assis devant chaque console de l'arc
+    if(o.kind==='v'&&(o.type==='bridge'||o.type==='cic'||o.type==='abridge'||o.type==='dcs')){const W=o.x1-o.x0,H=o.y1-o.y0,cx=(o.x0+o.x1)/2,cy=(o.y0+o.y1)/2,n=Math.max(3,Math.round(Math.min(10,H/1.3)));
+      for(let k=0;k<n;k++){const a=-0.9+1.8*k/Math.max(1,n-1),p=near(cx+Math.cos(a)*W*0.27,cy+Math.sin(a)*H*0.3,M.area[Math.floor(cy)*w+Math.floor(cx)],4);if(p)P.push({x:p[0],y:p[1],act:'console',role:b[1],o,face:[1,0],busy:null});}continue;}
+    if(o.kind==='v'&&(o.type==='galley'||o.type==='med')){const W=o.x1-o.x0,H=o.y1-o.y0,ar=M.area[Math.floor((o.y0+o.y1)/2)*w+Math.floor((o.x0+o.x1)/2)];
+      for(let yy=o.y0+1.5;yy<o.y1-1;yy+=3)for(let xx=o.x0+1.5;xx<o.x1-2;xx+=4){const p=near(xx,yy,ar,2);if(p)P.push({x:p[0],y:p[1],act:o.type==='galley'?'eat':'heal',role:'any',o,face:[0,1],busy:null});}continue;}
+    post(o,b[0],b[1],b[2]);}
+  // couchettes : dans les quartiers, une couchette tous les ~2,7 m², le long des cloisons
+  {const isD=new Uint8Array(M.areas.length);for(const A of M.areas)if((A.kind==='room'&&A.code==='D')||(A.xr&&A.xr.type==='quarters'))isD[A.id]=1;
+    for(let i=0;i<M.N;i++){const a=M.area[i];if(a<0||!isD[a]||M.walk[i]!==1)continue;const x=i%w,y=(i/w)|0;if(x%4===1&&y%3===1)M.beds.push({x:x+0.5,y:y+0.5,area:a,busy:null});}}
+  for(const b of M.beds)P.push({x:b.x,y:b.y,act:'sleep',role:'any',face:[1,0],busy:null,bed:b});
+  // pilotes : près des places des appareils
+  for(const s of M.slots){const p=near(s.x,s.y+s.h/2+2,s.area,12);if(p)P.push({x:p[0],y:p[1],act:'work',role:'pilot',face:[0,-1],busy:null});}
+}
+/* ---------- rendu : tuiles fixes (sols, cloisons, espaces techniques, équipements, réseaux) ---------- */
+const IN_TS=256;
+const INC={struct:'#1b2028',struct2:'#232a35',armor:'#2b313c',wall:'#d6dce6',wallHi:'#f4f7fb',wallLo:'#8a93a3',face:'#9aa3b2',faceLo:'#6f7887',out:'#11151c',
+  fl:{corr:'#4b5262',room:'#5a6373',hangar:'#2c3139',store:'#3a4048',airlock:'#3d4b5d',cockpit:'#2d3547',rest:'#4e4844',tunnel:'#3c424e',bay:'#23272e',duct:'#3c424e'},
+  code:{R:'#3e4452',r:'#3e4452',E:'#3c3e45',e:'#3c3e45',D:'#5e534b',O:'#474d56',F:'#5c4a4a',S:'#40495c',s:'#40495c',B:'#454b42',V:'#2c3139',I:'#3d4b5d',C:'#4a4f58',K:'#4a4f58',k:'#4a4f58'}};
+function inFloorCol(M,i){const A=M.areas[M.area[i]];if(!A)return INC.fl.room;if(A.kind==='room')return INC.code[A.code]||INC.fl.room;return INC.fl[A.kind]||INC.fl.room;}
+function inTile(M,tx,ty,Z){
+  const cv=mkCanvas(IN_TS,IN_TS),g=cv.getContext('2d'),w=M.w,h=M.h,X0=Math.floor(tx*IN_TS/Z),Y0=Math.floor(ty*IN_TS/Z),X1=Math.min(w,Math.ceil((tx+1)*IN_TS/Z)+1),Y1=Math.min(h,Math.ceil((ty+1)*IN_TS/Z)+1),ox=tx*IN_TS,oy=ty*IN_TS;
+  const R=(x,y,ww,hh,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(ww)),Math.max(1,Math.round(hh)));};
+  const arm=M.P.G&&M.P.G.arm,G=M.P.G;
+  // 1) coque : sols, espaces techniques
+  for(let y=Math.max(0,Y0-1);y<Y1;y++)for(let x=Math.max(0,X0-1);x<X1;x++){const i=y*w+x;if(!M.hullT[i])continue;const sx=x*Z-ox,sy=y*Z-oy;
+    if(M.walk[i]||M.block[i]){const c=inFloorCol(M,i);R(sx,sy,Z,Z,c);
+      if(Z>=6){g.fillStyle='rgba(0,0,0,0.16)';if(!(x&1))g.fillRect(sx,sy,1,Z);if(!(y&1))g.fillRect(sx,sy,Z,1);g.fillStyle='rgba(255,255,255,0.05)';g.fillRect(sx+1,sy+1,Z-2,1);}
+      const A=M.areas[M.area[i]];if(A&&!A.press){g.fillStyle='rgba(20,40,90,0.25)';g.fillRect(sx,sy,Z,Z);}}
+    else if(!M.wall[i]){let a=0;if(G&&arm){const gx=Math.floor(x/G.s),gy=Math.floor(y/G.s);a=arm[gy*G.gw+gx];}R(sx,sy,Z,Z,a?INC.armor:INC.struct);
+      if(Z>=5&&((x+y)%3===0)){g.fillStyle=INC.struct2;g.fillRect(sx,sy+Z-1,Z,1);}}}
+  // 2) réseaux : conduites, nettes dans les espaces techniques, fondues sous les sols
+  if(IN.nets){const L=mkCanvas(IN_TS,IN_TS),q=L.getContext('2d');q.lineCap='round';
+    for(const l of M.nets){if(!l.path||l.type==='acces')continue;const C=XR_NET[l.type];if(!C)continue;let hit=false;for(const p of l.path)if(p[0]>=X0-2&&p[0]<=X1+2&&p[1]>=Y0-2&&p[1]<=Y1+2){hit=true;break;}
+      if(!hit){for(let s=0;s+1<l.path.length&&!hit;s++){const a=l.path[s],b=l.path[s+1];if(Math.max(a[0],b[0])>=X0&&Math.min(a[0],b[0])<=X1&&Math.max(a[1],b[1])>=Y0&&Math.min(a[1],b[1])<=Y1)hit=true;}}if(!hit)continue;
+      q.strokeStyle=INC.out;q.lineWidth=Math.max(2,Z*0.34);q.beginPath();l.path.forEach((p,k)=>{const X=p[0]*Z-ox,Y=p[1]*Z-oy;k?q.lineTo(X,Y):q.moveTo(X,Y);});q.stroke();
+      q.strokeStyle=C[1];q.lineWidth=Math.max(1,Z*0.2);q.setLineDash(C[2].map(v=>v*Math.max(1,Z/4)));q.beginPath();l.path.forEach((p,k)=>{const X=p[0]*Z-ox,Y=p[1]*Z-oy;k?q.lineTo(X,Y):q.moveTo(X,Y);});q.stroke();q.setLineDash([]);}
+    // masque : les sols praticables laissent passer 25 %
+    const mw=X1-X0+2,mh=Y1-Y0+2,mk=mkCanvas(mw,mh),mg=mk.getContext('2d'),id=mg.createImageData(mw,mh),d=id.data;
+    for(let y=0;y<mh;y++)for(let x=0;x<mw;x++){const X=X0-1+x,Y=Y0-1+y,o=(y*mw+x)*4;if(X<0||Y<0||X>=w||Y>=h)continue;const i=Y*w+X;d[o+3]=!M.hullT[i]?0:M.walk[i]?60:M.wall[i]?0:235;}
+    mg.putImageData(id,0,0);q.globalCompositeOperation='destination-in';q.imageSmoothingEnabled=false;q.drawImage(mk,(X0-1)*Z-ox,(Y0-1)*Z-oy,mw*Z,mh*Z);g.drawImage(L,0,0);}
+  // 3) équipements du plan (ceux des espaces techniques un peu assombris : on les voit derrière les cloisons)
+  const eqs=M.eq.filter(o=>o.kind!=='k'&&o.x1>=X0-1&&o.x0<=X1+1&&o.y1>=Y0-1&&o.y0<=Y1+1).sort((a,b)=>(a.kind==='v'?0:1)-(b.kind==='v'?0:1)||a.z0-b.z0);
+  for(const o of eqs){const cx=Math.floor((o.x0+o.x1)/2),cy=Math.floor((o.y0+o.y1)/2),inside=M.inHull(cx,cy)&&(M.walk[cy*w+cx]||M.block[cy*w+cx]);
+    inEq(g,o,o.x0*Z-ox,o.y0*Z-oy,(o.x1-o.x0)*Z,(o.y1-o.y0)*Z,Z,M);
+    if(!inside&&o.kind!=='v'){g.fillStyle='rgba(10,14,22,0.38)';g.fillRect(Math.round(o.x0*Z-ox),Math.round(o.y0*Z-oy),Math.max(1,Math.round((o.x1-o.x0)*Z)),Math.max(1,Math.round((o.y1-o.y0)*Z)));}}
+  // 4) cloisons : blanches, arête claire en haut, face sombre qui retombe sur le sol au sud (relief vu de trois quarts)
+  for(let y=Math.max(0,Y0-1);y<Y1;y++)for(let x=Math.max(0,X0-1);x<X1;x++){const i=y*w+x;if(!M.wall[i])continue;const sx=x*Z-ox,sy=y*Z-oy;
+    R(sx,sy,Z,Z,INC.wall);if(y>0&&!M.wall[i-w])R(sx,sy,Z,Math.max(1,Z*0.22),INC.wallHi);if(x>0&&!M.wall[i-1])R(sx,sy,Math.max(1,Z*0.15),Z,INC.wallHi);
+    if(x<w-1&&!M.wall[i+1])R(sx+Z-Math.max(1,Z*0.15),sy,Math.max(1,Z*0.15),Z,INC.wallLo);
+    if(y<h-1&&M.walk[i+w]){R(sx,sy+Z,Z,Math.max(2,Z*0.45),INC.face);R(sx,sy+Z+Math.max(2,Z*0.45)-1,Z,1,INC.faceLo);}}
+  // 5) peau extérieure
+  for(let y=Math.max(0,Y0-1);y<Y1;y++)for(let x=Math.max(0,X0-1);x<X1;x++){const i=y*w+x;if(!M.hullT[i])continue;const sx=x*Z-ox,sy=y*Z-oy;
+    if(x===0||!M.hullT[i-1])R(sx,sy,Math.max(1,Z*0.25),Z,INC.wallLo);if(x===w-1||!M.hullT[i+1])R(sx+Z-Math.max(1,Z*0.25),sy,Math.max(1,Z*0.25),Z,INC.wallLo);
+    if(y===0||!M.hullT[i-w])R(sx,sy,Z,Math.max(1,Z*0.25),INC.wallLo);if(y===h-1||!M.hullT[i+w])R(sx,sy+Z-Math.max(1,Z*0.25),Z,Math.max(1,Z*0.25),INC.wallLo);}
+  return cv;}
+
+/* ---------- équipements : dessin selon le type, à la taille de leur emprise dans le plan ---------- */
+const IN_TANKC={tank:['#5e4a86','#8a72b8'],avfuel:['#5e4a86','#8a72b8'],rfuel:['#8a52c8','#c99aff'],ctank:['#2f5aa8','#6a9ae8'],o2:['#b8c4d4','#eef4fb'],wtank:['#2f7aa0','#6ac0e0'],foam:['#a8382e','#e0645a']};
+function inEq(g,o,x,y,W,H,Z,M){
+  const R=(a,b,c,d,col)=>{g.fillStyle=col;g.fillRect(Math.round(a),Math.round(b),Math.max(1,Math.round(c)),Math.max(1,Math.round(d)));};
+  const C=(cx,cy,r,col)=>{g.fillStyle=col;g.beginPath();g.arc(Math.round(cx),Math.round(cy),Math.max(0.6,r),0,TAU);g.fill();};
+  const box=(a,b,c,d,base,hi,lo)=>{R(a,b,c,d,INC.out);R(a+1,b+1,c-2,d-2,base);if(c>4&&d>4){R(a+1,b+1,c-2,1,hi);R(a+1,b+d-2,c-2,1,lo);}};
+  const cat=XR_CAT[o.cat]?XR_CAT[o.cat][1]:'#8f98a8',t=o.type,mn=Math.min(W,H),cx=x+W/2,cy=y+H/2,hz=W>=H;
+  const leds=(a,b,n,cols)=>{for(let k=0;k<n;k++)R(a+k*Math.max(2,Z*0.3),b,Math.max(1,Z*0.15),Math.max(1,Z*0.15),cols[k%cols.length]);};
+  if(o.kind==='v'){ // volumes : simple liseré de couleur de catégorie (le sol de la zone les montre)
+    if(t==='hangar'||t==='bay'||t==='cockpit'||t==='rest'||t==='tunnel'||t==='quarters'||t==='galley'||t==='med'||t==='armory'||t==='shop'||t==='hold'||t==='bridge'||t==='cic'||t==='abridge'||t==='dcs'||t==='airlock'||t==='dbay'){}
+    if(t==='quarters'||t==='rest'){for(let yy=y+Z*0.4;yy<y+H-Z;yy+=Z*1.6)for(let xx=x+Z*0.4;xx<x+W-Z*2.2;xx+=Z*3.2){box(xx,yy,Z*2.6,Z*1.1,'#7a8aa8','#a8b8d0','#4a5a78');R(xx+Z*0.15,yy+Z*0.2,Z*0.6,Z*0.7,'#e8ecf4');}}
+    else if(t==='galley'){for(let yy=y+Z;yy<y+H-Z*1.5;yy+=Z*3)for(let xx=x+Z;xx<x+W-Z*3;xx+=Z*4){box(xx,yy,Z*3,Z*1.4,'#8a7a62','#b0a084','#5a4c3a');R(xx,yy-Z*0.5,Z*3,Z*0.35,'#4a5262');R(xx,yy+Z*1.6,Z*3,Z*0.35,'#4a5262');}}
+    else if(t==='med'){for(let yy=y+Z;yy<y+H-Z*1.5;yy+=Z*2.4)for(let xx=x+Z;xx<x+W-Z*3;xx+=Z*3.4){box(xx,yy,Z*2.6,Z*1.2,'#e8eef6','#ffffff','#a8b0c0');R(xx+Z*0.2,yy+Z*0.25,Z*0.6,Z*0.7,'#cfe0ff');}R(cx-Z*0.6,y+Z*0.3,Z*1.2,Z*0.3,'#ff4f6a');R(cx-Z*0.15,y+Z*0.3-Z*0.45,Z*0.3,Z*1.2,'#ff4f6a');}
+    else if(t==='armory'){for(let xx=x+Z*0.5;xx<x+W-Z;xx+=Z*0.9)R(xx,y+Z*0.4,Z*0.5,Z*1.6,'#3a3e46');R(x+Z*0.4,y+Z*0.3,W-Z*0.8,Z*0.2,'#8a6a3a');}
+    else if(t==='shop'){box(x+Z*0.5,y+Z*0.5,Math.min(W-Z,Z*6),Z*1.4,'#6a6058','#8a8076','#3a342e');for(let k=0;k<4;k++)R(x+Z*(0.9+k*1.2),y+Z*0.7,Z*0.5,Z*0.3,['#ffb347','#a6e4ff','#c8d0dc','#ff6a5a'][k]);}
+    else if(t==='hold'){for(let yy=y+Z*0.6;yy<y+H-Z*2;yy+=Z*2.4)for(let xx=x+Z*0.6;xx<x+W-Z*3.6;xx+=Z*4){const col=['#b84a3a','#3a6ab8','#c8a03a','#4a8a5a'][((xx+yy)/Z|0)%4];box(xx,yy,Z*3.6,Z*2,col,'rgba(255,255,255,0.35)','rgba(0,0,0,0.35)');}}
+    else if(t==='bridge'||t==='abridge'||t==='cic'||t==='dcs'){ // consoles en arc tournées vers la proue, table tactique au centre
+      const n=Math.max(3,Math.round(Math.min(10,H/Z/1.3)));for(let k=0;k<n;k++){const a=-0.9+1.8*k/Math.max(1,n-1),px=cx+Math.cos(a)*W*0.38,py=cy+Math.sin(a)*H*0.4;box(px-Z*0.5,py-Z*0.6,Z*1.0,Z*1.2,'#3a4458','#5a6a88','#20283a');R(px-Z*0.3,py-Z*0.4,Z*0.6,Z*0.5,k%2?'#3fd8ff':'#5cff9a');}
+      if(t==='cic'){C(cx-W*0.05,cy,Math.min(W,H)*0.2,'#1a3050');C(cx-W*0.05,cy,Math.min(W,H)*0.14,'#2f6fd0');C(cx-W*0.05,cy,Math.min(W,H)*0.05,'#a6e4ff');}else{box(cx-W*0.15,cy-Z*0.6,Z*1.2,Z*1.2,'#2a3242','#4a5672','#161c28');}}
+    else if(t==='airlock'){g.strokeStyle='#ffd23c';g.lineWidth=Math.max(1,Z*0.2);g.setLineDash([Z*0.5,Z*0.5]);g.strokeRect(x+Z*0.3,y+Z*0.3,W-Z*0.6,H-Z*0.6);g.setLineDash([]);}
+    else if(t==='dbay'){for(let k=0;k<4;k++)C(x+W*(0.2+k*0.2),cy,Z*0.6,'#5a6372');}
+    return;}
+  if(t==='reactor'){const r=mn*0.48;C(cx,cy,r,INC.out);C(cx,cy,r-1,'#7d8798');C(cx,cy,r*0.78,'#4a5262');C(cx,cy,r*0.56,'#1a4a6a');C(cx,cy,r*0.36,'#3fd8ff');C(cx,cy,r*0.16,'#ffffff');
+    for(let k=0;k<8;k++){const a=k/8*TAU;R(cx+Math.cos(a)*r*0.86-1,cy+Math.sin(a)*r*0.86-1,2,2,'#ffd23f');}return;}
+  if(t==='engine'){box(x,y,W,H,'#3a3f48','#5a616c','#22262c');const n=Math.max(1,Math.round(H/Math.max(Z*2,W*0.5)));for(let k=0;k<n;k++){const yy=y+H*(k+0.5)/n,r=Math.min(H/n*0.4,W*0.3);C(x+W*0.28,yy,r,'#1a1c22');C(x+W*0.28,yy,r*0.6,'#ff8a3d');C(x+W*0.28,yy,r*0.3,'#ffe0a0');R(x+W*0.5,yy-Z*0.15,W*0.45,Z*0.3,'#8f98a8');}return;}
+  if(_IN_TANK.has(t)){const K=_IN_TANKC[t]||_IN_TANKC.tank;const rr=Math.min(W,H)/2;g.fillStyle=INC.out;g.beginPath();g.roundRect(x,y,W,H,rr);g.fill();g.fillStyle=K[0];g.beginPath();g.roundRect(x+1,y+1,W-2,H-2,Math.max(0,rr-1));g.fill();
+    g.fillStyle=K[1];if(hz)g.fillRect(Math.round(x+rr),Math.round(y+H*0.2),Math.max(1,Math.round(W-2*rr)),Math.max(1,Math.round(H*0.14)));else g.fillRect(Math.round(x+W*0.2),Math.round(y+rr),Math.max(1,Math.round(W*0.14)),Math.max(1,Math.round(H-2*rr)));
+    g.fillStyle='rgba(0,0,0,0.3)';if(hz)for(let xx=x+rr;xx<x+W-rr;xx+=Math.max(3,Z*2))g.fillRect(Math.round(xx),Math.round(y+1),1,Math.round(H-2));else for(let yy=y+rr;yy<y+H-rr;yy+=Math.max(3,Z*2))g.fillRect(Math.round(x+1),Math.round(yy),Math.round(W-2),1);return;}
+  if(t==='batt'||t==='caps'){box(x,y,W,H,'#3a4038','#5a6458','#22261f');const s=Math.max(2,Z*0.55);for(let yy=y+2;yy<y+H-s;yy+=s+1)for(let xx=x+2;xx<x+W-s;xx+=s+1){R(xx,yy,s,s,t==='caps'?'#3a5aa8':'#4a6a3a');R(xx,yy,s,1,t==='caps'?'#7fa8ff':'#9ae07a');}return;}
+  if(_IN_CAB.has(t)){box(x,y,W,H,'#3c4352','#5c6680','#1e232c');if(mn>Z*0.6){g.fillStyle='rgba(0,0,0,0.35)';for(let yy=y+3;yy<y+H-2;yy+=Math.max(2,Z*0.35))g.fillRect(Math.round(x+2),Math.round(yy),Math.round(W*0.55),1);
+      leds(x+W*0.66,y+2,Math.max(1,Math.floor(W*0.3/Math.max(2,Z*0.3))),[cat,'#5cff9a','#ffd23f']);}R(x,y,W,Math.max(1,Z*0.12),cat);return;}
+  if(_IN_MACH.has(t)){box(x,y,W,H,'#454b56','#6a7280','#262a31');const r=Math.min(W,H)*0.3;
+    if(t==='life'||t==='water'||t==='cpump'||t==='fpump'||t==='hyd'){C(cx,cy,r,'#22262c');C(cx,cy,r*0.7,t==='life'?'#5cff9a':t==='water'?'#3aa0c8':t==='cpump'?'#4f8cff':t==='fpump'?'#c77dff':'#ffb347');for(let k=0;k<4;k++){const a=k/4*TAU+0.4;R(cx+Math.cos(a)*r*0.5-0.5,cy+Math.sin(a)*r*0.5-0.5,1,1,'#22262c');}}
+    else if(t==='grav'){C(cx,cy,r*1.3,'#2a1f48');C(cx,cy,r,'#7a4ad8');C(cx,cy,r*0.5,'#d0b0ff');}
+    else if(t==='shield'||t==='dome'){C(cx,cy,r*1.3,'#1a2a48');C(cx,cy,r,'#3a7ad8');C(cx,cy,r*0.45,'#a6e4ff');}
+    else if(t==='hx'||t==='sink'){g.fillStyle='#4f8cff';for(let xx=x+2;xx<x+W-2;xx+=Math.max(2,Z*0.4))g.fillRect(Math.round(xx),Math.round(y+2),1,Math.round(H-4));}
+    else{R(x+W*0.15,cy-1,W*0.7,2,'#8f98a8');C(x+W*0.25,cy,r*0.6,'#2a2e36');C(x+W*0.75,cy,r*0.6,'#2a2e36');}
+    R(x,y,W,Math.max(1,Z*0.12),cat);return;}
+  if(_IN_WPN.has(t)){box(x,y,W,H,'#40454e','#62697a','#24272d');const r=Math.min(W,H)*0.42;C(cx,cy,r,INC.out);C(cx,cy,r-1,'#5a616c');C(cx,cy,r*0.62,'#2a2e36');
+    if(t==='launcher'||t==='mines'||t==='decoy'||t==='harpoon'||t==='torp'){const n=Math.max(2,Math.floor(Math.min(W,H)/Math.max(3,Z*0.8)));for(let i2=0;i2<n;i2++)for(let j2=0;j2<n;j2++)C(x+W*(i2+0.5)/n,y+H*(j2+0.5)/n,Math.min(W,H)/n*0.3,'#14161a');}
+    else{R(cx,cy-Math.max(1,r*0.18),r*1.2,Math.max(2,r*0.36),'#2a2e36');}R(x,y,W,Math.max(1,Z*0.12),'#ff4d5e');return;}
+  if(_IN_AMMO.has(t)){box(x,y,W,H,'#3a3a34','#5a5a4e','#22221d');const s=Math.max(2,Z*0.4);for(let yy=y+2;yy<y+H-s;yy+=s+1)for(let xx=x+2;xx<x+W-s*1.8;xx+=s*2+1){R(xx,yy,s*1.8,s,t==='rack'?'#2a2e36':'#8a7a4a');R(xx+s*1.4,yy,s*0.4,s,t==='rack'?'#ff4d5e':'#c8a050');}
+    g.strokeStyle='#ffd23c';g.lineWidth=1;g.setLineDash([2,2]);g.strokeRect(Math.round(x)+0.5,Math.round(y)+0.5,Math.round(W)-1,Math.round(H)-1);g.setLineDash([]);return;}
+  if(t==='pod'){g.fillStyle=INC.out;g.beginPath();g.roundRect(x,y,W,H,Math.min(W,H)/2);g.fill();g.fillStyle='#e8ecf4';g.beginPath();g.roundRect(x+1,y+1,W-2,H-2,Math.min(W,H)/2-1);g.fill();C(cx,cy,Math.min(W,H)*0.22,'#2f6fd0');R(x,cy-0.5,W,1,'#ff6a3a');return;}
+  if(t==='firest'||t==='ext'){if(mn>Z*2){box(x,y,W,H,'#3c4048','#5c626e','#22252b');const cw=Math.max(Z*0.9,4);for(let xx=x+Z*0.4;xx<x+W-cw;xx+=cw+Z*0.4){box(xx,y+Z*0.3,cw,Z*1.3,'#9a2e26','#d0503e','#5a1812');R(xx+cw*0.3,y+Z*0.6,cw*0.4,Z*0.25,'#e8e2da');}
+      for(let k=0;k<2;k++){const rx=x+W*(0.3+k*0.4),ry=y+H*0.65;C(rx,ry,Z*0.8,'#5a1812');C(rx,ry,Z*0.55,'#c8483e');C(rx,ry,Z*0.2,'#22252b');}return;}
+    box(x,y,W,H,'#8a2a24','#c8483e','#4a1410');for(let xx=x+2;xx<x+W-2;xx+=Math.max(3,Z*0.6))C(xx+1,cy,Math.max(1,Z*0.22),'#e8e2da');return;}
+  if(t==='spares'){box(x,y,W,H,'#4a4640','#6a645a','#2a2620');for(let yy=y+2;yy<y+H-3;yy+=Math.max(3,Z*0.7))R(x+2,yy,W-4,1,'#8a8070');return;}
+  if(t==='console'){box(x,y,W,H,'#2a3242','#4a5672','#161c28');R(x+W*0.2,y+H*0.15,W*0.6,H*0.35,'#3fd8ff');R(x+W*0.2,y+H*0.6,W*0.6,H*0.2,'#5cff9a');return;}
+  if(t==='seat'){box(x,y,W,H,'#3a3e46','#5a606c','#22252b');R(x+W*0.1,y+H*0.2,W*0.3,H*0.6,'#ffd23c');return;}
+  if(t==='bunk'){box(x,y,W,H,'#6a7a98','#9aaac8','#3a4a68');R(x+1,y+1,Math.min(W*0.2,Z*0.6),H-2,'#e8ecf4');return;}
+  if(t==='catapult'){R(x,cy-Math.max(1,Z*0.2),W,Math.max(2,Z*0.4),'#ffd23c');for(let xx=x;xx<x+W;xx+=Math.max(3,Z))R(xx,cy-Math.max(1,Z*0.2),1,Math.max(2,Z*0.4),'#1a1a1a');return;}
+  if(t==='elev'){box(x,y,W,H,'#3a3f48','#5a616c','#22262c');g.strokeStyle='#ffd23c';g.setLineDash([2,2]);g.strokeRect(Math.round(x)+1.5,Math.round(y)+1.5,Math.round(W)-3,Math.round(H)-3);g.setLineDash([]);return;}
+  if(t==='radar'||t==='sensor'||t==='mast'||t==='spectro'||t==='lcomms'||t==='comms'){box(x,y,W,H,'#3a4250','#5a6478','#1e232c');const r=Math.min(W,H)*0.38;C(cx,cy,r,'#c8d0dc');C(cx,cy,r*0.6,'#8f98a8');C(cx,cy,r*0.2,'#ff7ad9');return;}
+  if(t==='gear'){box(x,y,W,H,'#1e2228','#3a3e46','#101216');R(cx-1,y+1,2,H-2,'#8f98a8');return;}
+  // par défaut : bloc de la couleur de sa catégorie
+  box(x,y,W,H,'#454b56','#6a7280','#262a31');R(x,y,W,Math.max(1,Z*0.12),cat);
+}
+const _IN_TANK=new Set(['tank','avfuel','rfuel','ctank','o2','wtank','foam']),_IN_TANKC=IN_TANKC;
+const _IN_CAB=new Set(['pdu','sub','egen','datahub','core','avion','nav','firectl','ecm','trc','hpu']);
+const _IN_MACH=new Set(['life','water','hyd','cpump','fpump','hx','sink','grav','shield','dome','tractor','refinery','mlaser','conveyor','rails','weld','rcs','exh','ecs']);
+const _IN_WPN=new Set(['turret','plasma','gproj','drain','pd','emp','spinal','gun','torp','launcher','mines','harpoon','decoy']);
+const _IN_AMMO=new Set(['mag','mmag','ammo','tmag','pdmag','avammo','rack']);
+/* ---------- personnages : sprites d'après la planche de l'Armée Spatiale Humaine ----------
+   Uniforme bleu marine, casquette à bandeau doré ; l'or (bandeau, épaulettes, aiguillette, ceinture) et la longueur
+   de la vareuse suivent le grade ; les généraux portent la cape blanche bordée d'or, le commandant en chef la casquette
+   blanche. Tenues spéciales de la planche : espace (combinaison blanche, visière bleue), combat (armure blanche et
+   grise), abordage (armure sombre). Sprites générés une fois, puis mis en cache. Vue de trois quarts : face (0),
+   dos (1), profil gauche (2) et droit (3, miroir). */
+const IN_GRADES=['Cadet','Sous-lieutenant','Lieutenant','Capitaine','Commandant','Lieutenant-colonel','Colonel','Général de brigade','Général de division','Général de corps d’armée','Général d’armée','Commandant en chef'];
+const INP={navy:['#0c1328','#16224a','#203468','#2e4a8c','#4a68b0'],gold:['#7a5a14','#c0922a','#f2cc58'],white:['#8f99aa','#c9d1de','#f2f5fa'],boot:'#121318',
+  skin:[['#f2c8a4','#d8a07c'],['#e0ae84','#bc8460'],['#c08458','#9a6440'],['#8a5a3a','#6a4028'],['#f6d6bc','#dcb090']],hair:['#2a1c14','#5a3a1e','#8a6a3a','#1a1a1a','#a8a8b0','#b04a2a'],
+  suit:['#7e8899','#c2cad8','#eef2f8'],visor:['#16346e','#2f6fd0','#9fd8ff'],combat:['#6a7282','#aab2c0','#dde2ea'],board:['#16181c','#2c2f35','#474b53','#7a5a32']};
+const IN_SPR=new Map();
+function inLook(o){return Object.assign({outfit:'std',rank:0,skin:0,hair:0},o);}
+// sprite : 18 x 30 pixels, pieds en (9, 28)
+function inSprite(L,pose,dir,fr){
+  const key=L.outfit+L.rank+'|'+L.skin+L.hair+'|'+pose+dir+fr;let cv=IN_SPR.get(key);if(cv)return cv;
+  const W=18,H=30;cv=mkCanvas(W,H);const g=cv.getContext('2d'),flip=dir===3,d=flip?2:dir;
+  const P=(x,y,c)=>{g.fillStyle=c;g.fillRect(flip?W-1-x:x,y,1,1);},Rr=(x,y,w,h,c)=>{for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++)P(xx,yy,c);};
+  const N=INP.navy,Gd=INP.gold,Wt=INP.white,S=INP.skin[L.skin%INP.skin.length],Hr=INP.hair[L.hair%INP.hair.length],rk=L.rank|0,o=L.outfit;
+  const helm=o==='espace'||o==='combat'||o==='abordage',armC=o==='espace'?INP.suit:o==='combat'?INP.combat:o==='abordage'?[INP.board[0],INP.board[1],INP.board[2]]:null;
+  const body=armC?armC[1]:N[2],bodyD=armC?armC[0]:N[1],bodyL=armC?armC[2]:N[3],leg=armC?armC[0]:N[1],legL=armC?armC[1]:N[2];
+  const cape=!helm&&rk>=7,coat=!helm&&rk>=4,gen=rk>=11;
+  // animation : jambes et bras
+  const walk=pose==='walk'||pose==='run',amp=pose==='run'?2:1,ph=walk?[0,1,0,-1][fr&3]*amp:0,bob=pose==='run'&&(fr&1)?1:0;
+  if(pose==='crawl'){ // à quatre pattes, vu de profil (gauche/droite) ou de dessus (haut/bas)
+    const c1=armC?armC[1]:N[2],c0=armC?armC[0]:N[1],k=(fr&1);
+    if(d===2){Rr(4,19,10,4,c1);Rr(4,19,10,1,armC?armC[2]:N[3]);Rr(1,17,4,4,helm?armC[2]:S[0]);if(helm)Rr(1,18,2,2,INP.visor[1]);else{Rr(1,16,4,1,Hr);}
+      Rr(3+k,23,2,4,c0);Rr(7-k,23,2,4,c0);Rr(11+k,23,2,4,leg);Rr(14-k,22,2,4,leg);Rr(3+k,26,2,1,INP.boot);Rr(14-k,25,2,1,INP.boot);}
+    else{Rr(6,10,6,12,c1);Rr(7,6,4,4,helm?armC[2]:(d===1?Hr:S[0]));if(helm&&d!==1)Rr(8,7,2,2,INP.visor[1]);Rr(4,11+k*2,2,4,c0);Rr(12,13-k*2,2,4,c0);Rr(6,22,2,5-k,leg);Rr(10,22,2,4+k,leg);}
+    return IN_SPR.set(key,cv),cv;}
+  if(pose==='sleep'){ // couché dans une couchette, vu de dessus : tête sur l'oreiller, couverture
+    Rr(1,12,4,5,S[0]);Rr(1,12,4,1,Hr);Rr(5,11,12,7,'#4a5a88');Rr(5,11,12,1,'#7a8ab8');Rr(5,17,12,1,'#2a3458');return IN_SPR.set(key,cv),cv;}
+  const sit=pose==='sit',cr=pose==='crouch',y0=(sit?6:cr?5:0)+bob;
+  if(d===0||d===1){ // face ou dos
+    // jambes
+    if(sit){Rr(5,21,3,3,leg);Rr(10,21,3,3,leg);Rr(5,21,8,1,legL);Rr(5,24,3,2,leg);Rr(10,24,3,2,leg);Rr(5,26,3,1,INP.boot);Rr(10,26,3,1,INP.boot);}
+    else if(cr){Rr(5,22,3,4,leg);Rr(10,22,3,4,leg);Rr(4,26,4,1,INP.boot);Rr(10,26,4,1,INP.boot);}
+    else{const la=Math.max(0,ph),lb=Math.max(0,-ph);Rr(5,19,3,7-la,leg);Rr(10,19,3,7-lb,leg);Rr(5,19,1,7-la,legL);Rr(10,19,1,7-lb,legL);
+      Rr(5,26-la,3,2,INP.boot);Rr(10,26-lb,3,2,INP.boot);if(!armC&&rk>=3){Rr(7,19,1,6-la,Gd[1]);Rr(10,19,1,6-lb,Gd[1]);}}
+    // cape blanche des généraux (dans le dos : visible derrière les bras de face, couvrant tout de dos)
+    if(cape&&d===0){Rr(2,10+y0,2,12-(rk<9?3:0),Wt[1]);Rr(14,10+y0,2,12-(rk<9?3:0),Wt[1]);Rr(2,10+y0,1,12-(rk<9?3:0),Gd[2]);Rr(15,10+y0,1,12-(rk<9?3:0),Gd[2]);}
+    // torse (vareuse longue pour les officiers supérieurs)
+    const tl=coat&&!sit&&!cr?11:8;Rr(5,10+y0,8,tl,body);Rr(5,10+y0,8,1,bodyL);Rr(12,10+y0,1,tl,bodyD);
+    if(!armC){if(d===0){Rr(8,10+y0,2,2,Wt[2]);for(let k=0;k<3;k++)P(9,12+y0+k*2,Gd[2]);if(rk>=2)Rr(5,17+y0,8,1,Gd[1]);if(rk>=5)Rr(6,11+y0,1,5,Gd[2]);}
+      if(rk>=3){const ew=rk>=7?3:2;Rr(5-(ew-2),10+y0,ew,1,Gd[2]);Rr(12,10+y0,ew,1,Gd[2]);if(rk>=6){Rr(5-(ew-2),11+y0,ew,1,Gd[1]);Rr(12,11+y0,ew,1,Gd[1]);}}
+      if(cape&&d===1){Rr(4,10+y0,10,(rk<9?10:13),Wt[1]);Rr(4,10+y0,10,1,Wt[2]);Rr(4,10+y0+(rk<9?9:12),10,1,Gd[1]);Rr(4,10+y0,1,(rk<9?10:13),Gd[2]);Rr(13,10+y0,1,(rk<9?10:13),Gd[2]);}}
+    else{Rr(6,12+y0,6,1,armC[0]);Rr(6,15+y0,6,1,armC[0]);if(o==='abordage')Rr(6,13+y0,6,1,INP.board[3]);if(o==='espace'&&d===1)Rr(6,11+y0,6,5,armC[0]);}
+    // bras (balancement en marche)
+    const aa=sit?0:ph,arm=armC?armC[1]:N[2];Rr(3,11+y0+Math.max(0,aa),2,6,arm);Rr(13,11+y0+Math.max(0,-aa),2,6,arm);Rr(3,17+y0+Math.max(0,aa),2,1,helm?armC[0]:S[0]);Rr(13,17+y0+Math.max(0,-aa),2,1,helm?armC[0]:S[0]);
+    if(pose==='work'&&d!==1){Rr(3,13+y0+(fr&1),2,2,S[0]);Rr(13,14+y0-(fr&1),2,2,S[0]);}
+    // tête
+    if(helm){Rr(5,2+y0,8,8,armC[2]);Rr(5,2+y0,8,1,armC[1]);Rr(5,9+y0,8,1,armC[0]);if(d===0){Rr(6,4+y0,6,4,o==='abordage'?'#1a1208':INP.visor[1]);Rr(6,4+y0,6,1,o==='abordage'?'#c8782a':INP.visor[2]);}else Rr(6,4+y0,6,4,armC[1]);
+      if(o==='espace'&&rk>=4)Rr(5,2+y0,8,1,Gd[2]);}
+    else{Rr(6,4+y0,6,6,d===0?S[0]:Hr);if(d===0){Rr(6,4+y0,1,3,Hr);Rr(11,4+y0,1,3,Hr);P(7,6+y0,'#1a1218');P(10,6+y0,'#1a1218');Rr(8,8+y0,2,1,S[1]);Rr(6,9+y0,6,1,S[1]);}
+      // casquette à visière : calotte, bandeau (doré à partir de sous-lieutenant, blanche pour le commandant en chef), insigne
+      const capC=gen?Wt[2]:N[1],capL=gen?Wt[1]:N[3];Rr(5,1+y0,8,3,capC);Rr(5,1+y0,8,1,capL);Rr(5,3+y0,8,1,rk>=1?Gd[1]:N[0]);if(d===0){P(8,2+y0,Gd[2]);P(9,2+y0,Gd[2]);Rr(5,4+y0,8,1,'#08090c');}}
+  }else{ // profil (gauche ; le droit est le miroir)
+    if(sit){Rr(5,21,6,3,leg);Rr(4,24,2,2,leg);Rr(3,26,3,1,INP.boot);}
+    else if(cr){Rr(6,21,5,3,leg);Rr(5,24,3,2,leg);Rr(4,26,4,1,INP.boot);}
+    else{const s1=ph,s2=-ph;Rr(7+s1,19,3,7,leg);Rr(7+s2,19,3,7,legL);Rr(6+s1,26,4,2,INP.boot);Rr(6+s2,26,4,2,INP.boot);}
+    if(cape)Rr(10,10+y0,2,12-(rk<9?3:0),Wt[1]);
+    const tl=coat&&!sit&&!cr?11:8;Rr(6,10+y0,5,tl,body);Rr(6,10+y0,5,1,bodyL);if(!armC&&rk>=3)Rr(7,10+y0,3,1,Gd[2]);
+    const aa=sit?0:ph;Rr(7-aa,11+y0,3,6,armC?armC[0]:N[1]);Rr(7-aa,17+y0,3,1,helm?armC[0]:S[0]);if(pose==='work')Rr(4,14+y0+(fr&1),3,2,S[0]);
+    if(helm){Rr(5,2+y0,7,8,armC[2]);Rr(4,4+y0,3,4,o==='abordage'?'#1a1208':INP.visor[1]);Rr(4,4+y0,1,4,o==='abordage'?'#c8782a':INP.visor[2]);}
+    else{Rr(6,4+y0,5,6,S[0]);Rr(9,4+y0,2,4,Hr);P(6,6+y0,'#1a1218');P(5,7+y0,S[1]);const capC=gen?Wt[2]:N[1];Rr(6,1+y0,6,3,capC);Rr(6,3+y0,6,1,rk>=1?Gd[1]:N[0]);Rr(4,4+y0,3,1,'#08090c');}
+  }
+  IN_SPR.set(key,cv);return cv;}
+// grade du joueur : celui de son commandement (classe du vaisseau qu'il commande), ajusté par sa réputation auprès
+// de la Flotte d'Halcyon (le jeu ne tient pas de grade : hypothèse documentée)
+function inPlayerRank(){const M=MODEL_BY[game.ship],cat=M?M.cat:'chasseur';
+  const base={intercepteur:2,chasseur:2,chbomb:3,bombardier:3,furtif:3,corvette:4,minier:3,commerce:3,fregate:5,capital:6,porte:7}[cat]??2;
+  let adj=0;try{const v=game.mis&&game.mis.rep?game.mis.rep.flotte||0:0;adj=v>=50?2:v>=15?1:v<=-15?-1:0;}catch(e){}
+  return clamp(base+adj,0,10);}
+/* ---------- simulation : joueur, portes, équipage ---------- */
+// praticable ? (pixel de la grille ; porte fermée ; appareil garé)
+function inFree(M,x,y){const X=Math.floor(x),Y=Math.floor(y);if(X<0||Y<0||X>=M.w||Y>=M.h)return false;const i=Y*M.w+X;if(!M.walk[i])return false;
+  const d=M.doorAt[i];if(d>=0){const D=M.doors[d];if(D.anim<0.85)return false;}
+  for(const s of M.slots){if(!s.present)continue;if(Math.abs(x-s.x)<s.w*0.36&&Math.abs(y-s.y)<s.h*0.22)return false;}
+  return true;}
+function inCanAt(M,x,y,r){return inFree(M,x-r,y-r)&&inFree(M,x+r,y-r)&&inFree(M,x-r,y+r)&&inFree(M,x+r,y+r);}
+function inAreaAt(M,x,y){const X=Math.floor(x),Y=Math.floor(y);if(X<0||Y<0||X>=M.w||Y>=M.h)return null;const a=M.area[Y*M.w+X];return a>=0?M.areas[a]:null;}
+function inPostAt(M,x,y){const X=Math.floor(x),Y=Math.floor(y);if(X<0||Y<0||X>=M.w||Y>=M.h)return 1;return M.walk[Y*M.w+X]||1;}
+// pression d'une zone : celle du vaisseau en vol (compartiments du jeu), sinon nominale ; une soute n'est jamais pressurisée
+function inPress(M,A){if(!A)return 1;if(!A.press)return 0;const L=IN.live;if(L&&L.ok&&A.ci!==undefined&&L.b.comps&&L.b.comps[A.ci])return L.b.comps[A.ci].P;return 1;}
+// état d'une porte : celui du jeu pour le vaisseau en vol ; verrouillée si l'un des côtés est dépressurisé
+function inDoorLock(M,D){if(D.kind==='outer')return'Porte extérieure du sas : elle donne sur le vide (sortie extravéhiculaire par la touche K, en vol).';
+  const a=M.areas[D.a],b=D.b>=0?M.areas[D.b]:null;if(D.kind==='hatch')return null;
+  const pa=inPress(M,a),pb=b?inPress(M,b):1;if(Math.min(pa,pb)<0.3&&Math.max(pa,pb)>=0.3)return'Porte verrouillée : le compartiment voisin est dépressurisé.';return null;}
+function inDoorsStep(M,dt){const L=IN.live,pl=IN.pl,nearC=new Set(),w=M.w;
+  for(const c of IN.crew){if(c.act!=='walk')continue;const X=Math.floor(c.x),Y=Math.floor(c.y);for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const x=X+dx,y=Y+dy;if(x<0||y<0||x>=w||y>=M.h)continue;const d=M.doorAt[y*w+x];if(d>=0)nearC.add(d);}}
+  for(const D of M.doors){const dx=(pl?pl.x:-99)-D.x,dy=(pl?pl.y:-99)-D.y;let want=D.open;
+    if(L&&L.ok&&D.ipd!==undefined&&L.b.doors&&L.b.doors[D.ipd])want=L.b.doors[D.ipd].open;
+    D.lock=inDoorLock(M,D);
+    // portes coulissantes : elles s'ouvrent devant quelqu'un, se referment derrière (sauf portes tenues ouvertes en vol)
+    const near=Math.hypot(dx,dy)<2.6||nearC.has(D.id);
+    if(D.auto&&!D.lock)want=near||(D.kind==='door'&&D.open&&!(L&&L.ok));
+    if(D.lock)want=false;
+    if(D.kind==='hatch'){ // sas de soute : cycle de 1,4 s avant d'ouvrir
+      if(near){D.cyc=(D.cyc||0)+dt;want=D.cyc>1.4;}else{D.cyc=0;want=false;}}
+    D.anim=clamp(D.anim+(want?dt*3:-dt*3),0,1);}}
+// déplacement du joueur
+function inPlayerStep(M,dt){const p=IN.pl,K=IN.keys;if(!p)return;p.t+=dt;
+  if(M.seat||p.sit){p.pose=p.sleep?'sleep':'sit';p.fr=0;return;}
+  let dx=(K.right?1:0)-(K.left?1:0),dy=(K.down?1:0)-(K.up?1:0);const n=Math.hypot(dx,dy);
+  const post=inPostAt(M,p.x,p.y),run=K.run&&post===1;
+  if(n){dx/=n;dy/=n;const v=(post===3?IN_SPD.crawl:post===2?IN_SPD.crouch:run?IN_SPD.run:IN_SPD.walk)*dt,r=0.32;
+    const nx=p.x+dx*v;if(inCanAt(M,nx,p.y,r))p.x=nx;else if(inCanAt(M,nx,p.y,0.12))p.x=nx;
+    const ny=p.y+dy*v;if(inCanAt(M,p.x,ny,r))p.y=ny;else if(inCanAt(M,p.x,ny,0.12))p.y=ny;
+    p.dir=Math.abs(dx)>Math.abs(dy)?(dx<0?2:3):(dy<0?1:0);p.anim+=dt*(run?9:6);}
+  else p.anim=0;
+  p.pose=post===3?'crawl':post===2?(n?'crouch':'crouch'):n?(run?'run':'walk'):'stand';p.fr=Math.floor(p.anim)&3;
+  // tenue : combinaison pressurisée hors des zones pressurisées
+  const A=inAreaAt(M,p.x,p.y);const suit=A&&inPress(M,A)<0.3;if(suit!==p.suit){p.suit=suit;inMsg(suit?'Zone non pressurisée : combinaison fermée, visière baissée.':'Zone pressurisée : visière relevée.');}
+  p.look=Object.assign({},p.base,{outfit:suit?'espace':p.base.outfit});}
+function inMsg(t){IN.msg=t;IN.msgT=4;}
+
+/* ---------- équipage ---------- */
+// effectif visible : celui du vaisseau en vol (équipage simulé par le jeu), sinon l'effectif nominal réparti sur les ponts
+function inDecks(M){if(M.small||M.seat)return 1;const G=M.P.G,H=2*(G.Tmax||0)*XR.mpp,dk=M.P.deck||3.5;return Math.max(1,Math.floor(H/dk));}
+function inCrewInit(M){
+  const L=IN.live,crew=[];IN.crew=crew;M.decks=inDecks(M);
+  // le plan projette tous les ponts : tout l'équipage y figure ; en vol, l'effectif suit les pertes de l'équipage du jeu
+  let n=M.crewTotal;if(L&&L.ok&&L.b.crew&&L.b.crewMax)n=Math.round(M.crewTotal*L.b.crew.length/Math.max(1,L.b.crewMax));n=Math.min(n,2400);
+  if(M.small||M.seat)n=Math.max(0,(L&&L.ok&&L.b.crew?L.b.crew.length:M.crewTotal)-1);
+  M.crewVis=n;for(const q of M.posts)if(q.seat&&q.seat.occ)q.busy=IN.pl;
+  const roles=[],rn=M.roleN,tot=Math.max(1,M.crewTotal);for(const r in rn)for(let k=0;k<Math.round(n*rn[r]/tot);k++)roles.push(r);
+  const base=['officer','tech','tech','gunner','analyst','hand','any','any'];while(roles.length<n)roles.push(M.small?'any':base[roles.length%base.length]);
+  const rnd2=mulberry(sdOf(M.sid)+7);
+  for(let k=0;k<n;k++){const role=roles[k],rk=role==='officer'?2+((rnd2()*3)|0):role==='analyst'?1+((rnd2()*2)|0):role==='inspector'?2:(rnd2()*2)|0;
+    const outfit=role==='pilot'||role==='bomber'||role==='hand'&&M.cap||M.small?'espace':role==='marine'?'abordage':'std';
+    const c={x:0,y:0,look:inLook({outfit,rank:rk,skin:(rnd2()*5)|0,hair:(rnd2()*6)|0}),role,act:null,post:null,path:null,pi:0,t:rnd2()*20,dir:0,pose:'stand',anim:0,fr:0,shift:k%3};
+    crew.push(c);}
+  // positions de départ : sur le vaisseau en vol, là où l'équipage du jeu se trouve ; sinon directement à son poste
+  crew.forEach((c,k)=>{if(L&&L.ok&&L.b.crew&&L.b.crew[k]){const q=L.b.crew[k];c.x=q.x;c.y=q.y;c.job=q.job&&q.job.type;}inCrewAssign(M,c,true);});}
+function inCrewAssign(M,c,warp){
+  if(c.post)c.post.busy=null;c.post=null;c.act='walk';c.path=null;
+  // vaisseau en vol : la tâche donnée par le jeu passe avant (incendie, brèche, réparation)
+  if(c.job==='fire'||c.job==='breach'||c.job==='fix'){c.act='work';c.dur=8;if(!warp)return;}
+  const P=M.posts,sh=c.shift;let cand;
+  if(sh===2)cand=P.filter(p=>!p.busy&&p.act==='sleep');
+  else if(sh===1&&!M.small)cand=P.filter(p=>!p.busy&&(p.act==='eat'||p.act==='heal'))||[];
+  if(!cand||!cand.length)cand=P.filter(p=>!p.busy&&p.act!=='sleep'&&(p.role===c.role||p.role==='any'));
+  if(!cand.length)cand=P.filter(p=>!p.busy&&p.act!=='sleep');
+  let tgt=null;
+  if(cand.length&&(sh!==1||Math.random()<0.6)){const p=cand[(Math.random()*cand.length)|0];p.busy=c;c.post=p;tgt=[p.x,p.y];}
+  else{tgt=inRandomSpot(M,c);}
+  if(!tgt){c.act='stand';c.dur=5;return;}
+  if(warp||!c.x){c.x=tgt[0];c.y=tgt[1];c.path=null;inCrewArrive(M,c);return;}
+  c.path=inPath(M,[c.x,c.y],tgt);c.pi=0;c.act='walk';if(!c.path){c.x=tgt[0];c.y=tgt[1];inCrewArrive(M,c);}}
+function inCrewArrive(M,c){const p=c.post;if(!p){c.act='stand';c.dur=4+Math.random()*10;return;}
+  c.act=p.act==='console'||p.act==='seat'||p.act==='eat'?'sit':p.act==='sleep'?'sleep':p.act==='guard'?'stand':'work';c.dur=(p.act==='sleep'?60:25)+Math.random()*50;
+  const f=p.face||[1,0];c.dir=Math.abs(f[0])>Math.abs(f[1])?(f[0]<0?2:3):(f[1]<0?1:0);}
+// promenade : surtout les coursives, le réfectoire et les salles de vie ; jamais les ponts d'envol pour qui n'y travaille pas
+function inRandomSpot(M,c){for(let k=0;k<60;k++){const i=(Math.random()*M.N)|0;if(M.walk[i]===1&&M.doorAt[i]<0){const A=M.areas[M.area[i]];if(!A)continue;
+  if(A.kind==='corr'||A.kind==='rest'||(A.xr&&(A.xr.type==='galley'||A.xr.type==='med'||A.xr.type==='quarters'))||(A.kind==='hangar'&&c&&(c.role==='pilot'||c.role==='hand')))return[i%M.w+0.5,((i/M.w)|0)+0.5];}}return null;}
+function inCrewStep(M,dt){for(const c of IN.crew){c.t+=dt;
+    if(c.act==='walk'&&c.path){const P=c.path,q=P[c.pi];if(!q){c.path=null;inCrewArrive(M,c);continue;}const dx=q[0]-c.x,dy=q[1]-c.y,d=Math.hypot(dx,dy),post=inPostAt(M,c.x,c.y),v=(post===3?IN_SPD.crawl:post===2?IN_SPD.crouch:IN_SPD.walk*0.85)*dt;
+      if(d<=v){c.x=q[0];c.y=q[1];c.pi++;if(c.pi>=P.length){c.path=null;inCrewArrive(M,c);}}else{c.x+=dx/d*v;c.y+=dy/d*v;c.dir=Math.abs(dx)>Math.abs(dy)?(dx<0?2:3):(dy<0?1:0);}
+      c.pose=post===3?'crawl':post===2?'crouch':'walk';c.anim+=dt*5.5;c.fr=Math.floor(c.anim)&3;}
+    else{c.dur=(c.dur||5)-dt;c.pose=c.act==='sit'?'sit':c.act==='sleep'?'sleep':c.act==='work'?'work':'stand';c.anim+=dt*2;c.fr=Math.floor(c.anim)&1;if(c.dur<=0)inCrewAssign(M,c);}
+    const A=inAreaAt(M,c.x,c.y),suit=A&&inPress(M,A)<0.3;c.suit=suit;}}
+// chemin : par les cases du plan intérieur (grands vaisseaux) ou par la grille au pixel (petits appareils)
+function inPath(M,a,b){
+  if(M.ip){const ip=M.ip,GW=ip.GW,cell=(x,y)=>clamp(Math.floor((y-ip.Y0)/10),0,ip.GH-1)*GW+clamp(Math.floor((x-ip.X0)/10),0,GW-1);
+    let gs=cell(a[0],a[1]),gt=cell(b[0],b[1]);if(ip.cid[gs]<0||ip.cid[gt]<0){return[[b[0],b[1]]];}
+    if(gs===gt)return[[b[0],b[1]]];const N=GW*ip.GH,prev=new Int32Array(N).fill(-1),q=[gs];prev[gs]=gs;
+    for(let qi=0;qi<q.length;qi++){const g=q[qi];if(g===gt)break;const x=g%GW,y=(g/GW)|0,Lk=ip.link[g];for(let k=0;k<4;k++){if(!(Lk&(1<<k)))continue;const X=x+DIR4[k][0],Y=y+DIR4[k][1];if(X<0||Y<0||X>=GW||Y>=ip.GH)continue;const n=Y*GW+X;if(prev[n]>=0||ip.cid[n]<0)continue;prev[n]=g;q.push(n);}}
+    if(prev[gt]<0)return[[b[0],b[1]]];const cells=[];let c=gt;while(c!==gs){cells.push(c);c=prev[c];}cells.push(gs);cells.reverse();
+    const out=[];for(let k=1;k<cells.length;k++){const g0=cells[k-1],g=cells[k],p=inCellPt(M,g);if(ip.cid[g0]!==ip.cid[g]){const D=M.doors.find(d=>d.ipd!==undefined&&((ip.doors[d.ipd].ga===g0&&ip.doors[d.ipd].gb===g)||(ip.doors[d.ipd].ga===g&&ip.doors[d.ipd].gb===g0)));if(D)out.push([D.x+(D.vert?0:0.5)-(D.vert?0:0),D.y]);}
+      if(p&&k<cells.length-1)out.push(p);}out.push([b[0],b[1]]);return out;}
+  // petits appareils : BFS au pixel
+  const w=M.w,N=M.N,s=Math.floor(a[1])*w+Math.floor(a[0]),t=Math.floor(b[1])*w+Math.floor(b[0]);if(!M.walk[s]||!M.walk[t])return[[b[0],b[1]]];
+  const prev=new Int32Array(N).fill(-1),q=[s];prev[s]=s;for(let qi=0;qi<q.length;qi++){const i=q[qi];if(i===t)break;const x=i%w,y=(i/w)|0;for(const [dx,dy] of DIR4){const X=x+dx,Y=y+dy;if(!M.inHull(X,Y))continue;const j=Y*w+X;if(prev[j]>=0||!M.walk[j])continue;prev[j]=i;q.push(j);}}
+  if(prev[t]<0)return[[b[0],b[1]]];const pts=[];let c=t;while(c!==s){pts.push([c%w+0.5,((c/w)|0)+0.5]);c=prev[c];}pts.reverse();
+  const out=[];for(let k=0;k<pts.length;k++){if(k===pts.length-1||k%3===0)out.push(pts[k]);}return out;}
+// point praticable d'une case du plan intérieur (au plus près de son centre)
+function inCellPt(M,g){if(!M.cellPt)M.cellPt=new Map();if(M.cellPt.has(g))return M.cellPt.get(g);const ip=M.ip,X0=ip.X0+(g%ip.GW)*10,Y0=ip.Y0+((g/ip.GW)|0)*10;let best=null,bd=1e9;
+  for(let y=Y0;y<Y0+10;y++)for(let x=X0;x<X0+10;x++){if(!M.inHull(x,y))continue;const i=y*M.w+x;if(!M.walk[i]||M.doorAt[i]>=0)continue;const d=Math.abs(x-X0-5)+Math.abs(y-Y0-5);if(d<bd){bd=d;best=[x+0.5,y+0.5];}}
+  M.cellPt.set(g,best);return best;}
+// interaction (touche E) : s'asseoir / se lever, porte manuelle, couchette, équipement, stock du hangar
+function inUse(M){const p=IN.pl;if(!p)return;
+  if(M.seat){inMsg('Dans un '+M.cls.toLowerCase()+', le pilote reste sanglé dans son siège éjectable : on observe le poste sans se lever.');return;}
+  if(p.sit){p.sit.occ=null;p.sit=null;p.sleep=false;
+    // on se lève là où il y a de la place
+    if(!inCanAt(M,p.x,p.y,0.32)){let best=null;for(let r=1;r<8&&!best;r++)for(let dy=-r;dy<=r&&!best;dy++)for(let dx=-r;dx<=r;dx++){const x=p.x+dx*0.5,y=p.y+dy*0.5;if(inCanAt(M,x,y,0.32)){best=[x,y];break;}}if(best){p.x=best[0];p.y=best[1];}}
+    inMsg('Debout.');return;}
+  // siège ou couchette proche
+  let best=null,bd=1.6;for(const s of M.seats){const d=Math.hypot(s.x-p.x,s.y-p.y);if(d<bd&&!s.occ){bd=d;best=s;}}
+  if(best){best.occ=p;p.sit=best;p.x=best.x;p.y=best.y;p.dir=3;inMsg('Assis : '+XRT[best.o.type][0].toLowerCase()+'.');return;}
+  for(const b of M.beds){if(Math.hypot(b.x-p.x,b.y-p.y)<1.4&&!b.busy){p.sit=b;p.sleep=true;p.x=b.x;p.y=b.y;inMsg('Allongé sur une couchette.');return;}}
+  // porte manuelle ou verrouillée
+  let dD=null,dd=2.6;for(const D of M.doors){const d=Math.hypot(D.x-p.x,D.y-p.y);if(d<dd){dd=d;dD=D;}}
+  if(dD){if(dD.lock){inMsg(dD.lock);return;}if(!dD.auto){dD.open=!dD.open;inMsg(dD.open?'Porte ouverte.':'Porte fermée.');return;}}
+  // place d'appareil ou hangar : stock
+  if(M.slots.length&&M.slots.some(s=>Math.hypot(s.x-p.x,s.y-p.y)<Math.max(s.w,s.h)*0.7)){inPanel('stock');return;}
+  // équipement le plus proche : fiche du plan rayons X
+  let eq=null,ed=2.2;for(const o of M.eq){if(o.kind==='k')continue;const dx=Math.max(o.x0-p.x,0,p.x-o.x1),dy=Math.max(o.y0-p.y,0,p.y-o.y1),d=Math.hypot(dx,dy);if(d<ed){ed=d;eq=o;}}
+  if(eq){IN.sel=eq;inPanel('eq');return;}
+  inMsg('Rien à utiliser ici.');}
+/* ---------- interface : ouverture, rendu de chaque image, panneaux, commandes ---------- */
+const inEl=$('interior'),inCv=$('inCv'),inG=inCv.getContext('2d'),inMini=$('inMini');
+// vaisseau du joueur en vol : on relie l'intérieur à l'état réel (portes, pression, incendies, équipage, appareils)
+function inLiveOf(sid){const b=player;if(!b||!b.tpl||inSidOf(b.tpl)!==sid)return null;const ok=!b.grafts&&b.w===b.tpl.w&&b.h===b.tpl.h&&!!b.ip&&b.ip===b.tpl.ip;return{b,ok};}
+// ouverture : la première fois, le gabarit et le plan d'un grand vaisseau prennent quelques secondes : on l'annonce
+function inOpen(sid,opt){const src=xrSrc(sid);if(!inHumanSrc(src))return inOpenNow(sid,opt);
+  if(IN.cache.has(sid))return inOpenNow(sid,opt);
+  inEl.hidden=false;$('inName').textContent=src.n;$('inEyebrow').textContent='Intérieur · préparation';$('inWhere').textContent='Calcul du plan intérieur d’après le plan rayons X…';$('inCrew').textContent='';$('inHelp').textContent='';
+  inResize();inG.fillStyle='#05070d';inG.fillRect(0,0,inCv.width,inCv.height);setTimeout(()=>{if(!inOpenNow(sid,opt))inEl.hidden=true;},40);return true;}
+function inOpenNow(sid,opt){
+  const src=xrSrc(sid);if(!inHumanSrc(src)){toast('Intérieur indisponible','Seuls les vaisseaux de la faction humaine ont un intérieur visitable.','danger');return false;}
+  opt=opt||{};IN.live=opt.live?inLiveOf(sid):null;
+  if(IN.live&&IN.live.b&&!IN.live.b.ip&&typeof needInterior==='function'){try{needInterior(IN.live.b);IN.live=inLiveOf(sid);}catch(e){}}
+  const M=inBuild(sid);if(!M)return false;IN.M=M;IN.back=opt.back||null;IN.open=true;IN.sel=null;IN.tiles.clear();IN.tq.length=0;IN.keys={};IN.panelK=null;IN.t=0;
+  IN.Z=M.seat?inSeatZ(M):M.small?18:9;IN.nets=true;
+  // appareils embarqués : ceux en vol (porte-flottes du joueur) libèrent leur place, zone de lancement d'abord
+  for(const s of M.slots)s.present=true;
+  if(IN.live&&IN.live.b===player){const fly=allies.filter(q=>q.mother===player&&!q.dead&&!q.dying).length;let k=0;for(const s of M.slots.slice().sort((a,b)=>(a.zone==='lancement'?0:1)-(b.zone==='lancement'?0:1)))if(k<fly){s.present=false;k++;}}
+  // joueur : au poste de commandement (passerelle, poste d'équipage), en uniforme de son grade
+  const rk=inPlayerRank();IN.pl={x:0,y:0,dir:3,pose:'stand',anim:0,fr:0,t:0,sit:null,base:inLook({outfit:M.small||M.seat?'espace':'std',rank:rk,skin:2,hair:0}),look:null,suit:false};
+  inPlace(M);inCrewInit(M);
+  IN.cam.x=IN.pl.x;IN.cam.y=IN.pl.y;
+  inEl.hidden=false;$('inName').textContent=M.name;$('inEyebrow').textContent='Intérieur · '+M.cls+(IN.live?' · en vol':' · visite')+' · grade : '+IN_GRADES[rk];
+  inHelp();inPanel(null);inResize();requestAnimationFrame(inFrame);sfx.click&&sfx.click();return true;}
+function inClose(){if(!IN.open)return;IN.open=false;inEl.hidden=true;for(const k in IN.keys)IN.keys[k]=0;for(const k in keys)keys[k]=0;const b=IN.back;IN.back=null;if(b)b();}
+function inPlace(M){const p=IN.pl;
+  if(M.seat||M.small){const s=M.seats.slice().sort((a,b)=>b.x-a.x)[0];if(s){s.occ=p;p.sit=s;p.x=s.x;p.y=s.y;p.dir=3;return;}}
+  const br=M.eq.find(o=>o.type==='bridge')||M.eq.find(o=>o.type==='cic')||M.eq.find(o=>o.kind==='v');
+  const tgt=br?[(br.x0+br.x1)/2,(br.y0+br.y1)/2]:[M.w/2,M.h/2];let best=null;
+  for(let r=0;r<Math.max(M.w,M.h)&&!best;r++)for(let dy=-r;dy<=r&&!best;dy++)for(let dx=-r;dx<=r;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;const x=Math.floor(tgt[0])+dx,y=Math.floor(tgt[1])+dy;if(!M.inHull(x,y))continue;const i=y*M.w+x;if(M.walk[i]!==1||M.doorAt[i]>=0||!inCanAt(M,x+0.5,y+0.5,0.32))continue;best=[x+0.5,y+0.5];break;}
+  if(!best)for(let i=0;i<M.N;i++)if(M.walk[i]){best=[i%M.w+0.5,((i/M.w)|0)+0.5];break;}
+  if(best){p.x=best[0];p.y=best[1];}}
+function inSeatZ(M){const b=M.pit||{x0:0,x1:M.w,y0:0,y1:M.h};return clamp(Math.floor(Math.min(inCv.width/((b.x1-b.x0)*1.25),inCv.height/((b.y1-b.y0)*1.6))),12,72);}
+let inS=2;
+function inResize(){inS=innerWidth>2200?3:2;inCv.width=Math.ceil(innerWidth/inS);inCv.height=Math.ceil(innerHeight/inS);inCv.style.width=innerWidth+'px';inCv.style.height=innerHeight+'px';inG.imageSmoothingEnabled=false;
+  if(IN.M&&IN.M.seat){const z=inSeatZ(IN.M);if(z!==IN.Z){IN.Z=z;IN.tiles.clear();}}}
+window.addEventListener('resize',()=>{if(IN.open)inResize();});
+function inZoom(s){const M=IN.M;if(!M||M.seat)return;const L=[6,9,12,18,27],i=L.indexOf(IN.Z),j=clamp((i<0?1:i)+s,0,L.length-1);if(L[j]!==IN.Z){IN.Z=L[j];IN.tiles.clear();IN.tq.length=0;}}
+let inLast=0;
+function inFrame(ts){if(!IN.open)return;const dt=Math.min(0.05,inLast?(ts-inLast)/1000:1/60);inLast=ts;IN.t+=dt;const M=IN.M;
+  inDoorsStep(M,dt);inPlayerStep(M,dt);inCrewStep(M,dt);
+  // caméra : suit le joueur ; dans un chasseur, on regarde autour du siège
+  const p=IN.pl;if(M.seat){const b=M.pit,K=IN.keys;IN.look=IN.look||{x:0,y:0};IN.look.x=clamp(IN.look.x+((K.right?1:0)-(K.left?1:0))*dt*2.4,-(b.x1-b.x0)*0.5,(b.x1-b.x0)*0.5);IN.look.y=clamp(IN.look.y+((K.down?1:0)-(K.up?1:0))*dt*2.4,-(b.y1-b.y0)*0.5,(b.y1-b.y0)*0.5);
+    IN.cam.x=(b.x0+b.x1)/2+IN.look.x;IN.cam.y=(b.y0+b.y1)/2+IN.look.y;}
+  else{IN.cam.x+=(p.x-IN.cam.x)*Math.min(1,dt*6);IN.cam.y+=(p.y-IN.cam.y)*Math.min(1,dt*6);}
+  inDraw(M);if(IN.msgT>0){IN.msgT-=dt;$('inMsg').textContent=IN.msg;$('inMsg').style.opacity=Math.min(1,IN.msgT);}else $('inMsg').style.opacity=0;
+  inHud(M);requestAnimationFrame(inFrame);}
+// étoiles derrière la coque
+const IN_STARS=(()=>{const r=mulberry(99),L=[];for(let k=0;k<260;k++)L.push([r(),r(),r()<0.12?2:1,r()]);return L;})();
+function inDraw(M){const g=inG,SW=inCv.width,SH=inCv.height,Z=IN.Z,ox=Math.round(IN.cam.x*Z-SW/2),oy=Math.round(IN.cam.y*Z-SH/2);IN.ox=ox;IN.oy=oy;
+  g.fillStyle='#05070d';g.fillRect(0,0,SW,SH);for(const [a,b,s,c] of IN_STARS){g.fillStyle=c<0.3?'#a6c8ff':c<0.6?'#ffffff':'#ffe8c8';g.globalAlpha=0.35+c*0.5;g.fillRect(Math.floor(((a*SW*2-ox*0.05)%SW+SW)%SW),Math.floor(((b*SH*2-oy*0.05)%SH+SH)%SH),s,s);}g.globalAlpha=1;
+  // tuiles (construites quelques-unes par image)
+  const tx0=Math.floor(ox/IN_TS),ty0=Math.floor(oy/IN_TS),tx1=Math.floor((ox+SW)/IN_TS),ty1=Math.floor((oy+SH)/IN_TS);let built=0;
+  for(let ty=ty0;ty<=ty1;ty++)for(let tx=tx0;tx<=tx1;tx++){if(tx<0||ty<0||tx*IN_TS>M.w*Z||ty*IN_TS>M.h*Z)continue;const k=tx+','+ty;let T=IN.tiles.get(k);
+    if(!T&&built<4){T=inTile(M,tx,ty,Z);IN.tiles.set(k,T);built++;}if(T)g.drawImage(T,tx*IN_TS-ox,ty*IN_TS-oy);}
+  if(IN.tiles.size>220){let n=0;for(const k of IN.tiles.keys()){IN.tiles.delete(k);if(++n>60)break;}}
+  const S=(x,y)=>[Math.round(x*Z-ox),Math.round(y*Z-oy)];
+  // éclairages vivants : cœur du réacteur, bouches des propulseurs
+  for(const o of M.eq){if(o.type!=='reactor'&&o.type!=='engine')continue;const [x,y]=S((o.x0+o.x1)/2,(o.y0+o.y1)/2);if(x<-200||y<-200||x>SW+200||y>SH+200)continue;
+    const r=Math.min(o.x1-o.x0,o.y1-o.y0)*Z*(o.type==='reactor'?0.18:0.12)*(1+0.15*Math.sin(IN.t*3));g.globalAlpha=0.35;g.fillStyle=o.type==='reactor'?'#7fe8ff':'#ffb060';g.beginPath();g.arc(o.type==='reactor'?x:x-(o.x1-o.x0)*Z*0.22,y,Math.max(1,r),0,TAU);g.fill();g.globalAlpha=1;}
+  // vaisseau en vol : incendies et zones dépressurisées
+  const L=IN.live;if(L&&L.ok){const b=L.b;if(b.fires&&b.fire)for(const i of b.fires){if(b.fire[i]<=0)continue;const [x,y]=S(i%b.w+0.5,((i/b.w)|0)+0.5);if(x<-Z||y<-Z||x>SW+Z||y>SH+Z)continue;const f=((IN.t*12+i)|0)%3;g.fillStyle=['#ff4a1a','#ffb030','#ffe080'][f];g.fillRect(x-Z*0.4,y-Z*0.6,Z*0.8,Z*0.9);}
+    for(const A of M.areas){if(A.ci===undefined||!b.comps||!b.comps[A.ci])continue;const Pp=b.comps[A.ci].P;if(Pp>0.6)continue;const [x,y]=S(A.cx,A.cy);if(x<-400||y<-400||x>SW+400||y>SH+400)continue;g.fillStyle='rgba(255,60,80,0.10)';g.fillRect(x-60,y-30,120,60);}}
+  // portes
+  for(const D of M.doors){const [x,y]=S(D.x,D.y);if(x<-40||y<-40||x>SW+40||y>SH+40)continue;const hw=D.half*Z,th=Math.max(2,Z*(D.kind==='bulk'?0.9:0.55)),op=D.anim,lock=!!D.lock;
+    const col=D.kind==='bulk'||D.kind==='outer'||D.kind==='hatch'?'#8a93a3':'#b8c0cc';
+    if(D.vert){const gap=hw*op;g.fillStyle=INC.out;g.fillRect(x-th/2-1,y-hw-2,th+2,2);g.fillRect(x-th/2-1,y+hw,th+2,2);g.fillStyle=col;g.fillRect(x-th/2,y-hw,th,hw-gap);g.fillRect(x-th/2,y+gap,th,hw-gap);
+      if(D.kind!=='door'){g.fillStyle='#ffd23c';for(let k=0;k<hw-gap;k+=4){g.fillRect(x-th/2,y-hw+k,th,2);g.fillRect(x-th/2,y+gap+k,th,2);}}
+      g.fillStyle=lock?'#ff3a4a':op>0.5?'#5cff9a':'#ffb347';g.fillRect(x+th/2+1,y-hw-3,2,2);}
+    else{const gap=hw*op;g.fillStyle=INC.out;g.fillRect(x-hw-2,y-th/2-1,2,th+2);g.fillRect(x+hw,y-th/2-1,2,th+2);g.fillStyle=col;g.fillRect(x-hw,y-th/2,hw-gap,th);g.fillRect(x+gap,y-th/2,hw-gap,th);
+      if(D.kind!=='door'){g.fillStyle='#ffd23c';for(let k=0;k<hw-gap;k+=4){g.fillRect(x-hw+k,y-th/2,2,th);g.fillRect(x+gap+k,y-th/2,2,th);}}
+      g.fillStyle=lock?'#ff3a4a':op>0.5?'#5cff9a':'#ffb347';g.fillRect(x-hw-4,y-th/2-3,2,2);}}
+  // appareils embarqués : à leur place, nez vers la proue ; place vide marquée au sol
+  for(const s of M.slots){const [x,y]=S(s.x,s.y),hw=s.w*Z/2,hh=s.h*Z/2;if(x+hw<0||y+hh<0||x-hw>SW||y-hh>SH)continue;
+    g.strokeStyle=s.zone==='lancement'?'#ffd23c':'#e8eef8';g.lineWidth=1;g.setLineDash([4,3]);g.strokeRect(Math.round(x-hw-Z*0.5)+0.5,Math.round(y-hh-Z*0.5)+0.5,Math.round(hw*2+Z),Math.round(hh*2+Z));g.setLineDash([]);
+    if(s.present){const I=decoImg(M.fid);if(I){g.imageSmoothingEnabled=false;g.drawImage(I.cv,Math.round(x-hw),Math.round(y-hh),Math.round(hw*2),Math.round(hh*2));}else{g.fillStyle='#5a6372';g.fillRect(x-hw*0.6,y-hh*0.3,hw*1.2,hh*0.6);}}
+    else{g.fillStyle='rgba(255,210,60,0.8)';g.font='bold '+Math.max(8,Math.round(Z*0.9))+'px monospace';g.textAlign='center';g.fillText('EN VOL',x,y+4);g.textAlign='left';}}
+  // personnages, du haut vers le bas de l'écran
+  const P=IN.pl,list=IN.crew.filter(c=>{const [x,y]=S(c.x,c.y);return x>-60&&y>-60&&x<SW+60&&y<SH+80;});if(P)list.push(P);list.sort((a,b)=>a.y-b.y);
+  const sc=Math.max(1,Math.round(Z/9*((M.small&&!M.seat)?1:1)));
+  for(const c of list){const look=c===P?P.look||P.base:c.suit?Object.assign({},c.look,{outfit:'espace'}):c.look;const pose=c.pose==='work'&&c.act!=='work'?'stand':c.pose,spr=inSprite(look,pose==='stand'?'stand':pose,c.dir|0,c.fr|0);
+    const [x,y]=S(c.x,c.y),k=M.seat?Math.max(1,Math.round(Z/12)):sc;
+    if(pose!=='sleep'&&pose!=='crawl'){g.fillStyle='rgba(0,0,0,0.3)';g.fillRect(x-4*k,y-1*k,8*k,2*k);}
+    g.drawImage(spr,Math.round(x-9*k),Math.round(y-28*k),18*k,30*k);
+    if(c===P&&!M.seat){g.fillStyle='#ffd23c';g.fillRect(x-1,y-30*k-3,3,2);}}
+  // verrière du chasseur : vitrage, montants, reflets ; les étoiles passent derrière
+  if(M.seat&&M.cockpits)for(const o of M.cockpits){const [x,y]=S(o.x0,o.y0),W=(o.x1-o.x0)*Z,H=(o.y1-o.y0)*Z;g.fillStyle='rgba(120,190,255,0.10)';g.beginPath();g.roundRect(x,y,W,H,Math.min(W,H)*0.45);g.fill();
+    g.strokeStyle='#5a6372';g.lineWidth=Math.max(2,Z*0.12);g.beginPath();g.roundRect(x,y,W,H,Math.min(W,H)*0.45);g.stroke();g.beginPath();g.moveTo(x+W*0.72,y+2);g.lineTo(x+W*0.72,y+H-2);g.stroke();
+    g.fillStyle='rgba(255,255,255,0.18)';g.fillRect(x+W*0.15,y+H*0.12,W*0.4,Math.max(1,Z*0.08));}
+  // noms des zones
+  g.font='bold '+(Z>=12?10:8)+'px monospace';g.textAlign='center';
+  if(!M.seat)for(const A of M.areas){if(A.kind==='corr'||A.kind==='duct'||A.kind==='void')continue;let cx=A.cx,cy=A.cy;if(A.box){cx=(A.box.x0+A.box.x1)/2;cy=A.box.y0+0.6;}if(cx===undefined)continue;const [x,y]=S(cx,cy);if(x<-80||y<-20||x>SW+80||y>SH+20)continue;
+    g.fillStyle='rgba(5,8,14,0.6)';const t=A.name.toUpperCase(),tw=g.measureText(t).width;g.fillRect(x-tw/2-2,y-9,tw+4,11);g.fillStyle=A.kind==='hangar'?'#ffd23c':A.press?'#a6e4ff':'#ff9a6a';g.fillText(t,x,y);}
+  g.textAlign='left';
+  // repère d'interaction
+  inHover(M,g,S);
+  inMiniDraw(M);}
+// ce qu'on peut utiliser tout près : contour et indication
+function inHover(M,g,S){const p=IN.pl;if(!p)return;let txt='';
+  if(M.seat){txt='Flèches : regarder · E : fiche · Échap : sortir';}
+  else if(p.sit)txt=p.sleep?'E : se lever':'E : se lever';
+  else{for(const s of M.seats)if(!s.occ&&Math.hypot(s.x-p.x,s.y-p.y)<1.6){txt='E : s’asseoir';break;}
+    if(!txt)for(const D of M.doors)if(Math.hypot(D.x-p.x,D.y-p.y)<2.6&&(D.lock||!D.auto)){txt=D.lock?'Porte verrouillée':'E : porte';break;}
+    if(!txt&&M.slots.some(s=>Math.hypot(s.x-p.x,s.y-p.y)<Math.max(s.w,s.h)*0.7))txt='E : stock des appareils';
+    if(!txt){let eq=null,ed=2.2;for(const o of M.eq){if(o.kind==='k')continue;const dx=Math.max(o.x0-p.x,0,p.x-o.x1),dy=Math.max(o.y0-p.y,0,p.y-o.y1),d=Math.hypot(dx,dy);if(d<ed){ed=d;eq=o;}}
+      if(eq){const [x,y]=S(eq.x0,eq.y0);g.strokeStyle='#a6f6ff';g.lineWidth=1;g.strokeRect(x-1.5,y-1.5,(eq.x1-eq.x0)*IN.Z+3,(eq.y1-eq.y0)*IN.Z+3);txt='E : '+XRT[eq.type][0];}}}
+  $('inHint').textContent=txt;}
+function inHud(M){const p=IN.pl,A=p&&inAreaAt(M,p.x,p.y),pr=A?inPress(M,A):1,post=p?inPostAt(M,p.x,p.y):1;
+  let sec='';if(M.P.sections&&p)for(const s of M.P.sections)if(p.x>=s.x0&&p.x<s.x1){sec=' · '+s.name;break;}
+  $('inWhere').textContent=(A?A.name:'—')+sec+' · '+(A&&!A.press?'non pressurisé':pr<0.3?'DÉPRESSURISÉ':pr<0.8?'pression basse ('+Math.round(pr*100)+' %)':'pressurisé')+(M.seat?' · assis, sanglé':p&&p.sit?(p.sleep?' · allongé':' · assis'):post===3?' · à quatre pattes':post===2?' · accroupi':IN.keys.run?' · au pas de course':' · debout')+(p&&p.suit?' · combinaison':'');
+  $('inCrew').textContent='Équipage : '+(M.crewTotal>=1000?fmt(M.crewTotal):M.crewTotal)+(M.crewDesc?' ('+M.crewDesc+')':'')+(M.decks>1?' · '+M.crewVis+' sur ce plan ('+M.decks+' ponts)':' · '+(M.crewVis+1)+' à bord')+(M.cap?' · appareils : '+M.slots.filter(s=>s.present).length+' / '+M.cap+' places':'');}
+// mini-carte : silhouette, zones praticables, joueur, cadre de la vue
+function inMiniDraw(M){if(M.seat){inMini.hidden=true;return;}inMini.hidden=false;
+  if(!M.miniCv){const s=Math.min(260/M.w,90/M.h,3),cv=mkCanvas(Math.ceil(M.w*s),Math.ceil(M.h*s)),q=cv.getContext('2d'),id=q.createImageData(M.w,M.h),d=id.data;
+    for(let i=0;i<M.N;i++){const o=i*4;if(!M.hullT[i])continue;if(M.walk[i]){const A=M.areas[M.area[i]];const c=A&&A.kind==='hangar'?[200,170,60]:A&&A.kind==='corr'?[90,110,140]:[120,150,190];d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255;}else{d[o]=34;d[o+1]=40;d[o+2]=52;d[o+3]=255;}}
+    const tmp=mkCanvas(M.w,M.h);tmp.getContext('2d').putImageData(id,0,0);q.imageSmoothingEnabled=false;q.drawImage(tmp,0,0,cv.width,cv.height);M.miniCv=cv;M.miniS=s;}
+  const s=M.miniS;inMini.width=M.miniCv.width+4;inMini.height=M.miniCv.height+4;const q=inMini.getContext('2d');q.fillStyle='#05070d';q.fillRect(0,0,inMini.width,inMini.height);q.drawImage(M.miniCv,2,2);
+  const Z=IN.Z;q.strokeStyle='#ffffff';q.strokeRect(2+IN.ox/Z*s+0.5,2+IN.oy/Z*s+0.5,inCv.width/Z*s,inCv.height/Z*s);
+  q.fillStyle='#4a90ff';for(const c of IN.crew)q.fillRect(2+c.x*s,2+c.y*s,1,1);const p=IN.pl;if(p){q.fillStyle='#ffd23c';q.fillRect(1+p.x*s,1+p.y*s,3,3);}}
+// panneaux : fiche d'équipement (plan rayons X) ou stock des appareils embarqués
+function inPanel(kind){const el=$('inPanel');IN.panelK=kind;if(!kind){el.hidden=true;el.innerHTML='';return;}el.hidden=false;el.innerHTML='';const M=IN.M;
+  const add=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;el.append(e);return e;};
+  if(kind==='eq'&&IN.sel){const o=IN.sel,T=XRT[o.type],k=XR.mpp;add('p','eyebrow',(XR_CAT[o.cat]||['—'])[0]+' · '+o.id);add('h3','',T[0]);add('p','',T[7]);
+    const dl=add('dl','xr-dl');const kv=(a,b)=>{const t=document.createElement('dt');t.textContent=a;const d=document.createElement('dd');d.textContent=b;dl.append(t,d);};
+    kv('Dimensions',((o.x1-o.x0)*k).toFixed(1)+' × '+((o.y1-o.y0)*k).toFixed(1)+' × '+((o.z1-o.z0)*k).toFixed(1)+' m');kv('Emplacement',o.cp||'—');if(o.data&&o.data.access)kv('Accès',o.data.access);
+    const nets=Object.entries(o.nets||{}).map(([t,L])=>(XR_NET[t]||[t])[0]+' : '+L.length).join(' · ');if(nets)kv('Réseaux',nets);kv('Criticité',['faible','moyenne','haute','vitale'][T[4]|0]||'—');kv('Réparation',T[6]);
+    add('p','cap','Perte : '+T[8]);}
+  if(kind==='stock'){add('p','eyebrow','Porte-flottes · appareils embarqués');add('h3','',M.fname+' × '+M.cap);
+    add('p','','Capacité définie par le vaisseau : '+M.cap+' place'+(M.cap>1?'s':'')+' (une par appareil). Zones : lancement (catapulte de chaque hangar), hangars, stockage.');
+    const dl=add('dl','xr-dl');const kv=(a,b)=>{const t=document.createElement('dt');t.textContent=a;const d=document.createElement('dd');d.textContent=b;dl.append(t,d);};
+    const by={};for(const s of M.slots){const k2=s.zone+(s.hangar?' · hangar '+s.hangar:'');const q=by[k2]||(by[k2]={n:0,p:0});q.n++;if(s.present)q.p++;}
+    for(const k2 in by)kv(k2.charAt(0).toUpperCase()+k2.slice(1),by[k2].p+' à bord / '+by[k2].n+' place'+(by[k2].n>1?'s':''));
+    kv('En vol',String(M.slots.filter(s=>!s.present).length));kv('Munitions aviation',M.eq.filter(o=>o.type==='avammo').length+' soutes');kv('Carburant aviation',M.eq.filter(o=>o.type==='avfuel').length+' réservoirs');
+    if(M.capPlaced<M.cap)add('p','cap','Places non représentées faute de pont : '+(M.cap-M.capPlaced)+'.');}
+  if(kind==='info'){add('p','eyebrow','Plan intérieur · hypothèses');add('h3','',M.name);add('p','','Construit d’après le plan rayons X (échelle 2/3 m par pixel, proue à droite, bâbord en haut) et le plan intérieur du jeu.');for(const h of M.hyp)add('p','cap','• '+h);}
+  const b=document.createElement('button');b.className='btn small';b.type='button';b.textContent='Fermer';b.addEventListener('click',()=>inPanel(null));el.append(b);}
+function inHelp(){const M=IN.M;$('inHelp').textContent=M.seat?'Flèches/ZQSD : regarder le poste · E : fiche de l’équipement · Molette : — · I : hypothèses · Échap ou Y : sortir'
+  :'ZQSD/flèches : marcher · Maj : courir · E : utiliser (siège, couchette, porte, fiche, stock) · C : stock des appareils · N : réseaux · Molette : zoom · I : hypothèses · Échap ou Y : sortir';}
+const IN_KEYS={KeyW:'up',ArrowUp:'up',KeyS:'down',ArrowDown:'down',KeyA:'left',ArrowLeft:'left',KeyD:'right',ArrowRight:'right',ShiftLeft:'run',ShiftRight:'run'};
+function inKeyDown(e){const k=IN_KEYS[e.code];if(k){IN.keys[k]=1;e.preventDefault();return;}if(e.repeat)return;const key=(e.key||'').toLowerCase();
+  if(key==='escape'||key==='y'){e.preventDefault();if(IN.panelK)inPanel(null);else inClose();return;}
+  if(key==='e'){inUse(IN.M);return;}
+  if(key==='c'&&IN.M.cap){inPanel(IN.panelK==='stock'?null:'stock');return;}
+  if(key==='n'){IN.nets=!IN.nets;IN.tiles.clear();inMsg(IN.nets?'Réseaux affichés.':'Réseaux masqués.');return;}
+  if(key==='i'){inPanel(IN.panelK==='info'?null:'info');return;}
+  if(key==='+'||key==='=')inZoom(1);if(key==='-')inZoom(-1);}
+function inKeyUp(e){const k=IN_KEYS[e.code];if(k)IN.keys[k]=0;}
+inCv.addEventListener('wheel',e=>{e.preventDefault();inZoom(e.deltaY<0?1:-1);},{passive:false});
+inCv.addEventListener('pointerdown',e=>{if(!IN.M||!IN.M.seat)return;const r=inCv.getBoundingClientRect(),x=((e.clientX-r.left)/inS+IN.ox)/IN.Z,y=((e.clientY-r.top)/inS+IN.oy)/IN.Z;
+  const o=IN.M.eq.filter(q=>q.kind!=='k'&&x>=q.x0&&x<=q.x1&&y>=q.y0&&y<=q.y1).sort((a,b)=>(a.x1-a.x0)*(a.y1-a.y0)-(b.x1-b.x0)*(b.y1-b.y0))[0];if(o){IN.sel=o;inPanel('eq');}});
+$('inExit').addEventListener('click',()=>inClose());
+// entrées : en vol (touche Y), depuis le hangar et depuis les plans rayons X
+function inOpenPlayer(){if(!player||player.dead)return;const sid=inSidOf(player.tpl);if(!sid){floater(player.x,player.y-player.h*0.5-14*TXS,'INTERIEUR : VAISSEAUX HUMAINS SEULEMENT','#ffb347');return;}
+  if(mp.on){floater(player.x,player.y-player.h*0.5-14*TXS,'INTERIEUR : HORS MULTIJOUEUR','#ffb347');return;}
+  inOpen(sid,{live:true});}
+
+/* =========================================================
    Entrées
    ========================================================= */
 const CODEMAP={KeyW:'up',ArrowUp:'up',KeyS:'down',ArrowDown:'down',KeyA:'left',ArrowLeft:'left',KeyD:'right',ArrowRight:'right',Space:'fire',KeyF:'alt',ShiftLeft:'boost',ShiftRight:'boost'};
 const POWERMAP={Digit1:'sh',Numpad1:'sh',Digit2:'wp',Numpad2:'wp',Digit3:'en',Numpad3:'en',Digit4:'bal',Digit0:'bal',Numpad0:'bal'};
 window.addEventListener('keydown',e=>{
+  if(IN.open){inKeyDown(e);return;}
   if(xrUI.open){if(e.key==='Escape'){e.preventDefault();xrClose();}return;}
   const k=CODEMAP[e.code];
   if(k){keys[k]=1;if(running)e.preventDefault();}
@@ -18547,12 +19335,13 @@ window.addEventListener('keydown',e=>{
   else if(key==='l'&&running)toggleHelm();
   else if(key==='o'&&running)toggleShields();
   else if(key==='i'&&running)toggleEngines();
+  else if(key==='y'&&running)inOpenPlayer();
   else if((key==='+'||key==='=')&&mapOpen)mapZoom(false);
   else if((key==='-'||key==='_')&&mapOpen)mapZoom(true);
   else if((key==='+'||key==='=')&&running)setZoom(1);
   else if((key==='-'||key==='_')&&running)setZoom(-1);
 });
-window.addEventListener('keyup',e=>{const k=CODEMAP[e.code];if(k)keys[k]=0;});
+window.addEventListener('keyup',e=>{if(IN.open)inKeyUp(e);const k=CODEMAP[e.code];if(k)keys[k]=0;});
 window.addEventListener('blur',()=>{for(const k in keys)keys[k]=0;mouse.l=mouse.r=false;tch.fire=tch.alt=tch.boost=false;});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&running)openPause();});
 // cap fixe (L) : la coque garde son cap, les tourelles suivent seules la souris ; réservé aux grands vaisseaux
@@ -18668,7 +19457,7 @@ let rafPending=false;function rafLoop(ts){rafPending=false;loop(ts);}
 function loop(ts){
   const lt0=performance.now(),t=ts/1000,rawMs=last?(t-last)*1000:16.7,dt=last?Math.min(0.05,t-last):1/60;last=t;now=t;
   if(state==='loading')genNext();
-  running=state==='play'&&!paused&&!docked&&!mapOpen&&!completeOpen&&!yardOpen&&!boardPick&&!misDlg&&!scOpen;
+  running=state==='play'&&!paused&&!docked&&!mapOpen&&!completeOpen&&!yardOpen&&!boardPick&&!misDlg&&!scOpen&&!IN.open;
   // planètes construites en tâche de fond : budget réduit en vol, plus large quand le jeu attend
   astroTick();
   if(state!=='loading')bgWork(jump.phase==='transit'?6:running?3:8);
