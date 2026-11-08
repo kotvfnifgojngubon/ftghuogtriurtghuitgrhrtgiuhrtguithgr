@@ -162,6 +162,19 @@ les lourds) et les voyants animés (anneaux de l'Ancre Noire, reflet de la lenti
 contre-mesures (`CMLURES`, dessinés par `drawCMLures`) suivent la même règle : rampes de couleurs courtes, cycles de 3 ou 4
 images, aucun anticrénelage, et un `flashAt` bref quand ils doivent éclairer la scène.
 
+### Coques dessinées à la main (Machines et Xal'thar)
+
+Les Machines et les grands Xal'thar sont des plans `shipDef` écrits à la main avec des briques partagées :
+- Machines : `mSpon` (sponson à liseré de bronze), `mNac` (nacelle moteur), `mTower`/`mTowerXY` (tour à étages),
+  `mRibs`, `mBays`, `mVents`, `mTruss` (ferme), `mDeck` (pont d'envol), `mSpikes` (flèches plantées dans la coque) ;
+- Xal'thar : `xHull`/`xLayer` (coque lissée et couches en gradins), `xPod`, `xPylon`, `xBridge` (passerelle en goutte),
+  `xBlist` (cloque de tourelle), `xFin`, `xSeams`, `xlSpon`, `xBays`, `xlPanels` (plaques en relief), `xStern`.
+
+Leçons : un nom de fonction ne doit pas déjà exister dans le jeu (la dernière déclaration gagne) ; le relief projette
+les pièces surélevées vers le bas de l'écran, donc une pièce métallique posée pile sur le bord inférieur d'une coque
+déborde côté tribord — la reculer de deux unités ; `buildUnique` retire désormais toute miette de coque détachée
+(moins de 4 % des pixels), ce qui évite les débris dès la première image.
+
 ## 4. Les vaisseaux modulaires (ancien chantier)
 
 `buildShip(rows, pal)` assemble des modules de 10 × 10 pixels (`MS`), écrits comme une grille de lettres (`PRESETS`, `ENEMY_DESIGNS`).
