@@ -364,6 +364,11 @@ Vue de dessus de trois quarts, au pixel de coque (1 px = 2/3 m), proue à droite
 - Sons (`i6_snd`) : recettes synthétisées ajoutées à `SND_JOBS` (portes coulissantes, cloisons étanches, trappes,
   pas selon le sol, bips, fauteuil), joués par `inSnd` (volume et panoramique selon la distance au joueur, étouffés en
   combinaison) ; ambiances en boucle de 4 s par famille de salles (`inAmbStep`), coupées à la sortie.
+- Lumière (`i2j_light`) : carte de lumière par tuile (texel ≈ 1/5 de pixel de coque, agrandie sans lissage) : ambiance
+  par salle (`IN_AMBC`), plafonniers, écrans (`IN_EMIS`), réacteur, propulseurs ; multipliée sur la scène, émissifs
+  ensuite. L'équipage prend la lumière sous ses pieds (`inLightAt`, `inDrawLit`, sprites teintés en cache).
+- Réacteur (`i2i_reactor`) : socle, cuve octogonale, huit bobines en D orientées vers le centre, solénoïde, hublots du
+  plasma (animés par `inReactorAnim`), injecteurs, lignes cryogéniques, barres d'alimentation, portique.
 - Seuls les vaisseaux humains sont visitables (`inHumanSrc`) ; les styles des autres constructeurs restent dans le code
   mais ne servent pas.
 - Intérieurs humains (`i2f_human`, `i2g_human`, `i2h_deco`) : sièges multi-pièces (`inSeat` : commandement, console,
