@@ -367,8 +367,23 @@ Vue de dessus de trois quarts, au pixel de coque (1 px = 2/3 m), proue à droite
 - Lumière (`i2j_light`) : carte de lumière par tuile (texel ≈ 1/5 de pixel de coque, agrandie sans lissage) : ambiance
   par salle (`IN_AMBC`), plafonniers, écrans (`IN_EMIS`), réacteur, propulseurs ; multipliée sur la scène, émissifs
   ensuite. L'équipage prend la lumière sous ses pieds (`inLightAt`, `inDrawLit`, sprites teintés en cache).
-- Réacteur (`i2i_reactor`) : socle, cuve octogonale, huit bobines en D orientées vers le centre, solénoïde, hublots du
-  plasma (animés par `inReactorAnim`), injecteurs, lignes cryogéniques, barres d'alimentation, portique.
+- Réacteur (`i2i_reactor`) : dans la salle du réacteur, l'équipement du plan devient un îlot central `o.core`
+  (`inRxCore` : 6 × 6 px, 8 × 8 en salle capitale ; seul le socle octogonal bloque, `inRxCoreFree`) ; le reste du
+  volume est du sol meublé. Cœur (`inCoreDraw`, géométrie `inCoreGeom` gardée sur l'objet) : socle octogonal en tôle
+  larmée, cuve cylindrique, 3 ou 4 anneaux cuivre et acier, couvercle, hublot, 4 mécanismes de barres, conduites
+  chaude (est) et froide (ouest). Partie animée (`inCoreAnim`, sans dégradé recréé : sprites `inRxSpr`) : anneaux qui
+  tournent, plasma, barres (`inRxRod`), halo, vapeur, étincelles, arcs. État (`inRxState`, `IN_RX`) lu sur le vaisseau
+  en vol : `b.rEff`, `reactorHurt(b)`, `b.dm.rheat`, `b.dm.scram` → normal, hurt, shock (1,6 s après l'avarie ou
+  surchauffe > 85 %), off ; un changement d'éclairage incrémente `IN.tver` et les tuiles visibles sont refaites (2 par
+  image). Lumière du cœur par état : `IN_RXLIGHT`.
+- Salle du réacteur (`i2k_rxroom`) : pupitre de conduite `rconsole` (assis), râtelier de barres `rodrack`, échangeur
+  `hx`, turbo-alternateur `turbine`, radiamètre `radmon`, douche de décontamination `decon` (placée près de l'entrée :
+  clé `door` du catalogue), conduites murales `coolantpipe` / `coolantpipev` ; pompe, réservoir, vanne, coffret,
+  panneau refaits ; couches de détail ajoutées à `coolant`, `gen`, `fan`, `panel`, `monitor`, `cabletray`,
+  `manifold` (enveloppes autour de l'ancien dessin). Animations : `inRxPropAnim` (appelée par `inAnims` pour les types
+  de `IN_RXA`), chevrons des tranchées `inRxTrench`. Marquages : passerelle circulaire `catwalkring` (garde-corps,
+  « ZONE RADIOLOGIQUE », trèfles), tranchées `ctrench` du cœur aux cloisons (réservées au placement). Catalogue :
+  `cap` (nombre maximal par salle, divisé par deux sous 200 px²), `IN_WALLFLAT` (fixés au mur, posés sans dégagement).
 - Seuls les vaisseaux humains sont visitables (`inHumanSrc`) ; les styles des autres constructeurs restent dans le code
   mais ne servent pas.
 - Intérieurs humains (`i2f_human`, `i2g_human`, `i2h_deco`) : sièges multi-pièces (`inSeat` : commandement, console,
@@ -380,7 +395,7 @@ Vue de dessus de trois quarts, au pixel de coque (1 px = 2/3 m), proue à droite
   (présentoir de casques et gilets), tourelles (pupitre de pointage, obus), missiles détaillés, hangars (stations de
   ravitaillement, bras de maintenance ; places des appareils réservées), sas (pupitre de pressurisation).
   Marquages (`inHumanDecals`) : numéros de secteur et flèches des coursives, conduites au sol entre machines,
-  passerelle grillagée du réacteur, marques de stationnement, zones de chargement, brûlures de soudure.
+  passerelle circulaire et tranchées de caloporteur du réacteur, marques de stationnement, zones de chargement, brûlures de soudure.
 - Constructeurs (`IN_ST`, `inFacOf`, `inST`, `inApplyStyle`) : humain (militaire industriel), pirate (récupération,
   rouille, rustines, câbles), xalthar (organique, courbes, veines bioluminescentes), anciens / Machines (géométrie,
   chanfreins, circuits cyan). Le style change les formes du kit (`inPropKit` : `path` nette, rapiécée, arrondie,
