@@ -349,6 +349,13 @@ Vue de dessus de trois quarts, au pixel de coque (1 px = 2/3 m), proue à droite
 - Équipage visible : les postes du plan plus quelques passants dans les coursives ; le reste est « sur les autres ponts
   ou au repos » (bandeau). Attablés et assis aux pupitres : seul le haut du corps est dessiné (de dos devant le meuble,
   de face derrière le plateau).
+- Équipements du plan (`inEq3`, `inEqTop`, `i2d_eqdraw`) : socle, corps en volume, face avant (portes, grilles, voyants,
+  étiquette), dessus par famille. Au-delà de ~4 px de coque, les détails restent à taille humaine et se répètent
+  (`inPlating` : tôles de 1,7 m rivetées ; vannes, manomètres, échelles, passerelles, pochoirs `inStencil` ; rangées de
+  baies ; pompes reliées par des collecteurs ; couronne de bobines) au lieu de grossir avec l'objet.
+- Squelette des personnages (`IC_SK`) : proportions de la planche (tête et casquette ~19 % de la hauteur, épaules de
+  ~10 px, taille haute, jambes longues), trois-quarts réel en direction 2 (épaule éloignée rentrée) ; assis : bassin
+  abaissé de `IC_SITB`, hanches en `IC_SITHIP` (sert au dessin à mi-corps des attablés).
 - Personnages : `inSprite(look, pose, dir, frame, S)`, 32 × 56 px au zoom 15, pieds en (16, 53) ; S = échelle de
   peinture (zoom / 15 au-delà de 1,2) : chaque forme est tracée à la résolution de l'écran et les détails fins
   (`icDot`, `icLine` : visage, aiguillette à trois cordons, galons de manche, boutons, jugulaire, écusson) n'existent
