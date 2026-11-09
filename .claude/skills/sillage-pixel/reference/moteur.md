@@ -338,10 +338,24 @@ Vue de dessus de trois quarts, au pixel de coque (1 px = 2/3 m), proue à droite
 - Grille : `walk` (1 debout, 2 accroupi, 3 à quatre pattes selon la hauteur du volume), `area`, `doorAt`, `block`
   (équipement qui bloque, seulement dans les salles, avec une allée le long des cloisons), `wall` (blanc, face sud en
   relief). `inConnect` relie toute poche isolée par un passage et le note dans `M.hyp`.
-- Tuiles de 256 px rendues à la demande (`inTile`), équipements dessinés par type à leur emprise (`inEq`), réseaux
-  masqués sous les sols (25 %), nets dans les espaces techniques.
-- Personnages : `inSprite(look, pose, dir, frame)`, 18 × 30 px, pieds en (9, 28) ; tenues `std` (grade 0 à 11 :
-  or, vareuse longue dès commandant, cape blanche dès général, casquette blanche du commandant en chef), `espace`,
-  `combat`, `abordage` ; poses `stand`, `walk`, `run`, `sit`, `crouch`, `crawl`, `sleep`, `work`.
+- Tuiles de 256 px rendues à la demande (`inTile`) : sols par type de salle, marquages (`M.decals` : liserés jaune et
+  noir autour des machines, trappes, siphons, traces, allées peintes, emblème), lumières, cloisons, équipements du plan
+  (`inEq3`), mobilier (`inProp`, `i2c_propdraw`), réseaux masqués sous les sols (25 %), nets dans les espaces techniques.
+- Mobilier (`inProps`, catalogue `IN_FURN` par genre de salle) : rangées le long des cloisons nord, sud, est et ouest,
+  îlots en grille au centre (couchettes, tables, établis, tours, imprimantes, pupitres de quart, conteneurs…), objets
+  épars. Un meuble de cloison exige 2 px libres devant lui et ne doit pas augmenter le nombre de parties de la salle ;
+  un îlot garde une allée libre tout autour. Les postes de l'équipage viennent du mobilier (`IN_PPOST`, `inPropPosts`) :
+  places assises aux tables et aux pupitres, lits d'infirmerie, établis… au plus une personne debout pour ~32 px².
+- Équipage visible : les postes du plan plus quelques passants dans les coursives ; le reste est « sur les autres ponts
+  ou au repos » (bandeau). Attablés et assis aux pupitres : seul le haut du corps est dessiné (de dos devant le meuble,
+  de face derrière le plateau).
+- Personnages : `inSprite(look, pose, dir, frame, S)`, 32 × 56 px au zoom 15, pieds en (16, 53) ; S = échelle de
+  peinture (zoom / 15 au-delà de 1,2) : chaque forme est tracée à la résolution de l'écran et les détails fins
+  (`icDot`, `icLine` : visage, aiguillette à trois cordons, galons de manche, boutons, jugulaire, écusson) n'existent
+  qu'en haute définition. Tenues `std` (grade 0 à 11), `espace`, `combat`, `abordage`, `ceremonie`, `hiver`,
+  `commandement` ; poses `stand`, `walk`, `run`, `sit`, `type`, `eat`, `crouch`, `crawl`, `sleep`, `work`.
+- Sons (`i6_snd`) : recettes synthétisées ajoutées à `SND_JOBS` (portes coulissantes, cloisons étanches, trappes,
+  pas selon le sol, bips, fauteuil), joués par `inSnd` (volume et panoramique selon la distance au joueur, étouffés en
+  combinaison) ; ambiances en boucle de 4 s par famille de salles (`inAmbStep`), coupées à la sortie.
 - Vérifier avec un balayage de tous les vaisseaux humains : équipements du plan présents, portes du plan posées,
   zones atteignables depuis la passerelle ou le poste, places des porte-flottes égales à la capacité.
