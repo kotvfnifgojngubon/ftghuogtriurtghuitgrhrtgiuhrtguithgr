@@ -329,7 +329,7 @@ Le bruit déterministe vient de `hash2`, `hash3`, `vnoise3`, `fbm3`, et de `pnoi
 - `drawTwinkles` ;
 - les relais `drawStation`.
 
-## 7. Intérieurs des vaisseaux humains (`inBuild`, `inTile`, `inSprite`)
+## 7. Intérieurs des vaisseaux (`inBuild`, `inTile`, `inSprite`)
 
 Vue de dessus de trois quarts, au pixel de coque (1 px = 2/3 m), proue à droite, bâbord en haut, comme le plan rayons X.
 - Données : `xrBuild` (composants, emprises x/y/z, réseaux, cloisons étanches), `buildInterior` (salles, coursives,
@@ -364,5 +364,19 @@ Vue de dessus de trois quarts, au pixel de coque (1 px = 2/3 m), proue à droite
 - Sons (`i6_snd`) : recettes synthétisées ajoutées à `SND_JOBS` (portes coulissantes, cloisons étanches, trappes,
   pas selon le sol, bips, fauteuil), joués par `inSnd` (volume et panoramique selon la distance au joueur, étouffés en
   combinaison) ; ambiances en boucle de 4 s par famille de salles (`inAmbStep`), coupées à la sortie.
-- Vérifier avec un balayage de tous les vaisseaux humains : équipements du plan présents, portes du plan posées,
+- Constructeurs (`IN_ST`, `inFacOf`, `inST`, `inApplyStyle`) : humain (militaire industriel), pirate (récupération,
+  rouille, rustines, câbles), xalthar (organique, courbes, veines bioluminescentes), anciens / Machines (géométrie,
+  chanfreins, circuits cyan). Le style change les formes du kit (`inPropKit` : `path` nette, rapiécée, arrondie,
+  chanfreinée), les matières (`tex`), les accents (`deco`), les sols (`inFloorCol`), les cloisons (`inWalls`), la
+  lumière, les portes (`inDoorDraw`) et l'équipage (tenues `corsaire`, `nocturne`, `machine`). `IN_SUBST` remplace
+  le mobilier qui n'a pas de sens pour un constructeur (alcôves de recharge des Machines, capsules Xal'thar, hamacs).
+- Bibliothèque de mobilier : `IN_PD[type](K, p, x, y, W, H, Z, M, g)` (`i2c_furn`, `i2c_rooms`, `i2c_more`), repli
+  sur `inPropOld` ; sièges `inSeat` (bureau, réfectoire, tabouret, commandement, coque, cadre) ; variantes par
+  `p.v` et `p.var` (couchette double ou lit simple, table longue, carrée ou ronde) ; graine par vaisseau et par salle.
+- Tuile : sols, marquages, seuils de porte, cloisons (panneaux, renforts, bandeau lumineux, conduites, boîtiers,
+  grilles, écrans, signalétique, baies d'observation sur l'extérieur), objets, puis passe de lumière (`inLightPass` :
+  ambiance par salle, plafonniers, halos des écrans) ; couche plafond séparée (`inCeil`, `T.ov`) dessinée au-dessus
+  de l'équipage. Couche animée (`inAnims`, `i5b_anim`) : écrans, voyants, ventilateurs, holo, moniteurs, consoles
+  qui s'éveillent à l'approche, plafonniers qui grésillent ; seuls les éléments visibles sont redessinés.
+- Vérifier avec un balayage de tous les vaisseaux : équipements du plan présents, portes du plan posées,
   zones atteignables depuis la passerelle ou le poste, places des porte-flottes égales à la capacité.
