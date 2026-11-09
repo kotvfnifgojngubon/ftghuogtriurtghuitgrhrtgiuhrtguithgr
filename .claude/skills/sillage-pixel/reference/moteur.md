@@ -364,6 +364,18 @@ Vue de dessus de trois quarts, au pixel de coque (1 px = 2/3 m), proue à droite
 - Sons (`i6_snd`) : recettes synthétisées ajoutées à `SND_JOBS` (portes coulissantes, cloisons étanches, trappes,
   pas selon le sol, bips, fauteuil), joués par `inSnd` (volume et panoramique selon la distance au joueur, étouffés en
   combinaison) ; ambiances en boucle de 4 s par famille de salles (`inAmbStep`), coupées à la sortie.
+- Seuls les vaisseaux humains sont visitables (`inHumanSrc`) ; les styles des autres constructeurs restent dans le code
+  mais ne servent pas.
+- Intérieurs humains (`i2f_human`, `i2g_human`, `i2h_deco`) : sièges multi-pièces (`inSeat` : commandement, console,
+  réfectoire), couchettes militaires (`inBunkH`), effets personnels sans emprise (sac, bottes, uniforme plié, affiche,
+  étagère murale, prise), cuisine (distributeur, recycleur, tableau d'affichage), passerelle (plaque du vaisseau,
+  panneau d'état ; pupitres en arc autour du fauteuil du commandant, rangées si la salle est coupée), CIC en anneau
+  autour de la table tactique, atelier (établis outillés, servantes, casiers à pièces, compresseur), machines (groupe
+  hydraulique, collecteur), boucliers (bobines à trois couches, isolateurs, condensateurs), batteries, armurerie
+  (présentoir de casques et gilets), tourelles (pupitre de pointage, obus), missiles détaillés, hangars (stations de
+  ravitaillement, bras de maintenance ; places des appareils réservées), sas (pupitre de pressurisation).
+  Marquages (`inHumanDecals`) : numéros de secteur et flèches des coursives, conduites au sol entre machines,
+  passerelle grillagée du réacteur, marques de stationnement, zones de chargement, brûlures de soudure.
 - Constructeurs (`IN_ST`, `inFacOf`, `inST`, `inApplyStyle`) : humain (militaire industriel), pirate (récupération,
   rouille, rustines, câbles), xalthar (organique, courbes, veines bioluminescentes), anciens / Machines (géométrie,
   chanfreins, circuits cyan). Le style change les formes du kit (`inPropKit` : `path` nette, rapiécée, arrondie,
