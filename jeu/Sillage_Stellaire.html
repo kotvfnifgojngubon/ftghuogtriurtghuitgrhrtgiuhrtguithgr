@@ -18584,6 +18584,8 @@ function inBuild(sid){
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const X=x+dx,Y=y+dy;if(X>=0&&Y>=0&&X<w&&Y<h&&M.walk[Y*w+X])nb=1;}
     if(nb)M.wall[i]=1;}
   inCrewPlan(M);
+  // deux postes au même endroit (meubles voisins, équipement et meuble) : on n'en garde qu'un, personne ne se superpose
+  {const kept=[];for(const q of M.posts){if(q.act!=='sleep'&&q.act!=='seat'&&q.act!=='heal'&&!(M.inHull(Math.floor(q.x),Math.floor(q.y))&&M.walk[Math.floor(q.y)*w+Math.floor(q.x)]>0))continue;if(q.act!=='sleep'&&q.act!=='seat'&&kept.some(k=>k.act!=='sleep'&&Math.abs(k.x-q.x)<0.7&&Math.abs(k.y-q.y)<0.7))continue;kept.push(q);}M.posts=kept;}
   IN.cache.set(sid,M);return M;
 }
 function inArea(M,o){o.id=M.areas.length;M.areas.push(o);return o;}
@@ -19152,7 +19154,7 @@ const IN_MACHINE=new Set(['lathe','fab','arm','pump','tank','coil','loader','sur
 function inProps(M){const w=M.w,P=M.props=[],D=M.decals=[],taken=new Uint8Array(M.N),ftk=new Uint8Array(M.N),R=mulberry(sdOf(M.sid)+31);
   // pixels de chaque zone (une passe)
   const pix=M.areas.map(()=>[]);for(let i=0;i<M.N;i++){const a=M.area[i];if(a>=0&&M.walk[i]===1)pix[a].push(i);}
-  const nearDoor=new Uint8Array(M.N);for(const Dr of M.doors)for(const i of Dr.px){const x=i%w,y=(i/w)|0;for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){const X=x+dx,Y=y+dy;if(M.inHull(X,Y))nearDoor[Y*w+X]=1;}}
+  const nearDoor=new Uint8Array(M.N);for(const Dr of M.doors)for(const i of Dr.px){const x=i%w,y=(i/w)|0;for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const X=x+dx,Y=y+dy;if(M.inHull(X,Y))nearDoor[Y*w+X]=1;}}
   const wallAt=(x,y)=>!M.inHull(x,y)||(!M.walk[y*w+x]&&!M.block[y*w+x]);
   const fac=M.fac||'humain',SUB=IN_SUBST[fac]||{};
   M.areas.forEach((A,ai)=>{let g=inAreaGenre(A);A.genre=g;
@@ -19203,6 +19205,11 @@ function inProps(M){const w=M.w,P=M.props=[],D=M.decals=[],taken=new Uint8Array(
           if(R()>L.fill){y+=2;continue;}const it=pick(list),W=Math.ceil(it[1]),H=Math.ceil(it[2]),ox=side==='w'?x:x-W+1;let a=true;
           for(let k=0;k<H;k++)if(side==='w'?!wallAt(x-1,y+k):!wallAt(x+1,y+k))a=false;
           if(a&&ok(ox,y,W,H)&&put(it[0],ox,y,it[1],it[2],side)){y+=H+(R()<0.25?1:0);}else y++;}}}
+    // quartiers : au moins une couchette, où qu'elle tienne (cloison nord ou sud, puis est ou ouest)
+    if((g==='quarters'||g==='cabin')&&!P.some(p=>p.area===ai&&(p.t==='bunk'||p.t==='bunkv'||p.t==='pod'||p.t==='podv'||p.t==='alcove'||p.t==='alcovev'||p.t==='hammock'))){let done=false;
+      for(const i of pix[ai]){if(done)break;const x=i%w,y=(i/w)|0;for(const side of ['n','s']){const oy=side==='n'?y:y-1;let a=true;for(let k2=0;k2<3;k2++)if(side==='n'?!wallAt(x+k2,y-1):!wallAt(x+k2,y+1))a=false;if(a&&ok(x,oy,3,2)&&put('bunk',x,oy,3,1.5,side)){done=true;break;}}}
+      for(const i of pix[ai]){if(done)break;const x=i%w,y=(i/w)|0;for(const side of ['w','e']){const ox=side==='w'?x:x-1;let a=true;for(let k2=0;k2<3;k2++)if(side==='w'?!wallAt(x-1,y+k2):!wallAt(x+1,y+k2))a=false;if(a&&ok(ox,y,2,3)&&put('bunkv',ox,y,1.5,3,side)){done=true;break;}}}
+      for(const i of pix[ai]){if(done)break;const x=i%w,y=(i/w)|0;if(okM(x,y,3,2,1)&&put('bunk',x,y,3,1.5,'c'))done=true;}}
     // 3 bis) passerelle : table holographique au centre, fauteuil du commandant derrière, pupitres en arc tournés vers
     // les écrans principaux, barre de pilotage à l'avant ; CIC : table tactique cernée de postes d'opérateurs
     let special=false;const cxA=Math.round((x0+x1)/2),cyA=Math.round((y0+y1)/2);
@@ -19241,11 +19248,14 @@ function inProps(M){const w=M.w,P=M.props=[],D=M.decals=[],taken=new Uint8Array(
   // ils bloquent la marche… sauf s'ils coupent un passage : petites poches condamnées, sinon on retire les meubles qui
   // bordent une poche isolée
   const apply=on=>{for(const p of P){if(p.off||p.flat)continue;for(let y=p.y;y<p.y+p.H;y++)for(let x=p.x;x<p.x+p.W;x++){const i=y*w+x;if(on){M.walk[i]=0;M.block[i]=2;}else if(M.block[i]===2){M.walk[i]=1;M.block[i]=0;}}}};
-  const base=inComponents(M).n;apply(true);
+  // (une zone déjà isolée avant l'ameublement n'est pas une poche : ses meubles restent)
+  const B0=inComponents(M),base=B0.n,pre=i=>B0.lab[i]>=0&&B0.lab[i]!==B0.main;apply(true);
   for(let pass=0;pass<10;pass++){const comp=inComponents(M);if(comp.n<=base)break;const sz=new Map();for(let i=0;i<M.N;i++){const l=comp.lab[i];if(l>=0&&l!==comp.main)sz.set(l,(sz.get(l)||0)+1);}
-    let sealed=false;if(pass<5)for(let i=0;i<M.N;i++){const l=comp.lab[i];if(l<0||l===comp.main||sz.get(l)>=5||M.area[i]<0||M.walk[i]!==1||M.doorAt[i]>=0)continue;const x=i%w,y=(i/w)|0;let nb=false;for(const [dx,dy] of DIR4){const X=x+dx,Y=y+dy;if(M.inHull(X,Y)&&M.block[Y*w+X]===2)nb=true;}if(nb){M.walk[i]=0;M.block[i]=3;sealed=true;}}
+    let sealed=false;if(pass<5)for(let i=0;i<M.N;i++){const l=comp.lab[i];if(l<0||l===comp.main||pre(i)||sz.get(l)>=5||M.area[i]<0||M.walk[i]!==1||M.doorAt[i]>=0)continue;const x=i%w,y=(i/w)|0;let nb=false;for(const [dx,dy] of DIR4){const X=x+dx,Y=y+dy;if(M.inHull(X,Y)&&M.block[Y*w+X]===2)nb=true;}if(nb){M.walk[i]=0;M.block[i]=3;sealed=true;}}
     if(sealed)continue;
-    apply(false);for(const p of P){if(p.off||p.flat)continue;let hit=false;for(let y=p.y-1;y<=p.y+p.H&&!hit;y++)for(let x=p.x-1;x<=p.x+p.W;x++){if(!M.inHull(x,y))continue;const l=comp.lab[y*w+x];if(l>=0&&l!==comp.main){hit=true;break;}}if(hit)p.off=true;}apply(true);}
+    apply(false);for(const p of P){if(p.off||p.flat)continue;// seul un meuble qui sépare la poche d'une autre partie du vaisseau est retiré (pas ceux qui sont simplement dedans)
+      let pk=-1,oth=false;for(let y=p.y-1;y<=p.y+p.H;y++)for(let x=p.x-1;x<=p.x+p.W;x++){if(!M.inHull(x,y))continue;const l=comp.lab[y*w+x];if(l<0)continue;if(l!==comp.main&&!pre(y*w+x)&&pk<0)pk=l;}
+      if(pk>=0)for(let y=p.y-1;y<=p.y+p.H;y++)for(let x=p.x-1;x<=p.x+p.W;x++){if(!M.inHull(x,y))continue;const l=comp.lab[y*w+x];if(l>=0&&l!==pk)oth=true;}if(pk>=0&&(oth||pass>=6))p.off=true;}apply(true);}
   // pixels condamnés derrière un meuble : rendus comme du sol, non praticables
   for(let i=0;i<M.N;i++)if(M.block[i]===3)M.block[i]=2;
   M.props=P.filter(p=>!p.off);
@@ -20800,7 +20810,7 @@ function inRxPropAnim(g,M,p,x,y,W,H,Z,t,ph,near){const st=inRxState(),u=Z/15,mod
     case'jbox':{const vh=Z*1.15,bt=y+u*2-vh;if(((t*1.2+ph)|0)%2)inRxR(g,x+W-u*3.5,bt+u*1.5,u,u,alarm?'#ffb030':'#5cff9a');return;}
     case'core':{inCoreAnim(g,p,x,y,W,H,Z,W>=Z*7.5,t,inLightAt(p.x+p.w/2,p.y+p.h*0.4));return;}}}
 // tranchées de caloporteur : chevrons qui défilent vers l'est (sortie chaude, retour froid vers le cœur)
-function inRxTrench(M,g,S,Z,t){const st=inRxState();if(st.st==='off')return;const L=M._ctr||(M._ctr=M.decals.filter(d=>d.t==='ctrench')),u=Z/15,SW=inCv.width,SH=inCv.height,sp=0.6*(0.5+st.eff)*(st.st==='hurt'?0.6:1);
+function inRxTrench(M,g,S,Z,t){const st=inRxState();if(st.st==='off')return;const L=M._ctr||(M._ctr=(M.decals||[]).filter(d=>d.t==='ctrench')),u=Z/15,SW=inCv.width,SH=inCv.height,sp=0.6*(0.5+st.eff)*(st.st==='hurt'?0.6:1);
   g.globalCompositeOperation='lighter';g.globalAlpha=0.3;for(const d of L){const [x,y]=S(d.x,d.y),W=d.w*Z;if(x>SW||y>SH||x+W<0||y+Z<0)continue;g.fillStyle=d.hot?'#ffb080':'#a0d0ff';const n=Math.max(2,Math.round(d.w/1.5)),cy=y+Z/2;
     for(let k=0;k<n;k++){const f=(t*sp/Math.max(1,d.w)*2+k/n)%1,ax=x+f*W;g.beginPath();g.moveTo(ax+u*1.8,cy);g.lineTo(ax-u*0.9,cy-u*1.3);g.lineTo(ax-u*0.9,cy+u*1.3);g.closePath();g.fill();}}
   g.globalAlpha=1;g.globalCompositeOperation='source-over';}
