@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rue de la Loi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Courier+Prime:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="./src/ui/style.css">
+</head>
+<body>
+<canvas id="scene" aria-label="Le bureau du chef du gouvernement, en 3D"></canvas>
+
+<div id="loading" class="screen center">
+  <div class="loading-inner">
+    <div class="crest" aria-hidden="true"></div>
+    <p class="eyebrow">Royaume de Belgique</p>
+    <h1 class="title">Rue de la Loi</h1>
+    <p id="loading-text" class="muted">Préparation du bureau…</p>
+    <div class="bar"><span id="loading-bar"></span></div>
+  </div>
+</div>
+
+<div id="title" class="screen" hidden>
+  <div class="title-card">
+    <p class="eyebrow">Royaume de Belgique · Gouvernement d’urgence</p>
+    <h1 class="title">Rue de la Loi</h1>
+    <p class="lede">Quatre jours. Un bureau. Un pays dans le noir.</p>
+    <div class="title-actions">
+      <button id="btn-new" class="btn primary">Nouvelle partie</button>
+      <button id="btn-continue" class="btn" hidden>Continuer</button>
+    </div>
+    <div class="title-options">
+      <label for="opt-quality">Qualité graphique</label>
+      <select id="opt-quality">
+        <option value="2">Haute</option>
+        <option value="1">Moyenne</option>
+        <option value="0">Basse</option>
+      </select>
+      <label class="check"><input id="opt-sound" type="checkbox" checked> Son</label>
+    </div>
+    <p class="controls-help">Se déplacer : <kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> ou cliquer au sol · Tourner la caméra : glisser · Interagir : <kbd>E</kbd> ou cliquer sur l’objet · Fermer : <kbd>Échap</kbd></p>
+    <p class="disclaimer">Fiction. Les personnages, partis, organisations et événements sont imaginaires.</p>
+  </div>
+</div>
+
+<div id="intro" class="screen center" hidden>
+  <div class="intro-text" id="intro-text"></div>
+  <button id="btn-intro" class="btn ghost" hidden>Entrer dans le bureau</button>
+</div>
+
+<div id="hud" hidden>
+  <div class="hud-top-left">
+    <div class="clock-card">
+      <div id="hud-date" class="hud-date"></div>
+      <div class="hud-time"><span id="hud-time"></span><span id="hud-left" class="hud-left"></span></div>
+      <div class="hud-capital" title="Capital politique : il paie les grandes orientations (ordinateur).">Capital politique <strong id="hud-capital"></strong></div>
+    </div>
+  </div>
+  <div class="hud-top-right">
+    <button id="hud-stats" class="stats-card" aria-label="Indicateurs du pays"></button>
+  </div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <div id="prompt" class="prompt" hidden></div>
+  <div id="note" class="note" hidden>
+    <button class="note-close" aria-label="Masquer la note">×</button>
+    <div id="note-text"></div>
+    <div class="note-sign">— M.</div>
+  </div>
+  <nav class="dock" aria-label="Actions du bureau">
+    <button class="dock-btn" data-go="telephone"><span class="ico" data-ico="phone"></span><span>Téléphone</span><b id="badge-phone" class="badge ring" hidden>!</b></button>
+    <button class="dock-btn" data-go="dossiers"><span class="ico" data-ico="folder"></span><span>Dossiers</span><b id="badge-dossiers" class="badge" hidden></b></button>
+    <button class="dock-btn" data-go="ordinateur"><span class="ico" data-ico="screen"></span><span>Ordinateur</span></button>
+    <button class="dock-btn" data-go="carte"><span class="ico" data-ico="map"></span><span>Carte</span></button>
+    <button class="dock-btn end" data-go="agenda"><span class="ico" data-ico="moon"></span><span>Clore la journée</span></button>
+  </nav>
+  <div id="hover-label" class="hover-label" hidden></div>
+</div>
+
+<div id="panel-root" class="panel-root" hidden></div>
+
+<script type="importmap">
+{ "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/addons/" } }
+</script>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

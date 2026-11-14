@@ -1,0 +1,15 @@
+{
+  "name": "rue-de-la-loi",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Jeu de stratégie politique narratif en 3D : gouverner la Belgique sans quitter son bureau.",
+  "type": "module",
+  "scripts": {
+    "serve": "node tools/serve.mjs 8080",
+    "simulate": "node tools/simulate.mjs 300",
+    "build": "node tools/build-artifact.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}
