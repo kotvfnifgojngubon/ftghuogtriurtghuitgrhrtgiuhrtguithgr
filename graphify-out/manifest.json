@@ -1,0 +1,1658 @@
+{
+  ".claude/skills/create-game-assets/assets/asset-manifest.json": {
+    "mtime": 1794677175.2469208,
+    "seen": 1794941551.1421947,
+    "ast_hash": "49bd4eb907b6ce9727cc8657c94f0448",
+    "semantic_hash": "49bd4eb907b6ce9727cc8657c94f0448"
+  },
+  ".claude/skills/create-game-assets/scripts/asset_report.py": {
+    "mtime": 1794677175.2470686,
+    "seen": 1794941551.1422012,
+    "ast_hash": "b2fbc58c62c47f5e3963144338785ce3",
+    "semantic_hash": "b2fbc58c62c47f5e3963144338785ce3"
+  },
+  ".claude/skills/create-game-assets/scripts/build_preview_sheet.py": {
+    "mtime": 1794677175.2470915,
+    "seen": 1794941551.1422036,
+    "ast_hash": "855375c17b44bbc45b5ea8fab19b5bc7",
+    "semantic_hash": "855375c17b44bbc45b5ea8fab19b5bc7"
+  },
+  ".claude/skills/defold-core/scripts/check_defold_project.py": {
+    "mtime": 1794677175.466746,
+    "seen": 1794941551.142205,
+    "ast_hash": "90ac9e8f108c2768962fe214218e9db7",
+    "semantic_hash": "90ac9e8f108c2768962fe214218e9db7"
+  },
+  ".claude/skills/ebitengine-game/assets/ci/github-actions.yml": {
+    "mtime": 1794677175.318489,
+    "seen": 1794941551.1422062,
+    "ast_hash": "36281eb003199ff71e96baacb8688e23",
+    "semantic_hash": "36281eb003199ff71e96baacb8688e23"
+  },
+  ".claude/skills/ebitengine-game/assets/starter/assets.go": {
+    "mtime": 1794677175.3185506,
+    "seen": 1794941551.1422071,
+    "ast_hash": "5e6e84c04a0473e12050a8afa1de4474",
+    "semantic_hash": "5e6e84c04a0473e12050a8afa1de4474"
+  },
+  ".claude/skills/ebitengine-game/assets/starter/game.go": {
+    "mtime": 1794677175.318572,
+    "seen": 1794941551.1422083,
+    "ast_hash": "a5d9e44a26041decfb1034a29d319813",
+    "semantic_hash": "a5d9e44a26041decfb1034a29d319813"
+  },
+  ".claude/skills/ebitengine-game/assets/starter/input.go": {
+    "mtime": 1794677175.318635,
+    "seen": 1794941551.142209,
+    "ast_hash": "7ccac9e3b18ddcf564772bbc78971f61",
+    "semantic_hash": "7ccac9e3b18ddcf564772bbc78971f61"
+  },
+  ".claude/skills/ebitengine-game/assets/starter/main.go": {
+    "mtime": 1794677175.3186927,
+    "seen": 1794941551.1422098,
+    "ast_hash": "647700a1e7fd3dd238795a43be391254",
+    "semantic_hash": "647700a1e7fd3dd238795a43be391254"
+  },
+  ".claude/skills/ebitengine-game/assets/starter/scenes.go": {
+    "mtime": 1794677175.3187096,
+    "seen": 1794941551.1422107,
+    "ast_hash": "999d190f5acc7c9def25cbb75312c621",
+    "semantic_hash": "999d190f5acc7c9def25cbb75312c621"
+  },
+  ".claude/skills/ebitengine-game/assets/starter/sound.go": {
+    "mtime": 1794677175.3187275,
+    "seen": 1794941551.1422117,
+    "ast_hash": "b06cf209c28617a959ea57d2b71600d1",
+    "semantic_hash": "b06cf209c28617a959ea57d2b71600d1"
+  },
+  ".claude/skills/ebitengine-game/assets/starter/world/world.go": {
+    "mtime": 1794677175.3188024,
+    "seen": 1794941551.1422129,
+    "ast_hash": "cb8dd78f3327dd77a191954a2bc7b593",
+    "semantic_hash": "cb8dd78f3327dd77a191954a2bc7b593"
+  },
+  ".claude/skills/ebitengine-game/assets/starter/world/world_test.go": {
+    "mtime": 1794677175.3188238,
+    "seen": 1794941551.1422138,
+    "ast_hash": "18462805774dc9b1db06470b1e23939f",
+    "semantic_hash": "18462805774dc9b1db06470b1e23939f"
+  },
+  ".claude/skills/ebitengine-game/scripts/check_ebitengine.py": {
+    "mtime": 1794677175.3201954,
+    "seen": 1794941551.1422148,
+    "ast_hash": "0471c24d2fc16903debefbb51fb38505",
+    "semantic_hash": "0471c24d2fc16903debefbb51fb38505"
+  },
+  ".claude/skills/ebitengine-game/scripts/new_game.py": {
+    "mtime": 1794677175.3202248,
+    "seen": 1794941551.1422153,
+    "ast_hash": "843f6c740b3bbcc457dd45dd31eeaa74",
+    "semantic_hash": "843f6c740b3bbcc457dd45dd31eeaa74"
+  },
+  ".claude/skills/ebitengine-game/scripts/package_macos_app.py": {
+    "mtime": 1794677175.3202841,
+    "seen": 1794941551.142216,
+    "ast_hash": "52f5d88a82dd22e3999c49f01c07a4fc",
+    "semantic_hash": "52f5d88a82dd22e3999c49f01c07a4fc"
+  },
+  ".claude/skills/game-docs/scripts/check_docs.py": {
+    "mtime": 1794677175.6366131,
+    "seen": 1794941551.142217,
+    "ast_hash": "544eb9c3e6996044e64392e5dbbfecbe",
+    "semantic_hash": "544eb9c3e6996044e64392e5dbbfecbe"
+  },
+  ".claude/skills/godot-nodes-scenes/scripts/check_godot_project.py": {
+    "mtime": 1794677175.4202304,
+    "seen": 1794941551.1422179,
+    "ast_hash": "efed13ab16c9e48a36cf61823394156f",
+    "semantic_hash": "efed13ab16c9e48a36cf61823394156f"
+  },
+  ".claude/skills/platformer/scripts/jump_tuner.py": {
+    "mtime": 1794677175.3374395,
+    "seen": 1794941551.1422188,
+    "ast_hash": "e99a8edcf3766c0a97ec453c6d35106a",
+    "semantic_hash": "e99a8edcf3766c0a97ec453c6d35106a"
+  },
+  ".claude/skills/roblox-simulator-economy/scripts/balance.luau": {
+    "mtime": 1794677175.5118356,
+    "seen": 1794941551.1422195,
+    "ast_hash": "b45dc62af6147ffad97945a0e186fc06",
+    "semantic_hash": "b45dc62af6147ffad97945a0e186fc06"
+  },
+  ".claude/skills/roblox-simulator-economy/scripts/economy_math.luau": {
+    "mtime": 1794677175.5118566,
+    "seen": 1794941551.1422203,
+    "ast_hash": "0198fe8da480feff9e91e7d6c398796d",
+    "semantic_hash": "0198fe8da480feff9e91e7d6c398796d"
+  },
+  ".claude/skills/roblox-simulator-economy/scripts/test_economy_math.luau": {
+    "mtime": 1794677175.5118725,
+    "seen": 1794941551.1422212,
+    "ast_hash": "79b2ff4cb7fa22df10d5782c67bb5a91",
+    "semantic_hash": "79b2ff4cb7fa22df10d5782c67bb5a91"
+  },
+  ".claude/skills/roblox-ui/assets/inventory-quality-test.model.json": {
+    "mtime": 1794677175.522185,
+    "seen": 1794941551.1422222,
+    "ast_hash": "cae7c6b73082e4b61a147922cf478bbc",
+    "semantic_hash": "cae7c6b73082e4b61a147922cf478bbc"
+  },
+  ".claude/skills/roblox-ui/assets/inventory-quality-test.project.json": {
+    "mtime": 1794677175.522208,
+    "seen": 1794941551.1422231,
+    "ast_hash": "8b65261352c722cce69700b362d9ba18",
+    "semantic_hash": "8b65261352c722cce69700b362d9ba18"
+  },
+  ".claude/skills/steam-publish/scripts/check_steam_build.py": {
+    "mtime": 1794677175.6595137,
+    "seen": 1794941551.1422427,
+    "ast_hash": "19da4b819b4d245e49223c6103a8dfca",
+    "semantic_hash": "19da4b819b4d245e49223c6103a8dfca"
+  },
+  ".claude/skills/tower-defense/scripts/td_curve_check.py": {
+    "mtime": 1794677175.3651643,
+    "seen": 1794941551.1422455,
+    "ast_hash": "ef2c4da4f5e4fccdbc92ebff3630d9f9",
+    "semantic_hash": "ef2c4da4f5e4fccdbc92ebff3630d9f9"
+  },
+  ".claude/skills/unity-build-size/scripts/build_report.py": {
+    "mtime": 1794677175.5375347,
+    "seen": 1794941551.1422482,
+    "ast_hash": "7059e8176066e2aaafce94f34c2eb19f",
+    "semantic_hash": "7059e8176066e2aaafce94f34c2eb19f"
+  },
+  ".claude/skills/unity-build-size/scripts/check_unity_build_size.py": {
+    "mtime": 1794677175.5375566,
+    "seen": 1794941551.1422498,
+    "ast_hash": "bc4f697bd7f278a71fba0699c2d33020",
+    "semantic_hash": "bc4f697bd7f278a71fba0699c2d33020"
+  },
+  ".claude/skills/unity-csharp-scripting/scripts/check_unity_project.py": {
+    "mtime": 1794677175.5437636,
+    "seen": 1794941551.1422513,
+    "ast_hash": "d5f6a2363982cad1d01d5c7211fdd0c4",
+    "semantic_hash": "d5f6a2363982cad1d01d5c7211fdd0c4"
+  },
+  "le-bureau/package.json": {
+    "mtime": 1794681553.4713948,
+    "seen": 1794941551.1422527,
+    "ast_hash": "2bfa1245a6ed797d412d3d3db8455dda",
+    "semantic_hash": "2bfa1245a6ed797d412d3d3db8455dda"
+  },
+  "le-bureau/src/audio.js": {
+    "mtime": 1794680960.5790007,
+    "seen": 1794941551.1422544,
+    "ast_hash": "5c13847071884622df3c25a4a7898e99",
+    "semantic_hash": "5c13847071884622df3c25a4a7898e99"
+  },
+  "le-bureau/src/data/geo.js": {
+    "mtime": 1794678464.0625079,
+    "seen": 1794941551.1422555,
+    "ast_hash": "a4b07f6ac2d5418669381aebf2cba831",
+    "semantic_hash": "a4b07f6ac2d5418669381aebf2cba831"
+  },
+  "le-bureau/src/game/content/contacts.js": {
+    "mtime": 1794680330.5177686,
+    "seen": 1794941551.1422572,
+    "ast_hash": "8eecabb061cd311528a05e851b09afee",
+    "semantic_hash": "8eecabb061cd311528a05e851b09afee"
+  },
+  "le-bureau/src/game/content/dossiers.js": {
+    "mtime": 1794680452.3549705,
+    "seen": 1794941551.142259,
+    "ast_hash": "f7b86c7937004ed15323459a22e67d28",
+    "semantic_hash": "f7b86c7937004ed15323459a22e67d28"
+  },
+  "le-bureau/src/game/content/events.js": {
+    "mtime": 1794681831.5579412,
+    "seen": 1794941551.1422603,
+    "ast_hash": "771673694925b43e5367f9af14d9dac1",
+    "semantic_hash": "771673694925b43e5367f9af14d9dac1"
+  },
+  "le-bureau/src/game/content/tree.js": {
+    "mtime": 1794681831.5571089,
+    "seen": 1794941551.1422615,
+    "ast_hash": "33a2fc33e8f19cabead80c75be1884de",
+    "semantic_hash": "33a2fc33e8f19cabead80c75be1884de"
+  },
+  "le-bureau/src/game/content/world.js": {
+    "mtime": 1794681831.557537,
+    "seen": 1794941551.1422627,
+    "ast_hash": "ddaf029cee247946c981902c1399515d",
+    "semantic_hash": "ddaf029cee247946c981902c1399515d"
+  },
+  "le-bureau/src/game/engine.js": {
+    "mtime": 1794680997.5009427,
+    "seen": 1794941551.1422641,
+    "ast_hash": "97370953dc918baae662a2491133c605",
+    "semantic_hash": "97370953dc918baae662a2491133c605"
+  },
+  "le-bureau/src/main.js": {
+    "mtime": 1794681794.9205205,
+    "seen": 1794941551.1422653,
+    "ast_hash": "f2fdfa2a2637aabefb2bbb07664698a6",
+    "semantic_hash": "f2fdfa2a2637aabefb2bbb07664698a6"
+  },
+  "le-bureau/src/ui/dom.js": {
+    "mtime": 1794680886.0509963,
+    "seen": 1794941551.1422663,
+    "ast_hash": "dc92ca2ec794825635891f79ca6f0f0d",
+    "semantic_hash": "dc92ca2ec794825635891f79ca6f0f0d"
+  },
+  "le-bureau/src/ui/panels.js": {
+    "mtime": 1794681515.3641398,
+    "seen": 1794941551.1422675,
+    "ast_hash": "8cf54a4a858bef624b53226e6d2f110e",
+    "semantic_hash": "8cf54a4a858bef624b53226e6d2f110e"
+  },
+  "le-bureau/src/world/character.js": {
+    "mtime": 1794679377.0309064,
+    "seen": 1794941551.1422682,
+    "ast_hash": "169672cb2386664e2e74386060eca9aa",
+    "semantic_hash": "169672cb2386664e2e74386060eca9aa"
+  },
+  "le-bureau/src/world/mapboard.js": {
+    "mtime": 1794681515.3654978,
+    "seen": 1794941551.142269,
+    "ast_hash": "fbfd8f1b6daecfc0ff288664fa11555d",
+    "semantic_hash": "fbfd8f1b6daecfc0ff288664fa11555d"
+  },
+  "le-bureau/src/world/nav.js": {
+    "mtime": 1794679408.5989084,
+    "seen": 1794941551.1422727,
+    "ast_hash": "a3c9cdb287aa86a2f8734100c8f80490",
+    "semantic_hash": "a3c9cdb287aa86a2f8734100c8f80490"
+  },
+  "le-bureau/src/world/noise.js": {
+    "mtime": 1794678658.3746555,
+    "seen": 1794941551.142274,
+    "ast_hash": "5ff240f1c1de57c53d3291a2a2c4a5ba",
+    "semantic_hash": "5ff240f1c1de57c53d3291a2a2c4a5ba"
+  },
+  "le-bureau/src/world/office.js": {
+    "mtime": 1794680929.846999,
+    "seen": 1794941551.1422746,
+    "ast_hash": "245d07b4a838e695e10186550320488f",
+    "semantic_hash": "245d07b4a838e695e10186550320488f"
+  },
+  "le-bureau/src/world/post.js": {
+    "mtime": 1794679457.1269114,
+    "seen": 1794941551.1422753,
+    "ast_hash": "c62dc7eb178e6f479c407624ebd462f0",
+    "semantic_hash": "c62dc7eb178e6f479c407624ebd462f0"
+  },
+  "le-bureau/src/world/room.js": {
+    "mtime": 1794681794.9200163,
+    "seen": 1794941551.142276,
+    "ast_hash": "897cb34ed4aec0370615afb03437ec2c",
+    "semantic_hash": "897cb34ed4aec0370615afb03437ec2c"
+  },
+  "le-bureau/src/world/stage.js": {
+    "mtime": 1794679527.8549154,
+    "seen": 1794941551.142277,
+    "ast_hash": "ac13354303d164c54c2a660675e5fbc4",
+    "semantic_hash": "ac13354303d164c54c2a660675e5fbc4"
+  },
+  "le-bureau/src/world/textures.js": {
+    "mtime": 1794678762.11487,
+    "seen": 1794941551.142278,
+    "ast_hash": "8c510b12ac3fd7b41222000b8ebf87bd",
+    "semantic_hash": "8c510b12ac3fd7b41222000b8ebf87bd"
+  },
+  "le-bureau/tools/build-artifact.mjs": {
+    "mtime": 1794681571.7682726,
+    "seen": 1794941551.142279,
+    "ast_hash": "a61d99860043139184324d9a4a0d3d4f",
+    "semantic_hash": "a61d99860043139184324d9a4a0d3d4f"
+  },
+  "le-bureau/tools/extract_geo.py": {
+    "mtime": 1794678476.6920743,
+    "seen": 1794941551.1422796,
+    "ast_hash": "9a9be036b6d6f42de00d8da18f61069e",
+    "semantic_hash": "9a9be036b6d6f42de00d8da18f61069e"
+  },
+  "le-bureau/tools/serve.mjs": {
+    "mtime": 1794679553.3453982,
+    "seen": 1794941551.1422803,
+    "ast_hash": "1b9d01deb2e2eb6b76356d5e3ba0e592",
+    "semantic_hash": "1b9d01deb2e2eb6b76356d5e3ba0e592"
+  },
+  "le-bureau/tools/simulate.mjs": {
+    "mtime": 1794680574.1309776,
+    "seen": 1794941551.1422813,
+    "ast_hash": "ec7cef84b5879536816b6b013898f5b3",
+    "semantic_hash": "ec7cef84b5879536816b6b013898f5b3"
+  },
+  "le-bureau/tools/strategies.mjs": {
+    "mtime": 1794681837.5303872,
+    "seen": 1794941551.142282,
+    "ast_hash": "b8f34fe8f3476dc41dc8fcdf3316b55f",
+    "semantic_hash": "b8f34fe8f3476dc41dc8fcdf3316b55f"
+  },
+  "le-bureau/vendor/three/addons/environments/RoomEnvironment.js": {
+    "mtime": 1794678476.5959492,
+    "seen": 1794941551.142283,
+    "ast_hash": "c37d244b9379eaea34b6a8af0c0f0c8b",
+    "semantic_hash": "c37d244b9379eaea34b6a8af0c0f0c8b"
+  },
+  "le-bureau/vendor/three/addons/geometries/RoundedBoxGeometry.js": {
+    "mtime": 1794678476.600934,
+    "seen": 1794941551.1422837,
+    "ast_hash": "2a888ca7cf79cc69226aeb9e51b46b13",
+    "semantic_hash": "2a888ca7cf79cc69226aeb9e51b46b13"
+  },
+  "le-bureau/vendor/three/addons/lights/RectAreaLightTexturesLib.js": {
+    "mtime": 1794678604.2253275,
+    "seen": 1794941551.1422846,
+    "ast_hash": "1d94489a38fb6c08288b0caa6b9f5dc6",
+    "semantic_hash": "1d94489a38fb6c08288b0caa6b9f5dc6"
+  },
+  "le-bureau/vendor/three/addons/lights/RectAreaLightUniformsLib.js": {
+    "mtime": 1794678596.9507113,
+    "seen": 1794941551.1422853,
+    "ast_hash": "d9c1dcd56e0de216b62b733d97186859",
+    "semantic_hash": "d9c1dcd56e0de216b62b733d97186859"
+  },
+  "le-bureau/vendor/three/addons/math/SimplexNoise.js": {
+    "mtime": 1794678476.6053336,
+    "seen": 1794941551.1422863,
+    "ast_hash": "e7777ef581d61fabbf2f33d8f9faf213",
+    "semantic_hash": "e7777ef581d61fabbf2f33d8f9faf213"
+  },
+  "le-bureau/vendor/three/addons/postprocessing/EffectComposer.js": {
+    "mtime": 1794678476.6103508,
+    "seen": 1794941551.142287,
+    "ast_hash": "f23944beca4247e825b5971f8031b830",
+    "semantic_hash": "f23944beca4247e825b5971f8031b830"
+  },
+  "le-bureau/vendor/three/addons/postprocessing/GTAOPass.js": {
+    "mtime": 1794678476.6156337,
+    "seen": 1794941551.1422882,
+    "ast_hash": "3f53221c298b3e3525f0e5b33df31576",
+    "semantic_hash": "3f53221c298b3e3525f0e5b33df31576"
+  },
+  "le-bureau/vendor/three/addons/postprocessing/MaskPass.js": {
+    "mtime": 1794678476.6211174,
+    "seen": 1794941551.1422887,
+    "ast_hash": "e7b9f5f38c73dfb1a3f93c2bcbc686d4",
+    "semantic_hash": "e7b9f5f38c73dfb1a3f93c2bcbc686d4"
+  },
+  "le-bureau/vendor/three/addons/postprocessing/OutputPass.js": {
+    "mtime": 1794678476.6266043,
+    "seen": 1794941551.1422896,
+    "ast_hash": "42c2ad798a342f9841cb377db93229a2",
+    "semantic_hash": "42c2ad798a342f9841cb377db93229a2"
+  },
+  "le-bureau/vendor/three/addons/postprocessing/Pass.js": {
+    "mtime": 1794678476.6326952,
+    "seen": 1794941551.1422904,
+    "ast_hash": "d7b2bd3da1ba1146672a8e3f4ff396e9",
+    "semantic_hash": "d7b2bd3da1ba1146672a8e3f4ff396e9"
+  },
+  "le-bureau/vendor/three/addons/postprocessing/RenderPass.js": {
+    "mtime": 1794678476.638128,
+    "seen": 1794941551.1422913,
+    "ast_hash": "0cf5eec9f98eb58dc00c586404b89643",
+    "semantic_hash": "0cf5eec9f98eb58dc00c586404b89643"
+  },
+  "le-bureau/vendor/three/addons/postprocessing/SMAAPass.js": {
+    "mtime": 1794678476.6425855,
+    "seen": 1794941551.1422923,
+    "ast_hash": "a51c559a0170499ec459281b70744946",
+    "semantic_hash": "a51c559a0170499ec459281b70744946"
+  },
+  "le-bureau/vendor/three/addons/postprocessing/ShaderPass.js": {
+    "mtime": 1794678476.6478794,
+    "seen": 1794941551.1422932,
+    "ast_hash": "5a781f97fd18392eb28bf66e0b454cf7",
+    "semantic_hash": "5a781f97fd18392eb28bf66e0b454cf7"
+  },
+  "le-bureau/vendor/three/addons/postprocessing/UnrealBloomPass.js": {
+    "mtime": 1794678476.6528702,
+    "seen": 1794941551.142294,
+    "ast_hash": "6223a71976c3d5c88896f4a6f10d62a1",
+    "semantic_hash": "6223a71976c3d5c88896f4a6f10d62a1"
+  },
+  "le-bureau/vendor/three/addons/shaders/CopyShader.js": {
+    "mtime": 1794678476.6585658,
+    "seen": 1794941551.142295,
+    "ast_hash": "659b8645af074d24a1b1cdb4c5a9efa7",
+    "semantic_hash": "659b8645af074d24a1b1cdb4c5a9efa7"
+  },
+  "le-bureau/vendor/three/addons/shaders/GTAOShader.js": {
+    "mtime": 1794678476.6637883,
+    "seen": 1794941551.1422956,
+    "ast_hash": "9bd8cfcedca81ba09f63c70bcf4f0094",
+    "semantic_hash": "9bd8cfcedca81ba09f63c70bcf4f0094"
+  },
+  "le-bureau/vendor/three/addons/shaders/LuminosityHighPassShader.js": {
+    "mtime": 1794678476.6689527,
+    "seen": 1794941551.1422966,
+    "ast_hash": "c3d1e98711a7f4c1dcc1fd3599e593cb",
+    "semantic_hash": "c3d1e98711a7f4c1dcc1fd3599e593cb"
+  },
+  "le-bureau/vendor/three/addons/shaders/OutputShader.js": {
+    "mtime": 1794678476.6744337,
+    "seen": 1794941551.1422973,
+    "ast_hash": "541821203c922dac64351bbf8cf66fa7",
+    "semantic_hash": "541821203c922dac64351bbf8cf66fa7"
+  },
+  "le-bureau/vendor/three/addons/shaders/PoissonDenoiseShader.js": {
+    "mtime": 1794678476.6796577,
+    "seen": 1794941551.1422982,
+    "ast_hash": "fed1f3ed677643a96d8d1b82b56fe8d7",
+    "semantic_hash": "fed1f3ed677643a96d8d1b82b56fe8d7"
+  },
+  "le-bureau/vendor/three/addons/shaders/SMAAShader.js": {
+    "mtime": 1794678476.6843934,
+    "seen": 1794941551.142299,
+    "ast_hash": "2a857363b436de92a51436aa9d870295",
+    "semantic_hash": "2a857363b436de92a51436aa9d870295"
+  },
+  "le-bureau/vendor/three/addons/utils/BufferGeometryUtils.js": {
+    "mtime": 1794678476.6901476,
+    "seen": 1794941551.1423,
+    "ast_hash": "adcc536fde1507cc71de9efb230eded8",
+    "semantic_hash": "adcc536fde1507cc71de9efb230eded8"
+  },
+  "le-bureau/vendor/three/three.core.js": {
+    "mtime": 1794678476.5589557,
+    "seen": 1794941551.1423006,
+    "ast_hash": "811340fb3cff993a2da58dfba5f0e526",
+    "semantic_hash": "811340fb3cff993a2da58dfba5f0e526"
+  },
+  "le-bureau/vendor/three/three.module.js": {
+    "mtime": 1794678476.5585413,
+    "seen": 1794941551.1423013,
+    "ast_hash": "ae4c053a1933941f597ee608c348e358",
+    "semantic_hash": "ae4c053a1933941f597ee608c348e358"
+  },
+  ".claude/skills/ai-behavior-trees-utility-ai/SKILL.md": {
+    "mtime": 1794677175.229818,
+    "seen": 1794941551.1423025,
+    "ast_hash": "4b312587013d36bd9fa83239c7b8ffa5",
+    "semantic_hash": "4b312587013d36bd9fa83239c7b8ffa5"
+  },
+  ".claude/skills/ai-behavior-trees-utility-ai/references/behavior-tree-core.md": {
+    "mtime": 1794677175.2298853,
+    "seen": 1794941551.1423032,
+    "ast_hash": "10c4296c94a122201b10736b5c9aa03b",
+    "semantic_hash": "10c4296c94a122201b10736b5c9aa03b"
+  },
+  ".claude/skills/ai-behavior-trees-utility-ai/references/best-practices-and-pitfalls.md": {
+    "mtime": 1794677175.229916,
+    "seen": 1794941551.1423042,
+    "ast_hash": "bcb08feb73102eda246250699567c8a5",
+    "semantic_hash": "bcb08feb73102eda246250699567c8a5"
+  },
+  ".claude/skills/ai-behavior-trees-utility-ai/references/practical-examples.md": {
+    "mtime": 1794677175.2299347,
+    "seen": 1794941551.1423051,
+    "ast_hash": "c4ff4272d8adee8274d002b87596401b",
+    "semantic_hash": "c4ff4272d8adee8274d002b87596401b"
+  },
+  ".claude/skills/ai-behavior-trees-utility-ai/references/utility-ai-system.md": {
+    "mtime": 1794677175.2299652,
+    "seen": 1794941551.1423059,
+    "ast_hash": "a54cccf6df9953568b06ff46a5e01471",
+    "semantic_hash": "a54cccf6df9953568b06ff46a5e01471"
+  },
+  ".claude/skills/audio-design/SKILL.md": {
+    "mtime": 1794677175.2354484,
+    "seen": 1794941551.1423066,
+    "ast_hash": "07db4740098e633a85a75b540cde131e",
+    "semantic_hash": "07db4740098e633a85a75b540cde131e"
+  },
+  ".claude/skills/audio-design/references/adaptive-music.md": {
+    "mtime": 1794677175.2355013,
+    "seen": 1794941551.1423075,
+    "ast_hash": "8fe35aeec25c303c1b1a673c4a771fb4",
+    "semantic_hash": "8fe35aeec25c303c1b1a673c4a771fb4"
+  },
+  ".claude/skills/bevy-ecs/SKILL.md": {
+    "mtime": 1794677175.4605231,
+    "seen": 1794941551.1423082,
+    "ast_hash": "6a15f7ded1b93652f2bea4cecbb75122",
+    "semantic_hash": "6a15f7ded1b93652f2bea4cecbb75122"
+  },
+  ".claude/skills/bevy-ecs/references/queries-and-scheduling.md": {
+    "mtime": 1794677175.460632,
+    "seen": 1794941551.14231,
+    "ast_hash": "90598d86331debc6e10b860127fde4cd",
+    "semantic_hash": "90598d86331debc6e10b860127fde4cd"
+  },
+  ".claude/skills/camera-systems/SKILL.md": {
+    "mtime": 1794677175.2409277,
+    "seen": 1794941551.1423109,
+    "ast_hash": "3b4bba9f62aa40d6534ffeab21415869",
+    "semantic_hash": "3b4bba9f62aa40d6534ffeab21415869"
+  },
+  ".claude/skills/camera-systems/references/follow-and-framing.md": {
+    "mtime": 1794677175.2410276,
+    "seen": 1794941551.142312,
+    "ast_hash": "1ca8bd52b87744a01c33ef583c818652",
+    "semantic_hash": "1ca8bd52b87744a01c33ef583c818652"
+  },
+  ".claude/skills/card-game/SKILL.md": {
+    "mtime": 1794677175.325288,
+    "seen": 1794941551.142313,
+    "ast_hash": "8e1b98eec1ba3c2022ad6175edd789ca",
+    "semantic_hash": "8e1b98eec1ba3c2022ad6175edd789ca"
+  },
+  ".claude/skills/card-game/references/effect-resolution.md": {
+    "mtime": 1794677175.3253753,
+    "seen": 1794941551.1423137,
+    "ast_hash": "60c41c41c1bac79eaf31dedbd4305145",
+    "semantic_hash": "60c41c41c1bac79eaf31dedbd4305145"
+  },
+  ".claude/skills/create-game-assets/SKILL.md": {
+    "mtime": 1794677175.2467806,
+    "seen": 1794941551.1423142,
+    "ast_hash": "3c6f825300a25f8e459dc0a05ce25dbb",
+    "semantic_hash": "3c6f825300a25f8e459dc0a05ce25dbb"
+  },
+  ".claude/skills/create-game-assets/assets/art-direction-brief.md": {
+    "mtime": 1794677175.2468991,
+    "seen": 1794941551.1423151,
+    "ast_hash": "756a1f447651b81cd67c09352f11b3a7",
+    "semantic_hash": "756a1f447651b81cd67c09352f11b3a7"
+  },
+  ".claude/skills/create-game-assets/references/art-direction.md": {
+    "mtime": 1794677175.2469683,
+    "seen": 1794941551.142316,
+    "ast_hash": "e330504b74653bbf3f0782b96556e024",
+    "semantic_hash": "e330504b74653bbf3f0782b96556e024"
+  },
+  ".claude/skills/create-game-assets/references/provenance.md": {
+    "mtime": 1794677175.2469916,
+    "seen": 1794941551.142317,
+    "ast_hash": "8ad8fbd2552d099a5a359a18107383ac",
+    "semantic_hash": "8ad8fbd2552d099a5a359a18107383ac"
+  },
+  ".claude/skills/create-game-assets/references/raster-pipeline.md": {
+    "mtime": 1794677175.24701,
+    "seen": 1794941551.1423178,
+    "ast_hash": "96ece205911b9233c87f2b9b7569eeae",
+    "semantic_hash": "96ece205911b9233c87f2b9b7569eeae"
+  },
+  ".claude/skills/create-game-assets/references/three-d-pipeline.md": {
+    "mtime": 1794677175.2470298,
+    "seen": 1794941551.1423185,
+    "ast_hash": "e7cf481f5b212f7465fd8b86a99a6789",
+    "semantic_hash": "e7cf481f5b212f7465fd8b86a99a6789"
+  },
+  ".claude/skills/create-game-assets/scripts/requirements.txt": {
+    "mtime": 1794677175.247109,
+    "seen": 1794941551.1423194,
+    "ast_hash": "cdeed7e4f0411222476c871eabcd1914",
+    "semantic_hash": "cdeed7e4f0411222476c871eabcd1914"
+  },
+  ".claude/skills/defold-core/SKILL.md": {
+    "mtime": 1794677175.466545,
+    "seen": 1794941551.1423202,
+    "ast_hash": "d39531719e91c4bc9496eba5a4fdf4a1",
+    "semantic_hash": "d39531719e91c4bc9496eba5a4fdf4a1"
+  },
+  ".claude/skills/defold-core/references/build-and-run.md": {
+    "mtime": 1794677175.4666805,
+    "seen": 1794941551.142321,
+    "ast_hash": "6880a740180e3bfaa14c9b0e02fe0a2a",
+    "semantic_hash": "6880a740180e3bfaa14c9b0e02fe0a2a"
+  },
+  ".claude/skills/defold-core/references/file-formats.md": {
+    "mtime": 1794677175.4667046,
+    "seen": 1794941551.1423218,
+    "ast_hash": "62d4f05106f3f64faeba46aeee2ef69d",
+    "semantic_hash": "62d4f05106f3f64faeba46aeee2ef69d"
+  },
+  ".claude/skills/dialogue-systems/SKILL.md": {
+    "mtime": 1794677175.2528098,
+    "seen": 1794941551.1423228,
+    "ast_hash": "bd17c30149785208ecc2ceefee478d30",
+    "semantic_hash": "bd17c30149785208ecc2ceefee478d30"
+  },
+  ".claude/skills/dialogue-systems/references/ink-and-yarn.md": {
+    "mtime": 1794677175.2528803,
+    "seen": 1794941551.1423235,
+    "ast_hash": "9b3e1aea8644f2cd4fab26d1fb2f7f45",
+    "semantic_hash": "9b3e1aea8644f2cd4fab26d1fb2f7f45"
+  },
+  ".claude/skills/dialogue-systems/references/runner.md": {
+    "mtime": 1794677175.2529056,
+    "seen": 1794941551.1423242,
+    "ast_hash": "7d4e7bb442a0919f9cc7b84463bbb747",
+    "semantic_hash": "7d4e7bb442a0919f9cc7b84463bbb747"
+  },
+  ".claude/skills/ebitengine-game/SKILL.md": {
+    "mtime": 1794677175.3183382,
+    "seen": 1794941551.1423252,
+    "ast_hash": "50e558d5b0736d300fd8164a48cea23c",
+    "semantic_hash": "50e558d5b0736d300fd8164a48cea23c"
+  },
+  ".claude/skills/ebitengine-game/assets/starter/licenses/Go-Fonts.txt": {
+    "mtime": 1794677175.3186731,
+    "seen": 1794941551.142326,
+    "ast_hash": "be71cb48e01fa43187063f2c98b1113b",
+    "semantic_hash": "be71cb48e01fa43187063f2c98b1113b"
+  },
+  ".claude/skills/ebitengine-game/assets/starter/web/index.html": {
+    "mtime": 1794677175.3187647,
+    "seen": 1794941551.1423268,
+    "ast_hash": "76841c1e5fc21c77856b072864f59823",
+    "semantic_hash": "76841c1e5fc21c77856b072864f59823"
+  },
+  ".claude/skills/ebitengine-game/references/architecture-and-testing.md": {
+    "mtime": 1794677175.3188725,
+    "seen": 1794941551.1423275,
+    "ast_hash": "6989f140b6ed47302725be516f099be4",
+    "semantic_hash": "6989f140b6ed47302725be516f099be4"
+  },
+  ".claude/skills/ebitengine-game/references/assets-and-animation.md": {
+    "mtime": 1794677175.3190334,
+    "seen": 1794941551.1423283,
+    "ast_hash": "ffece5bb657e64c7705cfc1c60f4541f",
+    "semantic_hash": "ffece5bb657e64c7705cfc1c60f4541f"
+  },
+  ".claude/skills/ebitengine-game/references/audio.md": {
+    "mtime": 1794677175.319182,
+    "seen": 1794941551.142329,
+    "ast_hash": "eb5907d5aad98a71b161e6decf9fa1ea",
+    "semantic_hash": "eb5907d5aad98a71b161e6decf9fa1ea"
+  },
+  ".claude/skills/ebitengine-game/references/ci-and-release.md": {
+    "mtime": 1794677175.3192036,
+    "seen": 1794941551.14233,
+    "ast_hash": "87d3bd027c5b9f36f7ba0b3a6ef76e7a",
+    "semantic_hash": "87d3bd027c5b9f36f7ba0b3a6ef76e7a"
+  },
+  ".claude/skills/ebitengine-game/references/design-and-quality.md": {
+    "mtime": 1794677175.3192239,
+    "seen": 1794941551.1423306,
+    "ast_hash": "87e547737bd6a27bb914a77ed6953fb5",
+    "semantic_hash": "87e547737bd6a27bb914a77ed6953fb5"
+  },
+  ".claude/skills/ebitengine-game/references/gameplay-systems.md": {
+    "mtime": 1794677175.3193336,
+    "seen": 1794941551.1423314,
+    "ast_hash": "3a18869ac26c0327d94d38a89af135af",
+    "semantic_hash": "3a18869ac26c0327d94d38a89af135af"
+  },
+  ".claude/skills/ebitengine-game/references/input.md": {
+    "mtime": 1794677175.319466,
+    "seen": 1794941551.1423323,
+    "ast_hash": "3353c35f6dc37e226a31dee21d9f4738",
+    "semantic_hash": "3353c35f6dc37e226a31dee21d9f4738"
+  },
+  ".claude/skills/ebitengine-game/references/monetization.md": {
+    "mtime": 1794677175.3195212,
+    "seen": 1794941551.1423333,
+    "ast_hash": "177e7ca6d360462b4872c3efa70ab45d",
+    "semantic_hash": "177e7ca6d360462b4872c3efa70ab45d"
+  },
+  ".claude/skills/ebitengine-game/references/networking.md": {
+    "mtime": 1794677175.319572,
+    "seen": 1794941551.142334,
+    "ast_hash": "be4ab7ae4714a55be9f93cdadce9efcf",
+    "semantic_hash": "be4ab7ae4714a55be9f93cdadce9efcf"
+  },
+  ".claude/skills/ebitengine-game/references/playtest-diagnostics.md": {
+    "mtime": 1794677175.3197644,
+    "seen": 1794941551.1423347,
+    "ast_hash": "5b07b1f9ff688a01d775e6d930500314",
+    "semantic_hash": "5b07b1f9ff688a01d775e6d930500314"
+  },
+  ".claude/skills/ebitengine-game/references/project-and-builds.md": {
+    "mtime": 1794677175.3198004,
+    "seen": 1794941551.1423354,
+    "ast_hash": "f23bc4aa9e02abdfd21cd2736855c3c1",
+    "semantic_hash": "f23bc4aa9e02abdfd21cd2736855c3c1"
+  },
+  ".claude/skills/ebitengine-game/references/publishing-and-platforms.md": {
+    "mtime": 1794677175.3198984,
+    "seen": 1794941551.1423366,
+    "ast_hash": "85b4ec4433577a980c52dfefbd88c2a1",
+    "semantic_hash": "85b4ec4433577a980c52dfefbd88c2a1"
+  },
+  ".claude/skills/ebitengine-game/references/rendering.md": {
+    "mtime": 1794677175.3199809,
+    "seen": 1794941551.1423373,
+    "ast_hash": "f085d54345de20600ee8ca5c0e5dc03c",
+    "semantic_hash": "f085d54345de20600ee8ca5c0e5dc03c"
+  },
+  ".claude/skills/ebitengine-game/references/text-and-ui.md": {
+    "mtime": 1794677175.3200645,
+    "seen": 1794941551.1423383,
+    "ast_hash": "92736d45d34290e56307cddc3e10f742",
+    "semantic_hash": "92736d45d34290e56307cddc3e10f742"
+  },
+  ".claude/skills/ebitengine-game/references/tilemaps.md": {
+    "mtime": 1794677175.3201137,
+    "seen": 1794941551.142339,
+    "ast_hash": "975448e2f4d2a2daef731ef7f89df3de",
+    "semantic_hash": "975448e2f4d2a2daef731ef7f89df3de"
+  },
+  ".claude/skills/fps-shooter/SKILL.md": {
+    "mtime": 1794677175.3310754,
+    "seen": 1794941551.14234,
+    "ast_hash": "6b1328bd23acc8b665041e29a831c145",
+    "semantic_hash": "6b1328bd23acc8b665041e29a831c145"
+  },
+  ".claude/skills/fps-shooter/references/shooting-and-feel.md": {
+    "mtime": 1794677175.3311377,
+    "seen": 1794941551.142341,
+    "ast_hash": "315382b40b500f70e1cdc17538f14f2e",
+    "semantic_hash": "315382b40b500f70e1cdc17538f14f2e"
+  },
+  ".claude/skills/game-ai/SKILL.md": {
+    "mtime": 1794677175.2589867,
+    "seen": 1794941551.1423419,
+    "ast_hash": "7aa4e482197aeb4d86eb6b904df1bcfc",
+    "semantic_hash": "7aa4e482197aeb4d86eb6b904df1bcfc"
+  },
+  ".claude/skills/game-ai/references/fsm-perception-steering.md": {
+    "mtime": 1794677175.2590542,
+    "seen": 1794941551.142347,
+    "ast_hash": "c8be841b178dfe791643f9110a0b5025",
+    "semantic_hash": "c8be841b178dfe791643f9110a0b5025"
+  },
+  ".claude/skills/game-ai/references/pathfinding.md": {
+    "mtime": 1794677175.2590902,
+    "seen": 1794941551.142348,
+    "ast_hash": "6eb63697159ad9152326d328bf749020",
+    "semantic_hash": "6eb63697159ad9152326d328bf749020"
+  },
+  ".claude/skills/game-docs/SKILL.md": {
+    "mtime": 1794677175.63642,
+    "seen": 1794941551.1423488,
+    "ast_hash": "ddff52442559d9911c6668ca774da2b1",
+    "semantic_hash": "ddff52442559d9911c6668ca774da2b1"
+  },
+  ".claude/skills/game-docs/references/architecture-template.md": {
+    "mtime": 1794677175.6364996,
+    "seen": 1794941551.1423495,
+    "ast_hash": "9b6931a49b981b1e7632e7cfdde49bd2",
+    "semantic_hash": "9b6931a49b981b1e7632e7cfdde49bd2"
+  },
+  ".claude/skills/game-docs/references/doc-rules.md": {
+    "mtime": 1794677175.636515,
+    "seen": 1794941551.1423504,
+    "ast_hash": "84287a80fd7e90ab4f44753c37a9f376",
+    "semantic_hash": "84287a80fd7e90ab4f44753c37a9f376"
+  },
+  ".claude/skills/game-docs/references/feature-templates.md": {
+    "mtime": 1794677175.636533,
+    "seen": 1794941551.1423512,
+    "ast_hash": "f3041a26d6df6e8ec9cf4510f34c2e73",
+    "semantic_hash": "f3041a26d6df6e8ec9cf4510f34c2e73"
+  },
+  ".claude/skills/game-docs/references/gdd-template.md": {
+    "mtime": 1794677175.6365469,
+    "seen": 1794941551.1423519,
+    "ast_hash": "cc5ccc8dc582b492bd64c4ece8264867",
+    "semantic_hash": "cc5ccc8dc582b492bd64c4ece8264867"
+  },
+  ".claude/skills/game-docs/references/workflow-modes.md": {
+    "mtime": 1794677175.6365595,
+    "seen": 1794941551.1423526,
+    "ast_hash": "f533d4b8604bf1e59eb952cf71253d43",
+    "semantic_hash": "f533d4b8604bf1e59eb952cf71253d43"
+  },
+  ".claude/skills/game-feel/SKILL.md": {
+    "mtime": 1794677175.264947,
+    "seen": 1794941551.1423533,
+    "ast_hash": "07ccd263ea9e04403c4a6a2ff04d44e0",
+    "semantic_hash": "07ccd263ea9e04403c4a6a2ff04d44e0"
+  },
+  ".claude/skills/game-feel/references/feedback-recipes.md": {
+    "mtime": 1794677175.2650344,
+    "seen": 1794941551.1423545,
+    "ast_hash": "10cfd0b3c5eaf61c30152b9613d750a8",
+    "semantic_hash": "10cfd0b3c5eaf61c30152b9613d750a8"
+  },
+  ".claude/skills/game-jam/SKILL.md": {
+    "mtime": 1794677175.64197,
+    "seen": 1794941551.1423552,
+    "ast_hash": "4bcb745a9968e82b1711c6fe4678eac3",
+    "semantic_hash": "4bcb745a9968e82b1711c6fe4678eac3"
+  },
+  ".claude/skills/game-ui-ux/SKILL.md": {
+    "mtime": 1794677175.2707987,
+    "seen": 1794941551.142356,
+    "ast_hash": "ae8bd3ecbffee383ffdade9446b2148b",
+    "semantic_hash": "ae8bd3ecbffee383ffdade9446b2148b"
+  },
+  ".claude/skills/game-ui-ux/references/layout-and-flow.md": {
+    "mtime": 1794677175.2708683,
+    "seen": 1794941551.1423566,
+    "ast_hash": "598a574ff8808b373d905710166d3cb3",
+    "semantic_hash": "598a574ff8808b373d905710166d3cb3"
+  },
+  ".claude/skills/godot-2d-movement/SKILL.md": {
+    "mtime": 1794677175.37482,
+    "seen": 1794941551.1423578,
+    "ast_hash": "ebbb55dd6cda7519177ef3153031dddc",
+    "semantic_hash": "ebbb55dd6cda7519177ef3153031dddc"
+  },
+  ".claude/skills/godot-2d-movement/references/controller-recipes.md": {
+    "mtime": 1794677175.3749063,
+    "seen": 1794941551.1423585,
+    "ast_hash": "dbe5dede19a3ff110834613004d185be",
+    "semantic_hash": "dbe5dede19a3ff110834613004d185be"
+  },
+  ".claude/skills/godot-3d-essentials/SKILL.md": {
+    "mtime": 1794677175.380279,
+    "seen": 1794941551.1423593,
+    "ast_hash": "5e080c7b2892e46bea3e362bd29bff6b",
+    "semantic_hash": "5e080c7b2892e46bea3e362bd29bff6b"
+  },
+  ".claude/skills/godot-3d-essentials/references/scene-and-environment.md": {
+    "mtime": 1794677175.3803692,
+    "seen": 1794941551.1423602,
+    "ast_hash": "e9d39a5bb5851f0e98f43f0c46e23ed9",
+    "semantic_hash": "e9d39a5bb5851f0e98f43f0c46e23ed9"
+  },
+  ".claude/skills/godot-animation/SKILL.md": {
+    "mtime": 1794677175.3846955,
+    "seen": 1794941551.1423612,
+    "ast_hash": "a9d816b63dce7a8751a228be33a9b6ee",
+    "semantic_hash": "a9d816b63dce7a8751a228be33a9b6ee"
+  },
+  ".claude/skills/godot-animation/references/animation-tree-and-tween.md": {
+    "mtime": 1794677175.3847735,
+    "seen": 1794941551.1423619,
+    "ast_hash": "a71117a3baf35e2fe75787cdb4573af8",
+    "semantic_hash": "a71117a3baf35e2fe75787cdb4573af8"
+  },
+  ".claude/skills/godot-audio/SKILL.md": {
+    "mtime": 1794677175.3895612,
+    "seen": 1794941551.1423626,
+    "ast_hash": "675158e32a90a339555354853a26df1e",
+    "semantic_hash": "675158e32a90a339555354853a26df1e"
+  },
+  ".claude/skills/godot-audio/references/buses-and-effects.md": {
+    "mtime": 1794677175.3896902,
+    "seen": 1794941551.1423633,
+    "ast_hash": "67d8135c102126d346e109ff9a16b5e3",
+    "semantic_hash": "67d8135c102126d346e109ff9a16b5e3"
+  },
+  ".claude/skills/godot-csharp/SKILL.md": {
+    "mtime": 1794677175.3942652,
+    "seen": 1794941551.1423643,
+    "ast_hash": "14f8bd74c203f09629f47c6b2d07220d",
+    "semantic_hash": "14f8bd74c203f09629f47c6b2d07220d"
+  },
+  ".claude/skills/godot-csharp/references/csharp-setup-and-interop.md": {
+    "mtime": 1794677175.3943126,
+    "seen": 1794941551.1423652,
+    "ast_hash": "04a2a8bae7ed3eeba777b987f676390d",
+    "semantic_hash": "04a2a8bae7ed3eeba777b987f676390d"
+  },
+  ".claude/skills/godot-export/SKILL.md": {
+    "mtime": 1794677175.3986142,
+    "seen": 1794941551.142366,
+    "ast_hash": "1335d62b38a12c4ef2cef76905ba342a",
+    "semantic_hash": "1335d62b38a12c4ef2cef76905ba342a"
+  },
+  ".claude/skills/godot-export/references/presets-and-cli.md": {
+    "mtime": 1794677175.3986707,
+    "seen": 1794941551.1423666,
+    "ast_hash": "8b9a6a49080cc74ce7ec5907284ffc6e",
+    "semantic_hash": "8b9a6a49080cc74ce7ec5907284ffc6e"
+  },
+  ".claude/skills/godot-gdscript-headless-testing/SKILL.md": {
+    "mtime": 1794677175.4035087,
+    "seen": 1794941551.1423676,
+    "ast_hash": "4794184b2e9a0c286b482c64667a3056",
+    "semantic_hash": "4794184b2e9a0c286b482c64667a3056"
+  },
+  ".claude/skills/godot-gdscript/SKILL.md": {
+    "mtime": 1794677175.4083219,
+    "seen": 1794941551.1423686,
+    "ast_hash": "1a7dd293f1f4f23249ec0987b58a6204",
+    "semantic_hash": "1a7dd293f1f4f23249ec0987b58a6204"
+  },
+  ".claude/skills/godot-gdscript/references/annotations-and-typing.md": {
+    "mtime": 1794677175.4084237,
+    "seen": 1794941551.1423693,
+    "ast_hash": "1c66e656ed65a03a9a0613eb1c3389c3",
+    "semantic_hash": "1c66e656ed65a03a9a0613eb1c3389c3"
+  },
+  ".claude/skills/godot-multiplayer/SKILL.md": {
+    "mtime": 1794677175.4131505,
+    "seen": 1794941551.14237,
+    "ast_hash": "427f0489a9b7c3f7cafd959fde8cd926",
+    "semantic_hash": "427f0489a9b7c3f7cafd959fde8cd926"
+  },
+  ".claude/skills/godot-multiplayer/references/replication-and-rpc.md": {
+    "mtime": 1794677175.413214,
+    "seen": 1794941551.1423712,
+    "ast_hash": "6465a28084ffe0c2621b51cc715752a1",
+    "semantic_hash": "6465a28084ffe0c2621b51cc715752a1"
+  },
+  ".claude/skills/godot-nodes-scenes/SKILL.md": {
+    "mtime": 1794677175.4201255,
+    "seen": 1794941551.1423721,
+    "ast_hash": "c555d5f06c0a83fe4bd30ed45b418c27",
+    "semantic_hash": "c555d5f06c0a83fe4bd30ed45b418c27"
+  },
+  ".claude/skills/godot-nodes-scenes/references/tree-and-instancing.md": {
+    "mtime": 1794677175.4201884,
+    "seen": 1794941551.1423728,
+    "ast_hash": "5f0b835aa05fe6ac6f6a3cacff2f4bf1",
+    "semantic_hash": "5f0b835aa05fe6ac6f6a3cacff2f4bf1"
+  },
+  ".claude/skills/godot-physics/SKILL.md": {
+    "mtime": 1794677175.4267545,
+    "seen": 1794941551.1423736,
+    "ast_hash": "3ec5db324fb8ff1b8c28e6eeaecab914",
+    "semantic_hash": "3ec5db324fb8ff1b8c28e6eeaecab914"
+  },
+  ".claude/skills/godot-physics/references/bodies-and-queries.md": {
+    "mtime": 1794677175.4268134,
+    "seen": 1794941551.142375,
+    "ast_hash": "d3b474ebbac0e1cadd9ad5b5025bc81e",
+    "semantic_hash": "d3b474ebbac0e1cadd9ad5b5025bc81e"
+  },
+  ".claude/skills/godot-resources/SKILL.md": {
+    "mtime": 1794677175.4316518,
+    "seen": 1794941551.1423757,
+    "ast_hash": "a8ede3b3e251c4864a1a5dd8eb6a61de",
+    "semantic_hash": "a8ede3b3e251c4864a1a5dd8eb6a61de"
+  },
+  ".claude/skills/godot-resources/references/resource-patterns.md": {
+    "mtime": 1794677175.431702,
+    "seen": 1794941551.1423764,
+    "ast_hash": "ffc9b335f05587877262193f584503aa",
+    "semantic_hash": "ffc9b335f05587877262193f584503aa"
+  },
+  ".claude/skills/godot-shaders/SKILL.md": {
+    "mtime": 1794677175.4380727,
+    "seen": 1794941551.1423771,
+    "ast_hash": "a812687345fed685e108e434adacbebe",
+    "semantic_hash": "a812687345fed685e108e434adacbebe"
+  },
+  ".claude/skills/godot-shaders/references/shading-language.md": {
+    "mtime": 1794677175.438131,
+    "seen": 1794941551.1423783,
+    "ast_hash": "119da936d5202763efe43d30292521a6",
+    "semantic_hash": "119da936d5202763efe43d30292521a6"
+  },
+  ".claude/skills/godot-signals-groups/SKILL.md": {
+    "mtime": 1794677175.4435232,
+    "seen": 1794941551.142379,
+    "ast_hash": "603d6fdd00667b65b57c95da8e79b217",
+    "semantic_hash": "603d6fdd00667b65b57c95da8e79b217"
+  },
+  ".claude/skills/godot-signals-groups/references/signal-patterns.md": {
+    "mtime": 1794677175.4436276,
+    "seen": 1794941551.14238,
+    "ast_hash": "21e0ea9d025f74d9bf23bb04994c1dea",
+    "semantic_hash": "21e0ea9d025f74d9bf23bb04994c1dea"
+  },
+  ".claude/skills/godot-tilemap/SKILL.md": {
+    "mtime": 1794677175.4488878,
+    "seen": 1794941551.1423807,
+    "ast_hash": "627d660715a9d191f3550e2140ffee39",
+    "semantic_hash": "627d660715a9d191f3550e2140ffee39"
+  },
+  ".claude/skills/godot-tilemap/references/tileset-and-terrains.md": {
+    "mtime": 1794677175.4489448,
+    "seen": 1794941551.1423817,
+    "ast_hash": "aaa0ea0c8dd015a6badee534ac9c65d4",
+    "semantic_hash": "aaa0ea0c8dd015a6badee534ac9c65d4"
+  },
+  ".claude/skills/godot-ui-control/SKILL.md": {
+    "mtime": 1794677175.4544902,
+    "seen": 1794941551.1423824,
+    "ast_hash": "62a92b58e7250d58d980af6e8294adb1",
+    "semantic_hash": "62a92b58e7250d58d980af6e8294adb1"
+  },
+  ".claude/skills/godot-ui-control/references/layout-and-theming.md": {
+    "mtime": 1794677175.454568,
+    "seen": 1794941551.142383,
+    "ast_hash": "58f9481355f777f6209e9075dc108481",
+    "semantic_hash": "58f9481355f777f6209e9075dc108481"
+  },
+  ".claude/skills/input-systems/SKILL.md": {
+    "mtime": 1794677175.2766047,
+    "seen": 1794941551.142384,
+    "ast_hash": "a368cb0d6c1cadfbae8590ed12390ff6",
+    "semantic_hash": "a368cb0d6c1cadfbae8590ed12390ff6"
+  },
+  ".claude/skills/input-systems/references/buffering-and-accessibility.md": {
+    "mtime": 1794677175.2766776,
+    "seen": 1794941551.142385,
+    "ast_hash": "64d755960245471434a6dbb5e233e733",
+    "semantic_hash": "64d755960245471434a6dbb5e233e733"
+  },
+  ".claude/skills/itch-publish/SKILL.md": {
+    "mtime": 1794677175.6479182,
+    "seen": 1794941551.1424186,
+    "ast_hash": "0ff6bfb8628e328d2e2b002489960d12",
+    "semantic_hash": "0ff6bfb8628e328d2e2b002489960d12"
+  },
+  ".claude/skills/itch-publish/references/butler-ci.md": {
+    "mtime": 1794677175.6479943,
+    "seen": 1794941551.1424208,
+    "ast_hash": "2b22565f6f53b99d960c78b00e02f7ca",
+    "semantic_hash": "2b22565f6f53b99d960c78b00e02f7ca"
+  },
+  ".claude/skills/level-design/SKILL.md": {
+    "mtime": 1794677175.2825074,
+    "seen": 1794941551.1424227,
+    "ast_hash": "5c4af8ad421fedd1bc4a6c44994f492f",
+    "semantic_hash": "5c4af8ad421fedd1bc4a6c44994f492f"
+  },
+  ".claude/skills/level-design/references/pacing-and-flow.md": {
+    "mtime": 1794677175.2825744,
+    "seen": 1794941551.142424,
+    "ast_hash": "c627326b83de43db5a7a68b1d03fde04",
+    "semantic_hash": "c627326b83de43db5a7a68b1d03fde04"
+  },
+  ".claude/skills/love2d-core/SKILL.md": {
+    "mtime": 1794677175.4727535,
+    "seen": 1794941551.142425,
+    "ast_hash": "7ed137e9ec8ac3c71991817ad8a8a3c6",
+    "semantic_hash": "7ed137e9ec8ac3c71991817ad8a8a3c6"
+  },
+  ".claude/skills/love2d-core/references/state-stack.md": {
+    "mtime": 1794677175.4728303,
+    "seen": 1794941551.1424258,
+    "ast_hash": "0fc93333ca4121b30843f24fe30a7b51",
+    "semantic_hash": "0fc93333ca4121b30843f24fe30a7b51"
+  },
+  ".claude/skills/performance-optimization/SKILL.md": {
+    "mtime": 1794677175.2884846,
+    "seen": 1794941551.142427,
+    "ast_hash": "feee4674dbeb72451aafbe3001a575ed",
+    "semantic_hash": "feee4674dbeb72451aafbe3001a575ed"
+  },
+  ".claude/skills/performance-optimization/references/profiling-and-budgets.md": {
+    "mtime": 1794677175.2885594,
+    "seen": 1794941551.1424277,
+    "ast_hash": "85bb43ea0db372dc61be73ea954911e0",
+    "semantic_hash": "85bb43ea0db372dc61be73ea954911e0"
+  },
+  ".claude/skills/phaser-arcade-physics/SKILL.md": {
+    "mtime": 1794677175.603943,
+    "seen": 1794941551.1424284,
+    "ast_hash": "4edc10af532ded0b4e2cfc5799c7869e",
+    "semantic_hash": "4edc10af532ded0b4e2cfc5799c7869e"
+  },
+  ".claude/skills/phaser-arcade-physics/references/bodies-and-collision.md": {
+    "mtime": 1794677175.6039946,
+    "seen": 1794941551.1424294,
+    "ast_hash": "c91818420db2a2a3b7e7c514ad5d02bd",
+    "semantic_hash": "c91818420db2a2a3b7e7c514ad5d02bd"
+  },
+  ".claude/skills/phaser-core/SKILL.md": {
+    "mtime": 1794677175.6089616,
+    "seen": 1794941551.1424303,
+    "ast_hash": "f8cb7b70fa7d2954c54812a62d02294d",
+    "semantic_hash": "f8cb7b70fa7d2954c54812a62d02294d"
+  },
+  ".claude/skills/phaser-core/references/scene-flow.md": {
+    "mtime": 1794677175.6090286,
+    "seen": 1794941551.142431,
+    "ast_hash": "0c179fcfd906ebad9e5c8274187d8013",
+    "semantic_hash": "0c179fcfd906ebad9e5c8274187d8013"
+  },
+  ".claude/skills/physics-tuning/SKILL.md": {
+    "mtime": 1794677175.2964923,
+    "seen": 1794941551.142432,
+    "ast_hash": "316b0dedecab58209d257025f237986e",
+    "semantic_hash": "316b0dedecab58209d257025f237986e"
+  },
+  ".claude/skills/physics-tuning/references/timestep-and-ccd.md": {
+    "mtime": 1794677175.2965608,
+    "seen": 1794941551.142433,
+    "ast_hash": "498999250ce76e9f1c548b5d62a0fb5a",
+    "semantic_hash": "498999250ce76e9f1c548b5d62a0fb5a"
+  },
+  ".claude/skills/pixijs-rendering/SKILL.md": {
+    "mtime": 1794677175.6151874,
+    "seen": 1794941551.1424341,
+    "ast_hash": "d25e2171a74bfb685fb196002bb68a85",
+    "semantic_hash": "d25e2171a74bfb685fb196002bb68a85"
+  },
+  ".claude/skills/pixijs-rendering/references/assets-and-display.md": {
+    "mtime": 1794677175.6152399,
+    "seen": 1794941551.142435,
+    "ast_hash": "6db03914b9b7e84107de7f322a14b099",
+    "semantic_hash": "6db03914b9b7e84107de7f322a14b099"
+  },
+  ".claude/skills/platformer/SKILL.md": {
+    "mtime": 1794677175.3372698,
+    "seen": 1794941551.142436,
+    "ast_hash": "698eba409322db67970bfe7581d07bca",
+    "semantic_hash": "698eba409322db67970bfe7581d07bca"
+  },
+  ".claude/skills/platformer/references/feel-tuning.md": {
+    "mtime": 1794677175.337385,
+    "seen": 1794941551.142437,
+    "ast_hash": "a3d22f6d04e5f3312c947ae89dd977a9",
+    "semantic_hash": "a3d22f6d04e5f3312c947ae89dd977a9"
+  },
+  ".claude/skills/procedural-gen/SKILL.md": {
+    "mtime": 1794677175.3025331,
+    "seen": 1794941551.1424394,
+    "ast_hash": "227b1dcf3e1054e1c81574a0e40258cd",
+    "semantic_hash": "227b1dcf3e1054e1c81574a0e40258cd"
+  },
+  ".claude/skills/procedural-gen/references/dungeon-generation.md": {
+    "mtime": 1794677175.3026283,
+    "seen": 1794941551.14244,
+    "ast_hash": "75fbfd630d22da22890014b89217aab6",
+    "semantic_hash": "75fbfd630d22da22890014b89217aab6"
+  },
+  ".claude/skills/procedural-gen/references/noise.md": {
+    "mtime": 1794677175.3026567,
+    "seen": 1794941551.142441,
+    "ast_hash": "c5764f2c371fa688e4c9b1ea90f0fb96",
+    "semantic_hash": "c5764f2c371fa688e4c9b1ea90f0fb96"
+  },
+  ".claude/skills/prototype-fast/SKILL.md": {
+    "mtime": 1794677175.6538224,
+    "seen": 1794941551.142442,
+    "ast_hash": "f670861591144537239997f5848041c1",
+    "semantic_hash": "f670861591144537239997f5848041c1"
+  },
+  ".claude/skills/puzzle/SKILL.md": {
+    "mtime": 1794677175.3433442,
+    "seen": 1794941551.142443,
+    "ast_hash": "b2f8d0061b66b6d6a514a9d3ef4e3ae2",
+    "semantic_hash": "b2f8d0061b66b6d6a514a9d3ef4e3ae2"
+  },
+  ".claude/skills/puzzle/references/board-and-resolution.md": {
+    "mtime": 1794677175.3434162,
+    "seen": 1794941551.1424437,
+    "ast_hash": "ea28f21b861d4ff49ad1f286f56945cb",
+    "semantic_hash": "ea28f21b861d4ff49ad1f286f56945cb"
+  },
+  ".claude/skills/pygame-core/SKILL.md": {
+    "mtime": 1794677175.4781907,
+    "seen": 1794941551.1424448,
+    "ast_hash": "1444f4c03433855d0c17239490528440",
+    "semantic_hash": "1444f4c03433855d0c17239490528440"
+  },
+  ".claude/skills/pygame-core/references/sprites-and-collision.md": {
+    "mtime": 1794677175.4782493,
+    "seen": 1794941551.1424456,
+    "ast_hash": "25842311742447248e7821bd010d8950",
+    "semantic_hash": "25842311742447248e7821bd010d8950"
+  },
+  ".claude/skills/roblox-characters/SKILL.md": {
+    "mtime": 1794677175.484772,
+    "seen": 1794941551.1424463,
+    "ast_hash": "de6b7149b13e9a94fb76cac049fe3994",
+    "semantic_hash": "de6b7149b13e9a94fb76cac049fe3994"
+  },
+  ".claude/skills/roblox-characters/references/lifecycle-and-animation.md": {
+    "mtime": 1794677175.4848855,
+    "seen": 1794941551.142447,
+    "ast_hash": "fe3c62d2c14bf097a0388a8d77e21c04",
+    "semantic_hash": "fe3c62d2c14bf097a0388a8d77e21c04"
+  },
+  ".claude/skills/roblox-datastores/SKILL.md": {
+    "mtime": 1794677175.491501,
+    "seen": 1794941551.142448,
+    "ast_hash": "f716457c38b8d43a1273e5404bf424a7",
+    "semantic_hash": "f716457c38b8d43a1273e5404bf424a7"
+  },
+  ".claude/skills/roblox-datastores/references/sessions-and-limits.md": {
+    "mtime": 1794677175.4915662,
+    "seen": 1794941551.1424487,
+    "ast_hash": "ca8c2a51732b1921a68a8e7a8bd16b9f",
+    "semantic_hash": "ca8c2a51732b1921a68a8e7a8bd16b9f"
+  },
+  ".claude/skills/roblox-luau/SKILL.md": {
+    "mtime": 1794677175.4970071,
+    "seen": 1794941551.1424494,
+    "ast_hash": "4b2bd95cc3ad77ab1619c9dcad737698",
+    "semantic_hash": "4b2bd95cc3ad77ab1619c9dcad737698"
+  },
+  ".claude/skills/roblox-luau/references/client-server.md": {
+    "mtime": 1794677175.4970732,
+    "seen": 1794941551.1424503,
+    "ast_hash": "588fa8c63eb508163dab3fec641ad900",
+    "semantic_hash": "588fa8c63eb508163dab3fec641ad900"
+  },
+  ".claude/skills/roblox-networking/SKILL.md": {
+    "mtime": 1794677175.5016167,
+    "seen": 1794941551.1424513,
+    "ast_hash": "af81e4ac993777466969f00d5a858b0a",
+    "semantic_hash": "af81e4ac993777466969f00d5a858b0a"
+  },
+  ".claude/skills/roblox-networking/references/validation-and-testing.md": {
+    "mtime": 1794677175.5017118,
+    "seen": 1794941551.142452,
+    "ast_hash": "32eae8f20cf27626daf394bda89a1044",
+    "semantic_hash": "32eae8f20cf27626daf394bda89a1044"
+  },
+  ".claude/skills/roblox-physics/SKILL.md": {
+    "mtime": 1794677175.5066712,
+    "seen": 1794941551.1424527,
+    "ast_hash": "cb535649aa305354a3cb0593dc971cf4",
+    "semantic_hash": "cb535649aa305354a3cb0593dc971cf4"
+  },
+  ".claude/skills/roblox-physics/references/queries-and-ownership.md": {
+    "mtime": 1794677175.506782,
+    "seen": 1794941551.1424534,
+    "ast_hash": "db9f9591836b3bdfc2041af7533e1456",
+    "semantic_hash": "db9f9591836b3bdfc2041af7533e1456"
+  },
+  ".claude/skills/roblox-simulator-economy/SKILL.md": {
+    "mtime": 1794677175.511684,
+    "seen": 1794941551.1424546,
+    "ast_hash": "bdd0b78276936800fd913d8f75ed8880",
+    "semantic_hash": "bdd0b78276936800fd913d8f75ed8880"
+  },
+  ".claude/skills/roblox-simulator-economy/references/formulas.md": {
+    "mtime": 1794677175.5117817,
+    "seen": 1794941551.1424553,
+    "ast_hash": "4cd5c9cc1c905691c31d9572018986ef",
+    "semantic_hash": "4cd5c9cc1c905691c31d9572018986ef"
+  },
+  ".claude/skills/roblox-simulator-economy/references/server-patterns.md": {
+    "mtime": 1794677175.5118027,
+    "seen": 1794941551.142456,
+    "ast_hash": "bb1793d08fddb7b48452e02c96c524cc",
+    "semantic_hash": "bb1793d08fddb7b48452e02c96c524cc"
+  },
+  ".claude/skills/roblox-studio-workflow/SKILL.md": {
+    "mtime": 1794677175.5165224,
+    "seen": 1794941551.1424568,
+    "ast_hash": "8e3ab149d306083e6537eed6979f733e",
+    "semantic_hash": "8e3ab149d306083e6537eed6979f733e"
+  },
+  ".claude/skills/roblox-studio-workflow/references/studio-mcp.md": {
+    "mtime": 1794677175.516645,
+    "seen": 1794941551.1424575,
+    "ast_hash": "4e30e380e142448e8e848fa89a153abc",
+    "semantic_hash": "4e30e380e142448e8e848fa89a153abc"
+  },
+  ".claude/skills/roblox-studio-workflow/references/studio-verification.md": {
+    "mtime": 1794677175.516663,
+    "seen": 1794941551.1424584,
+    "ast_hash": "df191ee477dadebbf4aa578d5cebed33",
+    "semantic_hash": "df191ee477dadebbf4aa578d5cebed33"
+  },
+  ".claude/skills/roblox-ui/SKILL.md": {
+    "mtime": 1794677175.5220773,
+    "seen": 1794941551.1424594,
+    "ast_hash": "ff2b457c142ef02951fcd0a693274a21",
+    "semantic_hash": "ff2b457c142ef02951fcd0a693274a21"
+  },
+  ".claude/skills/roblox-ui/references/input-navigation.md": {
+    "mtime": 1794677175.5222416,
+    "seen": 1794941551.14246,
+    "ast_hash": "c8aa5e3664b1217b64b80bd385312acc",
+    "semantic_hash": "c8aa5e3664b1217b64b80bd385312acc"
+  },
+  ".claude/skills/roblox-ui/references/responsive-layout.md": {
+    "mtime": 1794677175.5222616,
+    "seen": 1794941551.1424608,
+    "ast_hash": "f363a9152451ae55599ae3a34f9a5097",
+    "semantic_hash": "f363a9152451ae55599ae3a34f9a5097"
+  },
+  ".claude/skills/roguelike/SKILL.md": {
+    "mtime": 1794677175.3483086,
+    "seen": 1794941551.1424618,
+    "ast_hash": "4a169cc95ce700a02abd8a3928894c5c",
+    "semantic_hash": "4a169cc95ce700a02abd8a3928894c5c"
+  },
+  ".claude/skills/roguelike/references/run-seeds-fov.md": {
+    "mtime": 1794677175.3483636,
+    "seen": 1794941551.1424625,
+    "ast_hash": "b8d70b34832a5f73f91ae97a41224ec1",
+    "semantic_hash": "b8d70b34832a5f73f91ae97a41224ec1"
+  },
+  ".claude/skills/router/SKILL.md": {
+    "mtime": 1794677175.2236683,
+    "seen": 1794941551.1424632,
+    "ast_hash": "0aec234be9c1c102efe815d4928e46a6",
+    "semantic_hash": "0aec234be9c1c102efe815d4928e46a6"
+  },
+  ".claude/skills/router/references/custom-engines.md": {
+    "mtime": 1794677175.2238078,
+    "seen": 1794941551.142464,
+    "ast_hash": "15509c60f028fd029448d133e06eb1e3",
+    "semantic_hash": "15509c60f028fd029448d133e06eb1e3"
+  },
+  ".claude/skills/router/references/engine-detection.md": {
+    "mtime": 1794677175.2238293,
+    "seen": 1794941551.142465,
+    "ast_hash": "a3edda8586df03b3dcd5a94b4180db76",
+    "semantic_hash": "a3edda8586df03b3dcd5a94b4180db76"
+  },
+  ".claude/skills/router/references/routing-table.md": {
+    "mtime": 1794677175.2238503,
+    "seen": 1794941551.1424658,
+    "ast_hash": "22a9b93dbbe89c992ea9b50e3f420dbb",
+    "semantic_hash": "22a9b93dbbe89c992ea9b50e3f420dbb"
+  },
+  ".claude/skills/rpg/SKILL.md": {
+    "mtime": 1794677175.3537824,
+    "seen": 1794941551.1424668,
+    "ast_hash": "f9c659f1b151bf9e337d8f18e869da0f",
+    "semantic_hash": "f9c659f1b151bf9e337d8f18e869da0f"
+  },
+  ".claude/skills/rpg/references/stats-combat-quests.md": {
+    "mtime": 1794677175.3538442,
+    "seen": 1794941551.1424675,
+    "ast_hash": "af1ce64e48f5a19ef5e67092565b9b7b",
+    "semantic_hash": "af1ce64e48f5a19ef5e67092565b9b7b"
+  },
+  ".claude/skills/save-systems/SKILL.md": {
+    "mtime": 1794677175.3082047,
+    "seen": 1794941551.1424685,
+    "ast_hash": "9e9d25db6c0f9c7d6055f40615df83ca",
+    "semantic_hash": "9e9d25db6c0f9c7d6055f40615df83ca"
+  },
+  ".claude/skills/save-systems/references/versioning-and-migration.md": {
+    "mtime": 1794677175.308254,
+    "seen": 1794941551.1424692,
+    "ast_hash": "30873bcb217b432f0036c2cf50510c27",
+    "semantic_hash": "30873bcb217b432f0036c2cf50510c27"
+  },
+  ".claude/skills/shader-programming/SKILL.md": {
+    "mtime": 1794677175.3128014,
+    "seen": 1794941551.14247,
+    "ast_hash": "cd91ca794db12212f5c6b275d569c6eb",
+    "semantic_hash": "cd91ca794db12212f5c6b275d569c6eb"
+  },
+  ".claude/skills/shader-programming/references/effects.md": {
+    "mtime": 1794677175.312849,
+    "seen": 1794941551.1424706,
+    "ast_hash": "fa38c522eea3a3d5cdd448c6e211cec4",
+    "semantic_hash": "fa38c522eea3a3d5cdd448c6e211cec4"
+  },
+  ".claude/skills/steam-publish/SKILL.md": {
+    "mtime": 1794677175.6593883,
+    "seen": 1794941551.1424718,
+    "ast_hash": "0d6dab0f2919dd7d8f8487d1869cbc21",
+    "semantic_hash": "0d6dab0f2919dd7d8f8487d1869cbc21"
+  },
+  ".claude/skills/steam-publish/references/steampipe-build-scripts.md": {
+    "mtime": 1794677175.6594546,
+    "seen": 1794941551.1424725,
+    "ast_hash": "9f0a71f48976b0d1892d2c65e1d7e875",
+    "semantic_hash": "9f0a71f48976b0d1892d2c65e1d7e875"
+  },
+  ".claude/skills/survival-crafting/SKILL.md": {
+    "mtime": 1794677175.3598416,
+    "seen": 1794941551.142473,
+    "ast_hash": "98fc73b21152b2e564fc01767edea399",
+    "semantic_hash": "98fc73b21152b2e564fc01767edea399"
+  },
+  ".claude/skills/survival-crafting/references/needs-and-crafting.md": {
+    "mtime": 1794677175.3599155,
+    "seen": 1794941551.142474,
+    "ast_hash": "bee36b958428d82fad364c1122480ac7",
+    "semantic_hash": "bee36b958428d82fad364c1122480ac7"
+  },
+  ".claude/skills/threejs-gltf-loading/SKILL.md": {
+    "mtime": 1794677175.62,
+    "seen": 1794941551.1424747,
+    "ast_hash": "162fe4c9bdd2b357c783a5338878a11d",
+    "semantic_hash": "162fe4c9bdd2b357c783a5338878a11d"
+  },
+  ".claude/skills/threejs-gltf-loading/references/loaders-and-animation.md": {
+    "mtime": 1794677175.6200569,
+    "seen": 1794941551.1424756,
+    "ast_hash": "eebe53f193a1a7db4cfbcca7a73bdf59",
+    "semantic_hash": "eebe53f193a1a7db4cfbcca7a73bdf59"
+  },
+  ".claude/skills/threejs-materials-lighting/SKILL.md": {
+    "mtime": 1794677175.62506,
+    "seen": 1794941551.1424763,
+    "ast_hash": "337d666b902bd12ab5cccff53a90c3f4",
+    "semantic_hash": "337d666b902bd12ab5cccff53a90c3f4"
+  },
+  ".claude/skills/threejs-materials-lighting/references/materials-lights-table.md": {
+    "mtime": 1794677175.62513,
+    "seen": 1794941551.142477,
+    "ast_hash": "bddcc8e0ca1beb26b27185840f1b82a2",
+    "semantic_hash": "bddcc8e0ca1beb26b27185840f1b82a2"
+  },
+  ".claude/skills/threejs-scene-setup/SKILL.md": {
+    "mtime": 1794677175.630232,
+    "seen": 1794941551.1424778,
+    "ast_hash": "ff8a22b1922709a63d038f46e13932f0",
+    "semantic_hash": "ff8a22b1922709a63d038f46e13932f0"
+  },
+  ".claude/skills/threejs-scene-setup/references/scene-graph.md": {
+    "mtime": 1794677175.6302803,
+    "seen": 1794941551.1424787,
+    "ast_hash": "607c711679358f9198098968c9d0f064",
+    "semantic_hash": "607c711679358f9198098968c9d0f064"
+  },
+  ".claude/skills/tower-defense/SKILL.md": {
+    "mtime": 1794677175.3650703,
+    "seen": 1794941551.1424797,
+    "ast_hash": "95381b523564cdf3c52c33b411fbe640",
+    "semantic_hash": "95381b523564cdf3c52c33b411fbe640"
+  },
+  ".claude/skills/tower-defense/references/balancing.md": {
+    "mtime": 1794677175.3651288,
+    "seen": 1794941551.1424804,
+    "ast_hash": "0b64ee3b52a56130b95d89eab9398ac6",
+    "semantic_hash": "0b64ee3b52a56130b95d89eab9398ac6"
+  },
+  ".claude/skills/unity-animation/SKILL.md": {
+    "mtime": 1794677175.5272238,
+    "seen": 1794941551.1424813,
+    "ast_hash": "7a4b198e087e083287ee745e5445c84e",
+    "semantic_hash": "7a4b198e087e083287ee745e5445c84e"
+  },
+  ".claude/skills/unity-animation/references/blend-trees-and-ik.md": {
+    "mtime": 1794677175.5272763,
+    "seen": 1794941551.1424825,
+    "ast_hash": "b63e19d0492539f95044a744886f0552",
+    "semantic_hash": "b63e19d0492539f95044a744886f0552"
+  },
+  ".claude/skills/unity-build-pipeline/SKILL.md": {
+    "mtime": 1794677175.5324342,
+    "seen": 1794941551.1424835,
+    "ast_hash": "7f8aa26e51260ac4d252dd812cb8c4b2",
+    "semantic_hash": "7f8aa26e51260ac4d252dd812cb8c4b2"
+  },
+  ".claude/skills/unity-build-pipeline/references/ci-build-script.md": {
+    "mtime": 1794677175.532486,
+    "seen": 1794941551.1424842,
+    "ast_hash": "da0b7907c9197fe1a247479ebc22aa04",
+    "semantic_hash": "da0b7907c9197fe1a247479ebc22aa04"
+  },
+  ".claude/skills/unity-build-size/SKILL.md": {
+    "mtime": 1794677175.5373106,
+    "seen": 1794941551.142485,
+    "ast_hash": "b8362ccb0cbd537624a77fae4f72ba95",
+    "semantic_hash": "b8362ccb0cbd537624a77fae4f72ba95"
+  },
+  ".claude/skills/unity-build-size/references/gltf-textures.md": {
+    "mtime": 1794677175.53745,
+    "seen": 1794941551.142486,
+    "ast_hash": "57a5e23e78ee602f79cecec23cc39312",
+    "semantic_hash": "57a5e23e78ee602f79cecec23cc39312"
+  },
+  ".claude/skills/unity-build-size/references/platform-android.md": {
+    "mtime": 1794677175.5374725,
+    "seen": 1794941551.1424868,
+    "ast_hash": "de0ed6f3f2c9c5f4b888414655b45fba",
+    "semantic_hash": "de0ed6f3f2c9c5f4b888414655b45fba"
+  },
+  ".claude/skills/unity-build-size/references/platform-desktop-steam.md": {
+    "mtime": 1794677175.5374854,
+    "seen": 1794941551.1424882,
+    "ast_hash": "46ff428ae24ba0f36a422069ef7f5e1e",
+    "semantic_hash": "46ff428ae24ba0f36a422069ef7f5e1e"
+  },
+  ".claude/skills/unity-build-size/references/platform-ios.md": {
+    "mtime": 1794677175.537497,
+    "seen": 1794941551.1424892,
+    "ast_hash": "203d3e06e813b1fef11eaf59e01157e1",
+    "semantic_hash": "203d3e06e813b1fef11eaf59e01157e1"
+  },
+  ".claude/skills/unity-build-size/references/platform-web.md": {
+    "mtime": 1794677175.5375078,
+    "seen": 1794941551.14249,
+    "ast_hash": "0646fb13f50b739ad29a4143645922ea",
+    "semantic_hash": "0646fb13f50b739ad29a4143645922ea"
+  },
+  ".claude/skills/unity-csharp-scripting/SKILL.md": {
+    "mtime": 1794677175.5436256,
+    "seen": 1794941551.1424906,
+    "ast_hash": "085535ebd3f52e3546dbd1f3eae6d037",
+    "semantic_hash": "085535ebd3f52e3546dbd1f3eae6d037"
+  },
+  ".claude/skills/unity-csharp-scripting/references/agent-checks.md": {
+    "mtime": 1794677175.5436993,
+    "seen": 1794941551.1424916,
+    "ast_hash": "e4c722fe32c802ab7cb798560f7843a3",
+    "semantic_hash": "e4c722fe32c802ab7cb798560f7843a3"
+  },
+  ".claude/skills/unity-csharp-scripting/references/lifecycle-and-coroutines.md": {
+    "mtime": 1794677175.543725,
+    "seen": 1794941551.1424925,
+    "ast_hash": "5d1edff703909ef1cef60024c3e523df",
+    "semantic_hash": "5d1edff703909ef1cef60024c3e523df"
+  },
+  ".claude/skills/unity-input-system/SKILL.md": {
+    "mtime": 1794677175.549742,
+    "seen": 1794941551.1424947,
+    "ast_hash": "11759e444e3b3caf72292481639d4f07",
+    "semantic_hash": "11759e444e3b3caf72292481639d4f07"
+  },
+  ".claude/skills/unity-input-system/references/rebinding.md": {
+    "mtime": 1794677175.5498185,
+    "seen": 1794941551.1424956,
+    "ast_hash": "7308fe22a7810d11f38e74e78bcfdf44",
+    "semantic_hash": "7308fe22a7810d11f38e74e78bcfdf44"
+  },
+  ".claude/skills/unity-navmesh/SKILL.md": {
+    "mtime": 1794677175.5551057,
+    "seen": 1794941551.1424968,
+    "ast_hash": "c82258089cd57d9c4bead0608c888e76",
+    "semantic_hash": "c82258089cd57d9c4bead0608c888e76"
+  },
+  ".claude/skills/unity-physics/SKILL.md": {
+    "mtime": 1794677175.5596716,
+    "seen": 1794941551.1424975,
+    "ast_hash": "b2a5e036a2451c0d5095bfdc77901536",
+    "semantic_hash": "b2a5e036a2451c0d5095bfdc77901536"
+  },
+  ".claude/skills/unity-physics/references/physics-2d.md": {
+    "mtime": 1794677175.5597255,
+    "seen": 1794941551.1424983,
+    "ast_hash": "b9e5bfcdd64601fb520c258a28b9d0d6",
+    "semantic_hash": "b9e5bfcdd64601fb520c258a28b9d0d6"
+  },
+  ".claude/skills/unity-physics/references/raycasting-and-joints.md": {
+    "mtime": 1794677175.5597432,
+    "seen": 1794941551.142499,
+    "ast_hash": "b5fde0de68c1b6f08060e4c9458351f9",
+    "semantic_hash": "b5fde0de68c1b6f08060e4c9458351f9"
+  },
+  ".claude/skills/unity-scriptableobjects/SKILL.md": {
+    "mtime": 1794677175.5640483,
+    "seen": 1794941551.1425,
+    "ast_hash": "775a34ec05819f01e19f00f71fa65488",
+    "semantic_hash": "775a34ec05819f01e19f00f71fa65488"
+  },
+  ".claude/skills/unity-scriptableobjects/references/event-channels.md": {
+    "mtime": 1794677175.5640972,
+    "seen": 1794941551.1425006,
+    "ast_hash": "adf86a0d524da8ebb8e290cb2dc257e3",
+    "semantic_hash": "adf86a0d524da8ebb8e290cb2dc257e3"
+  },
+  ".claude/skills/unity-tilemap-2d/SKILL.md": {
+    "mtime": 1794677175.5687263,
+    "seen": 1794941551.1425014,
+    "ast_hash": "d3d848ff4cee8492663247e7a7736593",
+    "semantic_hash": "d3d848ff4cee8492663247e7a7736593"
+  },
+  ".claude/skills/unreal-behavior-trees/SKILL.md": {
+    "mtime": 1794677175.5741296,
+    "seen": 1794941551.142502,
+    "ast_hash": "f8db62a0d368f002e19ffca12a6a99c8",
+    "semantic_hash": "f8db62a0d368f002e19ffca12a6a99c8"
+  },
+  ".claude/skills/unreal-behavior-trees/references/custom-bttask.md": {
+    "mtime": 1794677175.5741944,
+    "seen": 1794941551.142503,
+    "ast_hash": "e47f89f910df8747383b202c6937a857",
+    "semantic_hash": "e47f89f910df8747383b202c6937a857"
+  },
+  ".claude/skills/unreal-blueprints/SKILL.md": {
+    "mtime": 1794677175.5795522,
+    "seen": 1794941551.1425037,
+    "ast_hash": "1dd19a221ffc2bd8ac89b4a5ae726924",
+    "semantic_hash": "1dd19a221ffc2bd8ac89b4a5ae726924"
+  },
+  ".claude/skills/unreal-blueprints/references/communication.md": {
+    "mtime": 1794677175.5796301,
+    "seen": 1794941551.1425047,
+    "ast_hash": "91de570be28b61f4f08e3cf7ee5373eb",
+    "semantic_hash": "91de570be28b61f4f08e3cf7ee5373eb"
+  },
+  ".claude/skills/unreal-cpp-gameplay/SKILL.md": {
+    "mtime": 1794677175.5844727,
+    "seen": 1794941551.1425054,
+    "ast_hash": "abdde0469c89215843e71adac9d66b56",
+    "semantic_hash": "abdde0469c89215843e71adac9d66b56"
+  },
+  ".claude/skills/unreal-cpp-gameplay/references/components-and-gc.md": {
+    "mtime": 1794677175.5845294,
+    "seen": 1794941551.1425061,
+    "ast_hash": "637324aa928b9c3a2dc30b4293b27b95",
+    "semantic_hash": "637324aa928b9c3a2dc30b4293b27b95"
+  },
+  ".claude/skills/unreal-enhanced-input/SKILL.md": {
+    "mtime": 1794677175.590133,
+    "seen": 1794941551.142507,
+    "ast_hash": "60eedfd95e9e1205f3aae8a67abe0416",
+    "semantic_hash": "60eedfd95e9e1205f3aae8a67abe0416"
+  },
+  ".claude/skills/unreal-enhanced-input/references/cpp-setup.md": {
+    "mtime": 1794677175.5902104,
+    "seen": 1794941551.1425078,
+    "ast_hash": "cc054cd9fc62d6c2c28bfd5d932fdfbd",
+    "semantic_hash": "cc054cd9fc62d6c2c28bfd5d932fdfbd"
+  },
+  ".claude/skills/unreal-niagara/SKILL.md": {
+    "mtime": 1794677175.5954156,
+    "seen": 1794941551.1425085,
+    "ast_hash": "e27cbcbbe6b9507ebafe9cf99dd8a9f6",
+    "semantic_hash": "e27cbcbbe6b9507ebafe9cf99dd8a9f6"
+  },
+  ".claude/skills/unreal-packaging/SKILL.md": {
+    "mtime": 1794677175.599763,
+    "seen": 1794941551.1425092,
+    "ast_hash": "44314225bcdb88afd5f18b21f568e87c",
+    "semantic_hash": "44314225bcdb88afd5f18b21f568e87c"
+  },
+  ".claude/skills/visual-novel/SKILL.md": {
+    "mtime": 1794677175.369968,
+    "seen": 1794941551.1425102,
+    "ast_hash": "2a30a7abc38a4b5555bb88d009bc9d40",
+    "semantic_hash": "2a30a7abc38a4b5555bb88d009bc9d40"
+  },
+  ".claude/skills/visual-novel/references/script-and-flow.md": {
+    "mtime": 1794677175.3700223,
+    "seen": 1794941551.142511,
+    "ast_hash": "d64d5384dc00ef6af6f82c571106fee5",
+    "semantic_hash": "d64d5384dc00ef6af6f82c571106fee5"
+  },
+  "le-bureau/README.md": {
+    "mtime": 1794681863.5430543,
+    "seen": 1794941551.1425116,
+    "ast_hash": "7786e40254b65c1f97351d1490860aa6",
+    "semantic_hash": "7786e40254b65c1f97351d1490860aa6"
+  },
+  "le-bureau/index.html": {
+    "mtime": 1794680630.314981,
+    "seen": 1794941551.1425123,
+    "ast_hash": "b8f0160f71911e20139d565c9ad5a169",
+    "semantic_hash": "b8f0160f71911e20139d565c9ad5a169"
+  }
+}
